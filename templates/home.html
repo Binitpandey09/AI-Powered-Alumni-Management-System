@@ -1,0 +1,386 @@
+{% extends 'base.html' %}
+{% block title %}AlumniAI — Connect. Learn. Grow.{% endblock %}
+
+{% block body %}
+
+<!-- ═══════════════════════════════════════════════════════════
+     NAVBAR
+════════════════════════════════════════════════════════════ -->
+<header id="navbar" class="sticky top-0 z-40 bg-white transition-shadow duration-200">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+
+      <!-- Logo -->
+      <a href="/" class="flex items-center gap-2">
+        <svg class="w-7 h-7 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path d="M12 3L1 9l11 6 9-4.91V17M1 9v8" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M5 12.5v5a7 7 0 0014 0v-5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="text-xl font-bold text-blue-600 tracking-tight">AlumniAI</span>
+      </a>
+
+      <!-- Desktop nav -->
+      <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+        <a href="#how-it-works" class="hover:text-blue-600 transition-colors">How it works</a>
+        <a href="#for-alumni" class="hover:text-blue-600 transition-colors">For Alumni</a>
+        <a href="#testimonials" class="hover:text-blue-600 transition-colors">Community</a>
+      </nav>
+
+      <!-- CTA buttons -->
+      <div class="hidden md:flex items-center gap-3">
+        <a href="/auth/login/" class="px-4 py-2 text-sm font-semibold text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+          Sign In
+        </a>
+        <a href="/auth/choose-role/" class="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+          Get Started
+        </a>
+      </div>
+
+      <!-- Mobile hamburger -->
+      <button id="hamburger" class="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100" aria-label="Open menu">
+        <svg id="icon-open" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+        <svg id="icon-close" class="w-6 h-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile menu -->
+  <div id="mobile-menu" class="hidden md:hidden border-t border-slate-100 bg-white px-4 pb-4">
+    <nav class="flex flex-col gap-3 pt-3 text-sm font-medium text-slate-700">
+      <a href="#how-it-works" class="hover:text-blue-600">How it works</a>
+      <a href="#for-alumni" class="hover:text-blue-600">For Alumni</a>
+      <a href="#testimonials" class="hover:text-blue-600">Community</a>
+      <hr class="border-slate-200" />
+      <a href="/auth/login/" class="text-blue-600 font-semibold">Sign In</a>
+      <a href="/auth/choose-role/" class="px-4 py-2 text-center text-white bg-blue-600 rounded-lg font-semibold">Get Started</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════════
+     HERO
+════════════════════════════════════════════════════════════ -->
+<section class="bg-gradient-to-b from-blue-50 to-slate-50 pt-20 pb-24 px-4">
+  <div class="max-w-4xl mx-auto text-center">
+    <div class="inline-flex items-center gap-2 bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
+      <span class="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
+      Now live across 200+ colleges in India
+    </div>
+
+    <h1 class="text-5xl sm:text-6xl font-extrabold leading-tight tracking-tight mb-6">
+      <span class="text-slate-900">Connect.</span><br />
+      <span class="text-slate-900">Learn.</span><br />
+      <span class="text-blue-600">Grow.</span>
+    </h1>
+
+    <p class="text-lg sm:text-xl text-slate-500 max-w-2xl mx-auto mb-10 leading-relaxed">
+      India's smartest alumni platform. Get AI-powered career guidance, connect with mentors
+      working at top MNCs, and land your dream job through verified referrals.
+    </p>
+
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+      <a href="/auth/choose-role/"
+         class="w-full sm:w-auto px-8 py-3.5 text-base font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors shadow-sm">
+        Get Started Free &rarr;
+      </a>
+      <a href="/auth/login/"
+         class="w-full sm:w-auto px-8 py-3.5 text-base font-semibold text-blue-600 border border-blue-300 rounded-xl hover:bg-blue-50 transition-colors">
+        Sign In
+      </a>
+    </div>
+
+    <p class="text-sm text-slate-400 font-medium">
+      Join 10,000+ students and alumni already on the platform
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     STATS BAR
+════════════════════════════════════════════════════════════ -->
+<section class="bg-white border-y border-slate-200 py-10 px-4">
+  <div class="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-8 text-center">
+    {% for stat in stats %}
+    <div>
+      <div class="text-2xl font-extrabold text-blue-600">{{ stat.value }}</div>
+      <div class="text-xs text-slate-500 mt-1 font-medium">{{ stat.label }}</div>
+    </div>
+    {% empty %}
+    <div><div class="text-2xl font-extrabold text-blue-600">10,000+</div><div class="text-xs text-slate-500 mt-1 font-medium">Alumni Members</div></div>
+    <div><div class="text-2xl font-extrabold text-blue-600">500+</div><div class="text-xs text-slate-500 mt-1 font-medium">Partner Companies</div></div>
+    <div><div class="text-2xl font-extrabold text-blue-600">2,000+</div><div class="text-xs text-slate-500 mt-1 font-medium">Job Placements</div></div>
+    <div><div class="text-2xl font-extrabold text-blue-600">95%</div><div class="text-xs text-slate-500 mt-1 font-medium">Success Rate</div></div>
+    <div><div class="text-2xl font-extrabold text-blue-600">1,200+</div><div class="text-xs text-slate-500 mt-1 font-medium">Active Mentors</div></div>
+    <div><div class="text-2xl font-extrabold text-blue-600">&#8377;2.4L+</div><div class="text-xs text-slate-500 mt-1 font-medium">Avg Mentor Earnings</div></div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     HOW IT WORKS
+════════════════════════════════════════════════════════════ -->
+<section id="how-it-works" class="py-20 px-4 bg-slate-50">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-14">
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-3">How AlumniAI Works</h2>
+      <p class="text-slate-500 text-lg">From sign up to your dream job in 4 simple steps</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+      <!-- Step 1 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div class="w-9 h-9 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold mb-4">1</div>
+        <h3 class="text-base font-bold text-slate-900 mb-2">Create Your Profile</h3>
+        <p class="text-sm text-slate-500 leading-relaxed">Upload your CV and let AI auto-build your profile and score your resume instantly.</p>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div class="w-9 h-9 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold mb-4">2</div>
+        <h3 class="text-base font-bold text-slate-900 mb-2">Connect with Alumni</h3>
+        <p class="text-sm text-slate-500 leading-relaxed">Browse verified alumni from top companies. Book 1:1 sessions or join group mentorships.</p>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div class="w-9 h-9 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold mb-4">3</div>
+        <h3 class="text-base font-bold text-slate-900 mb-2">Apply via Referrals</h3>
+        <p class="text-sm text-slate-500 leading-relaxed">Get AI-matched to the right referrals. Apply in one click if your profile qualifies.</p>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div class="w-9 h-9 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold mb-4">4</div>
+        <h3 class="text-base font-bold text-slate-900 mb-2">Land Your Dream Job</h3>
+        <p class="text-sm text-slate-500 leading-relaxed">Track applications, attend sessions, improve your resume score and get placed.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     FOR ALUMNI & FACULTY
+════════════════════════════════════════════════════════════ -->
+<section id="for-alumni" class="py-20 px-4 bg-white">
+  <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+
+    <!-- Alumni card -->
+    <div class="border border-slate-200 rounded-xl p-8 shadow-sm">
+      <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-5">
+        <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      <h3 class="text-xl font-bold text-slate-900 mb-2">Start Earning as an Alumni Mentor</h3>
+      <ul class="space-y-2 text-sm text-slate-500 mb-6">
+        <li class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          Post job referrals for your college juniors
+        </li>
+        <li class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          Conduct paid 1:1 mentorship sessions
+        </li>
+        <li class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          Run weekend group masterclasses
+        </li>
+        <li class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          Earn 70% of every booking — instantly
+        </li>
+      </ul>
+      <a href="/auth/register/?role=alumni"
+         class="inline-block px-6 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+        Join as Alumni &rarr;
+      </a>
+    </div>
+
+    <!-- Faculty card -->
+    <div class="border border-slate-200 rounded-xl p-8 shadow-sm">
+      <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-5">
+        <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+        </svg>
+      </div>
+      <h3 class="text-xl font-bold text-slate-900 mb-2">Teach Beyond the Classroom</h3>
+      <ul class="space-y-2 text-sm text-slate-500 mb-6">
+        <li class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          Host paid doubt-clearing sessions
+        </li>
+        <li class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          Run weekend project-based classes
+        </li>
+        <li class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          Guide students on career paths
+        </li>
+        <li class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          Build passive income from recorded sessions
+        </li>
+      </ul>
+      <a href="/auth/register/?role=faculty"
+         class="inline-block px-6 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+        Join as Faculty &rarr;
+      </a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TESTIMONIALS
+════════════════════════════════════════════════════════════ -->
+<section id="testimonials" class="py-20 px-4 bg-slate-50">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-14">
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-3">What our community says</h2>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+      <!-- Testimonial 1 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <p class="text-sm text-slate-600 leading-relaxed mb-6">
+          "AlumniAI helped me land a referral at Google through a senior from my college.
+          The AI resume scorer actually told me what was missing."
+        </p>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">PS</div>
+          <div>
+            <div class="text-sm font-semibold text-slate-900">Priya S.</div>
+            <div class="text-xs text-slate-500">IIT Bombay &rarr; Google</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Testimonial 2 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <p class="text-sm text-slate-600 leading-relaxed mb-6">
+          "I earn Rs.40,000+ per month just by taking 2 weekend sessions and a few 1:1 calls.
+          This platform is a game changer."
+        </p>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">RM</div>
+          <div>
+            <div class="text-sm font-semibold text-slate-900">Rohit M.</div>
+            <div class="text-xs text-slate-500">Alumni at Microsoft</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Testimonial 3 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <p class="text-sm text-slate-600 leading-relaxed mb-6">
+          "My students are getting placed 3x faster since I started recommending AlumniAI.
+          The AI mock interview feature is incredible."
+        </p>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">KR</div>
+          <div>
+            <div class="text-sm font-semibold text-slate-900">Prof. Kavita R.</div>
+            <div class="text-xs text-slate-500">VJTI Mumbai</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     FOOTER
+════════════════════════════════════════════════════════════ -->
+<footer class="bg-slate-900 text-slate-400 pt-14 pb-8 px-4">
+  <div class="max-w-6xl mx-auto">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
+
+      <!-- Brand -->
+      <div>
+        <div class="flex items-center gap-2 mb-3">
+          <svg class="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M12 3L1 9l11 6 9-4.91V17M1 9v8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5 12.5v5a7 7 0 0014 0v-5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="text-white font-bold text-lg">AlumniAI</span>
+        </div>
+        <p class="text-sm leading-relaxed">India's smartest alumni platform connecting students, alumni, and faculty for career growth.</p>
+      </div>
+
+      <!-- Links -->
+      <div>
+        <h4 class="text-white text-sm font-semibold mb-4">Platform</h4>
+        <ul class="space-y-2 text-sm">
+          <li><a href="#" class="hover:text-white transition-colors">About</a></li>
+          <li><a href="#how-it-works" class="hover:text-white transition-colors">How it works</a></li>
+          <li><a href="/auth/choose-role/?role=student" class="hover:text-white transition-colors">For Students</a></li>
+          <li><a href="/auth/choose-role/?role=alumni" class="hover:text-white transition-colors">For Alumni</a></li>
+          <li><a href="/auth/choose-role/?role=faculty" class="hover:text-white transition-colors">For Faculty</a></li>
+          <li><a href="#" class="hover:text-white transition-colors">Contact</a></li>
+        </ul>
+      </div>
+
+      <!-- CTA -->
+      <div>
+        <h4 class="text-white text-sm font-semibold mb-4">Get started today</h4>
+        <p class="text-sm mb-4">Join thousands of students and alumni building their careers on AlumniAI.</p>
+        <a href="/auth/choose-role/"
+           class="inline-block px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+          Create Free Account
+        </a>
+      </div>
+
+    </div>
+
+    <div class="border-t border-slate-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+      <span>&copy; 2025 AlumniAI. All rights reserved.</span>
+      <div class="flex gap-5">
+        <a href="#" class="hover:text-white transition-colors">Privacy Policy</a>
+        <a href="#" class="hover:text-white transition-colors">Terms of Service</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Navbar shadow on scroll
+  const navbar = document.getElementById('navbar');
+  window.addEventListener('scroll', () => {
+    navbar.classList.toggle('shadow-md', window.scrollY > 10);
+  });
+
+  // Mobile hamburger
+  const hamburger = document.getElementById('hamburger');
+  const mobileMenu = document.getElementById('mobile-menu');
+  const iconOpen   = document.getElementById('icon-open');
+  const iconClose  = document.getElementById('icon-close');
+
+  hamburger.addEventListener('click', () => {
+    const isOpen = !mobileMenu.classList.contains('hidden');
+    mobileMenu.classList.toggle('hidden', isOpen);
+    iconOpen.classList.toggle('hidden', !isOpen);
+    iconClose.classList.toggle('hidden', isOpen);
+  });
+
+  // Close mobile menu on link click
+  mobileMenu.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+      mobileMenu.classList.add('hidden');
+      iconOpen.classList.remove('hidden');
+      iconClose.classList.add('hidden');
+    });
+  });
+</script>
+{% endblock %}

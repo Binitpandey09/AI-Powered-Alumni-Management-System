@@ -1,0 +1,349 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Edit Profile — AlumniAI{% endblock %}
+
+{% block role_badge %}
+  <span class="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full capitalize">{{ user.role }}</span>
+{% endblock %}
+
+{% block sidebar_links %}
+  <a href="/dashboard/{{ user.role }}/" class="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+    Dashboard
+  </a>
+  <a href="/profile/" class="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 bg-blue-50 rounded-lg font-medium">
+    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+    Profile
+  </a>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="max-w-2xl mx-auto">
+  <div class="mb-6 flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-extrabold text-slate-900">Edit Profile</h1>
+      <p class="text-slate-500 text-sm mt-1">Keep your profile up to date</p>
+    </div>
+    <!-- Profile completeness badge -->
+    <div id="completeness-badge" class="text-sm font-semibold text-slate-500"></div>
+  </div>
+
+  <!-- Profile Picture -->
+  <div class="bg-white border border-slate-200 rounded-xl p-6 mb-4 shadow-sm">
+    <h2 class="text-sm font-semibold text-slate-700 mb-4">Profile Picture</h2>
+    <div class="flex items-center gap-4">
+      <div class="relative">
+        <img id="pic-preview" src="" alt="Profile" class="w-20 h-20 rounded-full object-cover bg-slate-100 border border-slate-200" onerror="this.src='https://ui-avatars.com/api/?name={{ user.first_name }}+{{ user.last_name }}&background=6366f1&color=fff&size=80'" />
+        <label for="pic-input" class="absolute -bottom-1 -right-1 w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition-colors">
+          <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+        </label>
+        <input id="pic-input" type="file" accept="image/jpeg,image/png" class="hidden" onchange="uploadPicture(this)" />
+      </div>
+      <div>
+        <p class="text-sm font-medium text-slate-700">{{ user.first_name }} {{ user.last_name }}</p>
+        <p class="text-xs text-slate-400 mt-0.5">JPG or PNG, max 2MB</p>
+        <div id="pic-status" class="text-xs mt-1"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CV Upload (students & alumni) -->
+  {% if user.role != 'faculty' %}
+  <div class="bg-white border border-slate-200 rounded-xl p-6 mb-4 shadow-sm">
+    <h2 class="text-sm font-semibold text-slate-700 mb-1">Auto-fill from CV</h2>
+    <p class="text-xs text-slate-400 mb-4">Upload your CV and we'll pre-fill your profile using AI</p>
+    <div id="cv-drop-zone" class="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer" onclick="document.getElementById('cv-input').click()">
+      <svg class="w-8 h-8 text-slate-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      <p class="text-sm text-slate-500">Drop your CV here or <span class="text-blue-600 font-medium">browse</span></p>
+      <p class="text-xs text-slate-400 mt-1">PDF or DOCX, max 5MB</p>
+      <input id="cv-input" type="file" accept=".pdf,.docx" class="hidden" onchange="uploadCV(this)" />
+    </div>
+    <div id="cv-status" class="mt-3 text-sm"></div>
+  </div>
+  {% endif %}
+
+  <!-- Profile Fields Form -->
+  <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+    <h2 class="text-sm font-semibold text-slate-700 mb-4">Profile Details</h2>
+    <form id="profile-form" class="space-y-4" onsubmit="saveProfile(event)">
+
+      {% if user.role == 'alumni' %}
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Company</label>
+          <input type="text" name="company" id="f-company" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Google, Microsoft…" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Designation</label>
+          <input type="text" name="designation" id="f-designation" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Software Engineer" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">LinkedIn URL</label>
+        <input type="url" name="linkedin_url" id="f-linkedin_url" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://linkedin.com/in/…" />
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Years of Experience</label>
+          <input type="number" name="years_of_experience" id="f-years_of_experience" min="0" max="50" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Available for 1-on-1?</label>
+          <select name="is_available_for_1on1" id="f-is_available_for_1on1" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="false">No</option>
+            <option value="true">Yes</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Price / 30 min (₹)</label>
+          <input type="number" name="price_per_30min" id="f-price_per_30min" min="0" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Price / 60 min (₹)</label>
+          <input type="number" name="price_per_60min" id="f-price_per_60min" min="0" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+      </div>
+
+      {% elif user.role == 'student' %}
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Degree</label>
+          <input type="text" name="degree" id="f-degree" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="B.Tech, MCA…" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Branch</label>
+          <input type="text" name="branch" id="f-branch" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Computer Science" />
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Graduation Year</label>
+          <input type="number" name="graduation_year" id="f-graduation_year" min="2000" max="2035" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Looking For</label>
+          <input type="text" name="looking_for" id="f-looking_for" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Internship, Full-time…" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">GitHub URL</label>
+        <input type="url" name="github_url" id="f-github_url" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://github.com/…" />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">Portfolio URL</label>
+        <input type="url" name="portfolio_url" id="f-portfolio_url" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://yoursite.com" />
+      </div>
+
+      {% elif user.role == 'faculty' %}
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Department</label>
+          <input type="text" name="department" id="f-department" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Computer Science" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Designation</label>
+          <input type="text" name="designation" id="f-designation" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Associate Professor" />
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Bio — all roles -->
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">Bio</label>
+        <textarea name="bio" id="f-bio" rows="3" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" placeholder="Tell us about yourself…"></textarea>
+      </div>
+
+      <!-- Skills (JSON array displayed as comma-separated) -->
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">Skills <span class="text-slate-400 font-normal">(comma-separated)</span></label>
+        <input type="text" id="f-skills-display" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Python, Django, React…" />
+      </div>
+
+      <div id="form-error" class="text-sm text-red-600 hidden"></div>
+
+      <button type="submit" id="save-btn" class="w-full py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+        <span id="save-btn-text">Save Profile</span>
+        <svg id="save-spinner" class="hidden w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+const ROLE = '{{ user.role }}';
+const API_BASE = '/api/accounts/profile/';
+
+// Load existing profile on page load
+async function loadProfile() {
+  try {
+    const res = await apiFetch(API_BASE + ROLE + '/');
+    if (!res.ok) return;
+    const data = res.data;
+
+    // Fill fields
+    const fields = ['company','designation','linkedin_url','years_of_experience',
+                    'price_per_30min','price_per_60min','degree','branch',
+                    'graduation_year','looking_for','github_url','portfolio_url',
+                    'department','bio'];
+    fields.forEach(f => {
+      const el = document.getElementById('f-' + f);
+      if (el && data[f] != null) el.value = data[f];
+    });
+
+    // Skills
+    if (data.skills && data.skills.length) {
+      document.getElementById('f-skills-display').value = data.skills.join(', ');
+    }
+
+    // Boolean select
+    const avail = document.getElementById('f-is_available_for_1on1');
+    if (avail) avail.value = data.is_available_for_1on1 ? 'true' : 'false';
+
+    // Profile pic
+    if (data.user && data.user.profile_pic) {
+      document.getElementById('pic-preview').src = data.user.profile_pic;
+    }
+
+    // Completeness
+    if (data.profile_completeness !== undefined) {
+      const badge = document.getElementById('completeness-badge');
+      const pct = data.profile_completeness;
+      const color = pct >= 80 ? 'text-emerald-600' : pct >= 40 ? 'text-amber-500' : 'text-red-500';
+      badge.innerHTML = `<span class="${color}">${pct}% complete</span>`;
+    }
+  } catch(e) { console.warn('Profile load failed', e); }
+}
+
+async function saveProfile(e) {
+  e.preventDefault();
+  const btn = document.getElementById('save-btn');
+  const spinner = document.getElementById('save-spinner');
+  const errEl = document.getElementById('form-error');
+  btn.disabled = true;
+  spinner.classList.remove('hidden');
+  errEl.classList.add('hidden');
+
+  const form = document.getElementById('profile-form');
+  const fd = new FormData(form);
+  const body = {};
+  fd.forEach((v, k) => { if (v !== '') body[k] = v; });
+
+  // Convert skills string → array
+  const skillsRaw = document.getElementById('f-skills-display').value;
+  if (skillsRaw.trim()) {
+    body.skills = skillsRaw.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  delete body['undefined'];
+
+  // Boolean conversion
+  if ('is_available_for_1on1' in body) {
+    body.is_available_for_1on1 = body.is_available_for_1on1 === 'true';
+  }
+
+  try {
+    const res = await apiFetch(API_BASE + ROLE + '/', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = res.data;
+    if (res.ok) {
+      showToast('Profile saved successfully', 'success');
+      if (data.profile_completeness !== undefined) {
+        const badge = document.getElementById('completeness-badge');
+        const pct = data.profile_completeness;
+        const color = pct >= 80 ? 'text-emerald-600' : pct >= 40 ? 'text-amber-500' : 'text-red-500';
+        badge.innerHTML = `<span class="${color}">${pct}% complete</span>`;
+      }
+    } else {
+      const msg = Object.values(data).flat().join(' ');
+      errEl.textContent = msg;
+      errEl.classList.remove('hidden');
+    }
+  } catch(err) {
+    errEl.textContent = 'Network error. Please try again.';
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    spinner.classList.add('hidden');
+  }
+}
+
+async function uploadPicture(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const status = document.getElementById('pic-status');
+  status.textContent = 'Uploading…';
+  status.className = 'text-xs mt-1 text-slate-400';
+
+  const fd = new FormData();
+  fd.append('profile_pic', file);
+
+  try {
+    const res = await apiFetch('/api/accounts/profile/picture/', { method: 'POST', body: fd });
+    const data = res.data;
+    if (res.ok) {
+      document.getElementById('pic-preview').src = data.profile_pic + '?t=' + Date.now();
+      status.textContent = 'Updated';
+      status.className = 'text-xs mt-1 text-emerald-600';
+    } else {
+      status.textContent = Object.values(data).flat().join(' ');
+      status.className = 'text-xs mt-1 text-red-500';
+    }
+  } catch(e) {
+    status.textContent = 'Upload failed';
+    status.className = 'text-xs mt-1 text-red-500';
+  }
+}
+
+async function uploadCV(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById('cv-status');
+  statusEl.innerHTML = '<span class="text-slate-400">Parsing CV with AI… this may take a few seconds</span>';
+
+  const fd = new FormData();
+  fd.append('cv_file', file);
+
+  try {
+    const res = await apiFetch('/api/accounts/profile/cv-upload/', { method: 'POST', body: fd });
+    const data = res.data;
+    if (res.ok) {
+      const applied = data.applied_fields || [];
+      statusEl.innerHTML = `<span class="text-emerald-600 font-medium">CV parsed. Pre-filled: ${applied.join(', ') || 'no new fields'}</span>`;
+      // Reload profile to show filled values
+      await loadProfile();
+      showToast('CV imported — review and save your profile', 'success');
+    } else {
+      statusEl.innerHTML = `<span class="text-red-500">${data.message || 'CV parsing failed'}</span>`;
+    }
+  } catch(e) {
+    statusEl.innerHTML = '<span class="text-red-500">Upload failed. Please try again.</span>';
+  }
+}
+
+// Drag-and-drop support
+const dropZone = document.getElementById('cv-drop-zone');
+if (dropZone) {
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('border-blue-400'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-blue-400'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('border-blue-400');
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const input = document.getElementById('cv-input');
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+      uploadCV(input);
+    }
+  });
+}
+
+loadProfile();
+</script>
+{% endblock %}

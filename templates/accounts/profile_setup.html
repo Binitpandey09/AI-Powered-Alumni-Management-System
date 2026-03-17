@@ -1,0 +1,473 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Set Up Your Profile — AlumniAI{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 flex flex-col items-center py-10 px-4">
+
+  <!-- Logo -->
+  <a href="/" class="flex items-center gap-2 mb-8">
+    <svg class="w-7 h-7 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path d="M12 3L1 9l11 6 9-4.91V17M1 9v8" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M5 12.5v5a7 7 0 0014 0v-5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span class="text-xl font-bold text-blue-600">AlumniAI</span>
+  </a>
+
+  <!-- Progress bar -->
+  <div class="w-full max-w-xl mb-8">
+    <div class="flex items-center justify-between mb-2">
+    </div>
+    <div class="flex gap-2">
+      <div id="step-bar-1" class="h-1.5 flex-1 rounded-full bg-blue-600 transition-all"></div>
+      <div id="step-bar-2" class="h-1.5 flex-1 rounded-full bg-slate-200 transition-all"></div>
+      <div id="step-bar-3" class="h-1.5 flex-1 rounded-full bg-slate-200 transition-all"></div>
+      <div id="step-bar-4" class="h-1.5 flex-1 rounded-full bg-slate-200 transition-all"></div>
+    </div>
+    <div class="flex justify-between mt-1.5 text-xs text-slate-400">
+      <span id="step-label-1" class="text-blue-600 font-medium">Basic Info</span>
+      <span id="step-label-2">Profile Details</span>
+      <span id="step-label-3">Upload CV</span>
+      <span id="step-label-4">Done</span>
+    </div>
+  </div>
+
+  <!-- Card container -->
+  <div class="w-full max-w-xl">
+
+    <!-- ── STEP 1: Basic Info ── -->
+    <div id="step-1" class="bg-white border border-slate-200 rounded-xl shadow-sm p-8">
+      <h1 class="text-2xl font-extrabold text-slate-900 mb-1">Let's set up your profile</h1>
+      <p class="text-slate-500 text-sm mb-6" id="step1-sub">
+        {% if user_role == 'student' %}Tell us about yourself so alumni can find you
+        {% elif user_role == 'alumni' %}Build your mentor profile to start earning
+        {% else %}Set up your teaching profile{% endif %}
+      </p>
+
+      <!-- Avatar upload -->
+      <div class="flex flex-col items-center mb-6">
+        <div class="relative cursor-pointer" onclick="document.getElementById('pic-input').click()">
+          <div id="avatar-ring" class="w-24 h-24 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center bg-slate-50 overflow-hidden hover:border-blue-400 transition-colors">
+            <img id="avatar-preview" src="" alt="" class="hidden w-full h-full object-cover rounded-full" />
+            <span id="avatar-initials" class="text-2xl font-bold text-slate-400">{{ user.first_name|slice:":1"|upper }}{{ user.last_name|slice:":1"|upper }}</span>
+          </div>
+          <div class="absolute -bottom-1 -right-1 w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center">
+            <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          </div>
+        </div>
+        <input id="pic-input" type="file" accept="image/jpeg,image/png" class="hidden" onchange="handlePicSelect(this)" />
+        <p class="text-xs text-slate-400 mt-2">Click to upload photo</p>
+        <p id="pic-status" class="text-xs mt-1"></p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">First Name <span class="text-red-500">*</span></label>
+          <input id="s1-first_name" type="text" value="{{ user.first_name }}" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Last Name <span class="text-red-500">*</span></label>
+          <input id="s1-last_name" type="text" value="{{ user.last_name }}" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+      </div>
+      <div class="mb-4">
+        <label class="block text-xs font-medium text-slate-600 mb-1">Phone Number <span class="text-red-500">*</span></label>
+        <input id="s1-phone" type="tel" value="{{ user.phone }}" placeholder="+91 9876543210" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+      <p id="s1-error" class="text-sm text-red-500 mb-3 hidden"></p>
+      <button onclick="goStep2()" class="w-full py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+        Next <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+
+    <!-- ── STEP 2: Role-specific details ── -->
+    <div id="step-2" class="hidden bg-white border border-slate-200 rounded-xl shadow-sm p-8">
+      <h2 class="text-xl font-extrabold text-slate-900 mb-1">Profile Details</h2>
+      <p class="text-slate-500 text-sm mb-6">Fill in your professional details</p>
+
+      {% if user_role == 'student' %}
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Degree</label>
+          <input id="s2-degree" type="text" placeholder="B.Tech" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Branch</label>
+          <input id="s2-branch" type="text" placeholder="Computer Science" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Graduation Year</label>
+          <input id="s2-graduation_year" type="number" min="2020" max="2032" placeholder="2026" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Looking For</label>
+          <select id="s2-looking_for" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Select…</option>
+            <option>Internship</option><option>Full-time</option><option>Part-time</option><option>Freelance</option>
+          </select>
+        </div>
+      </div>
+      <div class="mb-4">
+        <label class="block text-xs font-medium text-slate-600 mb-1">GitHub URL <span class="text-slate-400 font-normal">(optional)</span></label>
+        <input id="s2-github_url" type="url" placeholder="https://github.com/…" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+      <div class="mb-4">
+        <label class="block text-xs font-medium text-slate-600 mb-1">Portfolio URL <span class="text-slate-400 font-normal">(optional)</span></label>
+        <input id="s2-portfolio_url" type="url" placeholder="https://yoursite.com" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+
+      {% elif user_role == 'alumni' %}
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Current Company <span class="text-red-500">*</span></label>
+          <input id="s2-company" type="text" placeholder="Google" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Designation <span class="text-red-500">*</span></label>
+          <input id="s2-designation" type="text" placeholder="Senior Software Engineer" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Years of Experience</label>
+          <input id="s2-years_of_experience" type="number" min="0" max="50" placeholder="3" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">LinkedIn URL</label>
+          <input id="s2-linkedin_url" type="url" placeholder="https://linkedin.com/in/…" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+      </div>
+      <div class="mb-4">
+        <label class="block text-xs font-medium text-slate-600 mb-1">Bio <span id="bio-count" class="text-slate-400 font-normal">0/500</span></label>
+        <textarea id="s2-bio" rows="3" maxlength="500" oninput="document.getElementById('bio-count').textContent=this.value.length+'/500'" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" placeholder="Tell students about your journey…"></textarea>
+      </div>
+      <div class="mb-4 flex items-center justify-between">
+        <label class="text-xs font-medium text-slate-600">Available for 1:1 sessions?</label>
+        <button type="button" id="toggle-1on1" onclick="toggle1on1()" class="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-200 transition-colors focus:outline-none">
+          <span id="toggle-knob" class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform translate-x-1"></span>
+        </button>
+      </div>
+      <div id="pricing-fields" class="hidden grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Price / 30 min (₹)</label>
+          <input id="s2-price_per_30min" type="number" min="0" placeholder="500" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Price / 60 min (₹)</label>
+          <input id="s2-price_per_60min" type="number" min="0" placeholder="900" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+      </div>
+
+      {% elif user_role == 'faculty' %}
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Department <span class="text-red-500">*</span></label>
+          <input id="s2-department" type="text" placeholder="Computer Engineering" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Designation <span class="text-red-500">*</span></label>
+          <input id="s2-designation" type="text" placeholder="Associate Professor" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+      </div>
+      <div class="mb-4">
+        <label class="block text-xs font-medium text-slate-600 mb-1">Employee ID</label>
+        <input id="s2-employee_id" type="text" placeholder="EMP001" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+      <div class="mb-4">
+        <label class="block text-xs font-medium text-slate-600 mb-1">Bio <span id="bio-count" class="text-slate-400 font-normal">0/500</span></label>
+        <textarea id="s2-bio" rows="3" maxlength="500" oninput="document.getElementById('bio-count').textContent=this.value.length+'/500'" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" placeholder="About your teaching experience…"></textarea>
+      </div>
+      {% endif %}
+
+      <!-- Skills tag input — all roles -->
+      <div class="mb-6">
+        <label class="block text-xs font-medium text-slate-600 mb-1">
+          {% if user_role == 'faculty' %}Subjects you teach{% else %}Skills{% endif %}
+        </label>
+        <div id="skills-container" class="flex flex-wrap gap-1.5 p-2 border border-slate-200 rounded-lg min-h-[42px] cursor-text focus-within:ring-2 focus-within:ring-blue-500"></div>
+      </div>
+
+      <p id="s2-error" class="text-sm text-red-500 mb-3 hidden"></p>
+      <div class="flex gap-3">
+        <button onclick="goStep(1)" class="flex-1 py-2.5 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50 transition-colors">← Back</button>
+        <button id="s2-next-btn" onclick="saveStep2()" class="flex-1 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+          <span>Next</span>
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          <svg id="s2-spinner" class="hidden w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── STEP 3: CV Upload ── -->
+    <div id="step-3" class="hidden bg-white border border-slate-200 rounded-xl shadow-sm p-8">
+      <h2 class="text-xl font-extrabold text-slate-900 mb-1">Upload your CV</h2>
+      <p class="text-slate-500 text-sm mb-6">Our AI will automatically fill your profile details from your CV</p>
+
+      <div id="cv-drop" class="border-2 border-dashed border-slate-200 rounded-xl p-10 text-center hover:border-blue-400 transition-colors cursor-pointer mb-4" onclick="document.getElementById('cv-file-input').click()">
+        <svg class="w-10 h-10 text-slate-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        <p class="text-sm text-slate-500">Drag and drop your CV here or <span class="text-blue-600 font-medium">click to browse</span></p>
+        <p class="text-xs text-slate-400 mt-1">Supports PDF and DOCX • Max 5MB</p>
+        <input id="cv-file-input" type="file" accept=".pdf,.docx" class="hidden" onchange="handleCVSelect(this)" />
+      </div>
+
+      <div id="cv-file-info" class="hidden flex items-center gap-3 p-3 bg-slate-50 rounded-lg mb-4">
+        <svg class="w-8 h-8 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        <div class="flex-1 min-w-0">
+          <p id="cv-filename" class="text-sm font-medium text-slate-700 truncate"></p>
+          <p id="cv-filesize" class="text-xs text-slate-400"></p>
+        </div>
+      </div>
+
+      <div id="cv-status" class="text-sm mb-4"></div>
+
+      <button id="cv-upload-btn" onclick="uploadCV()" class="hidden w-full py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 mb-3">
+        <span id="cv-btn-text">Upload &amp; Parse CV</span>
+        <svg id="cv-spinner" class="hidden w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+      </button>
+
+      <div class="flex gap-3">
+        <button onclick="goStep(2)" class="flex-1 py-2.5 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50 transition-colors">← Back</button>
+        <button onclick="goStep(4)" class="flex-1 py-2.5 text-slate-400 text-sm rounded-lg hover:text-slate-600 transition-colors">Skip for now →</button>
+      </div>
+    </div>
+
+    <!-- ── STEP 4: Done ── -->
+    <div id="step-4" class="hidden bg-white border border-slate-200 rounded-xl shadow-sm p-10 text-center">
+      <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-5">
+        <svg class="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <h2 class="text-2xl font-extrabold text-slate-900 mb-2">You're all set!</h2>
+      <p id="completeness-text" class="text-slate-500 text-sm mb-5">Your profile is being loaded…</p>
+
+      <div id="missing-fields-card" class="hidden text-left bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+        <p class="text-xs font-semibold text-amber-700 mb-2">To complete your profile, add:</p>
+        <ul id="missing-fields-list" class="text-xs text-amber-600 space-y-1 list-disc list-inside"></ul>
+      </div>
+
+      <div class="flex flex-col gap-3">
+        <button id="go-dashboard-btn" onclick="goToDashboard()" class="w-full py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors">
+          Go to Dashboard →
+        </button>
+        <button onclick="goToDashboard()" class="w-full py-2.5 border border-slate-200 text-slate-500 text-sm rounded-lg hover:bg-slate-50 transition-colors">
+          Complete profile later
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /card container -->
+</div><!-- /page -->
+
+{% block extra_js %}
+<script>
+const ROLE = '{{ user_role }}';
+let is1on1 = false;
+let skillsWidget;
+let selectedCVFile = null;
+
+// ── Progress bar ──────────────────────────────────────────────
+function goStep(n) {
+  [1,2,3,4].forEach(i => {
+    document.getElementById('step-'+i).classList.add('hidden');
+    document.getElementById('step-bar-'+i).classList.remove('bg-blue-600');
+    document.getElementById('step-bar-'+i).classList.add('bg-slate-200');
+    document.getElementById('step-label-'+i).classList.remove('text-blue-600','font-medium');
+  });
+  document.getElementById('step-'+n).classList.remove('hidden');
+  for (let i = 1; i <= n; i++) {
+    document.getElementById('step-bar-'+i).classList.remove('bg-slate-200');
+    document.getElementById('step-bar-'+i).classList.add('bg-blue-600');
+  }
+  document.getElementById('step-label-'+n).classList.add('text-blue-600','font-medium');
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+// ── Step 1 → 2 ────────────────────────────────────────────────
+async function goStep2() {
+  const first = document.getElementById('s1-first_name').value.trim();
+  const last  = document.getElementById('s1-last_name').value.trim();
+  const phone = document.getElementById('s1-phone').value.trim();
+  const err   = document.getElementById('s1-error');
+  if (!first || !last || !phone) {
+    err.textContent = 'Please fill in all required fields.';
+    err.classList.remove('hidden'); return;
+  }
+  err.classList.add('hidden');
+  // Save basic info
+  const res = await apiFetch('/api/accounts/profile/basic/', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({first_name: first, last_name: last, phone}),
+  });
+  if (!res.ok) { err.textContent = extractErrorMessage(res.error); err.classList.remove('hidden'); return; }
+  goStep(2);
+  // Init skills widget after step 2 is visible
+  const container = document.getElementById('skills-container');
+  if (container) skillsWidget = renderSkillTags(container, [], true);
+}
+
+// ── Toggle 1:1 ────────────────────────────────────────────────
+function toggle1on1() {
+  is1on1 = !is1on1;
+  const btn = document.getElementById('toggle-1on1');
+  const knob = document.getElementById('toggle-knob');
+  const pricing = document.getElementById('pricing-fields');
+  btn.classList.toggle('bg-blue-600', is1on1);
+  btn.classList.toggle('bg-slate-200', !is1on1);
+  knob.classList.toggle('translate-x-6', is1on1);
+  knob.classList.toggle('translate-x-1', !is1on1);
+  if (pricing) pricing.classList.toggle('hidden', !is1on1);
+}
+
+// ── Step 2 save ───────────────────────────────────────────────
+async function saveStep2() {
+  const btn = document.getElementById('s2-next-btn');
+  const spinner = document.getElementById('s2-spinner');
+  const err = document.getElementById('s2-error');
+  btn.disabled = true; spinner.classList.remove('hidden'); err.classList.add('hidden');
+
+  const body = {};
+  const skills = skillsWidget ? skillsWidget.getTags() : [];
+  if (skills.length) body.skills = skills;
+
+  const fields = ROLE === 'student'
+    ? ['degree','branch','graduation_year','looking_for','github_url','portfolio_url']
+    : ROLE === 'alumni'
+    ? ['company','designation','years_of_experience','linkedin_url','bio','price_per_30min','price_per_60min']
+    : ['department','designation','employee_id','bio'];
+
+  fields.forEach(f => {
+    const el = document.getElementById('s2-'+f);
+    if (el && el.value.trim()) body[f] = el.value.trim();
+  });
+
+  if (ROLE === 'alumni') body.is_available_for_1on1 = is1on1;
+
+  const endpoint = `/api/accounts/profile/${ROLE}/`;
+  const res = await apiFetch(endpoint, {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(body),
+  });
+
+  btn.disabled = false; spinner.classList.add('hidden');
+  if (!res.ok) { err.textContent = extractErrorMessage(res.error); err.classList.remove('hidden'); return; }
+
+  // Faculty skips CV step
+  if (ROLE === 'faculty') { await loadDoneStep(); goStep(4); }
+  else goStep(3);
+}
+
+// ── Profile picture ───────────────────────────────────────────
+function handlePicSelect(input) {
+  const file = input.files[0]; if (!file) return;
+  // Instant preview via FileReader
+  const reader = new FileReader();
+  reader.onload = e => {
+    const preview = document.getElementById('avatar-preview');
+    const initials = document.getElementById('avatar-initials');
+    preview.src = e.target.result;
+    preview.classList.remove('hidden');
+    initials.classList.add('hidden');
+  };
+  reader.readAsDataURL(file);
+  // Upload in background
+  uploadPicture(file);
+}
+
+async function uploadPicture(file) {
+  const status = document.getElementById('pic-status');
+  status.textContent = 'Uploading…'; status.className = 'text-xs mt-1 text-slate-400';
+  const fd = new FormData(); fd.append('profile_pic', file);
+  const res = await uploadFile('/api/accounts/profile/picture/', fd);
+  if (res.ok) { status.textContent = '✓ Photo saved'; status.className = 'text-xs mt-1 text-emerald-600'; }
+  else { status.textContent = extractErrorMessage(res.error); status.className = 'text-xs mt-1 text-red-500'; }
+}
+
+// ── CV upload ─────────────────────────────────────────────────
+function handleCVSelect(input) {
+  selectedCVFile = input.files[0]; if (!selectedCVFile) return;
+  document.getElementById('cv-file-info').classList.remove('hidden');
+  document.getElementById('cv-filename').textContent = selectedCVFile.name;
+  document.getElementById('cv-filesize').textContent = (selectedCVFile.size / 1024).toFixed(1) + ' KB';
+  document.getElementById('cv-upload-btn').classList.remove('hidden');
+}
+
+async function uploadCV() {
+  if (!selectedCVFile) return;
+  const btn = document.getElementById('cv-upload-btn');
+  const spinner = document.getElementById('cv-spinner');
+  const btnText = document.getElementById('cv-btn-text');
+  const statusEl = document.getElementById('cv-status');
+  btn.disabled = true; spinner.classList.remove('hidden');
+  btnText.textContent = 'AI is reading your CV…';
+  statusEl.innerHTML = '';
+
+  const fd = new FormData(); fd.append('cv_file', selectedCVFile);
+  const res = await uploadFile('/api/accounts/profile/cv-upload/', fd);
+
+  btn.disabled = false; spinner.classList.add('hidden'); btnText.textContent = 'Upload & Parse CV';
+
+  if (res.ok) {
+    statusEl.innerHTML = '<span class="text-emerald-600 font-medium">CV uploaded! We\'re filling your profile automatically.</span>';
+    await loadDoneStep();
+    goStep(4);
+  } else {
+    statusEl.innerHTML = `<span class="text-red-500">${extractErrorMessage(res.error)}</span>`;
+  }
+}
+
+// Drag-and-drop
+const dropZone = document.getElementById('cv-drop');
+if (dropZone) {
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('border-blue-400'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-blue-400'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('border-blue-400');
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const input = document.getElementById('cv-file-input');
+      const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files;
+      handleCVSelect(input);
+    }
+  });
+}
+
+// ── Done step ─────────────────────────────────────────────────
+async function loadDoneStep() {
+  const res = await apiFetch(`/api/accounts/profile/${ROLE}/`);
+  if (!res.ok) return;
+  const pct = res.data.profile_completeness ?? 0;
+  document.getElementById('completeness-text').textContent = `Your profile is ${pct}% complete`;
+  if (pct < 100) {
+    const missing = [];
+    if (ROLE === 'alumni') {
+      if (!res.data.company) missing.push('Company');
+      if (!res.data.designation) missing.push('Designation');
+      if (!res.data.bio) missing.push('Bio');
+      if (!res.data.linkedin_url) missing.push('LinkedIn URL');
+    } else if (ROLE === 'student') {
+      if (!res.data.degree) missing.push('Degree');
+      if (!res.data.branch) missing.push('Branch');
+      if (!res.data.graduation_year) missing.push('Graduation Year');
+    } else {
+      if (!res.data.department) missing.push('Department');
+      if (!res.data.designation) missing.push('Designation');
+      if (!res.data.bio) missing.push('Bio');
+    }
+    if (missing.length) {
+      const card = document.getElementById('missing-fields-card');
+      const list = document.getElementById('missing-fields-list');
+      card.classList.remove('hidden');
+      list.innerHTML = missing.map(m => `<li>${m}</li>`).join('');
+    }
+  }
+}
+
+function goToDashboard() {
+  const map = {alumni:'/dashboard/alumni/',student:'/dashboard/student/',faculty:'/dashboard/faculty/'};
+  window.location.href = map[ROLE] || '/dashboard/student/';
+}
+</script>
+{% endblock %}

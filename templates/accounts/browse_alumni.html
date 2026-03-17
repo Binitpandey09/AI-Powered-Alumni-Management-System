@@ -1,0 +1,155 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+{% block title %}Browse Alumni — AlumniAI{% endblock %}
+
+{% block dashboard_content %}
+<div>
+  <div class="mb-6">
+    <h1 class="text-2xl font-extrabold text-slate-900">Browse Alumni</h1>
+    <p class="text-slate-500 text-sm mt-1">Connect with alumni from your college and beyond</p>
+  </div>
+
+  <!-- Search + Filters -->
+  <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-4 mb-6">
+    <div class="flex flex-col sm:flex-row gap-3 mb-3">
+      <div class="relative flex-1">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input id="search-input" type="text" placeholder="Search alumni by name, company…"
+          class="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+      <input id="skill-filter" type="text" placeholder="Filter by skill…"
+        class="sm:w-44 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+    </div>
+    <!-- Filter pills -->
+    <div class="flex flex-wrap gap-2">
+      <button onclick="setFilter('all')" id="filter-all" class="filter-pill filter-active px-3 py-1 text-xs font-medium rounded-full border transition-colors">All</button>
+      <button onclick="setFilter('available')" id="filter-available" class="filter-pill px-3 py-1 text-xs font-medium rounded-full border border-slate-200 text-slate-600 hover:border-blue-300 transition-colors">Available for 1:1</button>
+    </div>
+  </div>
+
+  <!-- Results count -->
+  <p id="results-count" class="text-xs text-slate-400 mb-4"></p>
+
+  <!-- Grid -->
+  <div id="alumni-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6"></div>
+
+  <!-- Empty state -->
+  <div id="empty-state" class="hidden bg-white border border-slate-200 rounded-xl p-10 text-center">
+    <svg class="w-10 h-10 text-slate-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/></svg>
+    <p class="text-slate-500 text-sm">No alumni found matching your search.</p>
+  </div>
+
+  <!-- Load more -->
+  <div class="text-center">
+    <button id="load-more-btn" onclick="loadMore()" class="hidden px-6 py-2.5 border border-slate-200 text-slate-600 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors">
+      Load more
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block dashboard_js %}
+<style>
+  .filter-pill { cursor: pointer; }
+  .filter-active { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+</style>
+<script>
+let currentPage = 1;
+let currentFilter = 'all';
+let currentSearch = '';
+let currentSkill = '';
+let hasNext = false;
+
+async function fetchAlumni(append = false) {
+  const params = new URLSearchParams({ page: currentPage });
+  if (currentSearch) params.set('search', currentSearch);
+  if (currentFilter === 'available') params.set('available', 'true');
+  if (currentSkill) params.set('skill', currentSkill);
+
+  const res = await apiFetch(`/api/accounts/alumni/?${params}`);
+  if (!res.ok) return;
+
+  const { results, total, has_next } = res.data;
+  hasNext = has_next;
+
+  document.getElementById('results-count').textContent = `${total} alumni found`;
+  document.getElementById('load-more-btn').classList.toggle('hidden', !has_next);
+
+  const grid = document.getElementById('alumni-grid');
+  const empty = document.getElementById('empty-state');
+
+  if (!append) grid.innerHTML = '';
+
+  if (!results.length && !append) {
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  results.forEach(a => {
+    const card = document.createElement('div');
+    card.className = 'bg-white border border-slate-200 rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow flex flex-col';
+
+    const initials = getInitials(a.full_name);
+    const picHtml = a.profile_pic
+      ? `<img src="${a.profile_pic}" alt="" class="w-12 h-12 rounded-full object-cover" />`
+      : `<div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm">${initials}</div>`;
+
+    const skillPills = (a.skills || []).slice(0, 3).map(s =>
+      `<span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-full">${s}</span>`
+    ).join('');
+    const extraSkills = (a.skills || []).length > 3
+      ? `<span class="px-2 py-0.5 bg-slate-100 text-slate-400 text-xs rounded-full">+${a.skills.length - 3}</span>` : '';
+
+    const availBadge = a.is_available_for_1on1
+      ? `<span class="flex items-center gap-1 text-xs text-emerald-600 font-medium"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>Available for 1:1</span>` : '';
+
+    card.innerHTML = `
+      <div class="flex items-start gap-3 mb-3">
+        ${picHtml}
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-slate-900 truncate">${a.full_name}</p>
+          <p class="text-xs text-slate-500 truncate">${[a.designation, a.company].filter(Boolean).join(' @ ') || '—'}</p>
+          ${availBadge}
+        </div>
+        <span class="text-xs text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full flex-shrink-0">⭐ ${a.impact_score}</span>
+      </div>
+      <div class="flex flex-wrap gap-1 mb-4">${skillPills}${extraSkills}</div>
+      <a href="/alumni/${a.user_id}/" class="mt-auto block text-center py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors">View Profile →</a>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  currentPage = 1;
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('filter-active'));
+  document.getElementById('filter-' + f).classList.add('filter-active');
+  fetchAlumni();
+}
+
+function loadMore() {
+  currentPage++;
+  fetchAlumni(true);
+}
+
+// Debounced search
+const debouncedSearch = debounce(() => {
+  currentSearch = document.getElementById('search-input').value.trim();
+  currentPage = 1;
+  fetchAlumni();
+}, 400);
+
+const debouncedSkill = debounce(() => {
+  currentSkill = document.getElementById('skill-filter').value.trim();
+  currentPage = 1;
+  fetchAlumni();
+}, 400);
+
+document.getElementById('search-input').addEventListener('input', debouncedSearch);
+document.getElementById('skill-filter').addEventListener('input', debouncedSkill);
+
+fetchAlumni();
+</script>
+{% endblock %}

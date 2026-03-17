@@ -1,0 +1,42 @@
+<nav class="bg-white shadow-lg">
+    <div class="container mx-auto px-4">
+        <div class="flex justify-between items-center py-4">
+            <!-- Logo -->
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-graduation-cap text-blue-600 text-2xl"></i>
+                <span class="text-xl font-bold text-gray-800">AlumniConnect</span>
+            </div>
+            
+            <!-- Navigation Links -->
+            <div class="hidden md:flex space-x-6">
+                <a href="/" class="text-gray-700 hover:text-blue-600 transition">Home</a>
+                <a href="/feed" class="text-gray-700 hover:text-blue-600 transition">Feed</a>
+                <a href="/sessions" class="text-gray-700 hover:text-blue-600 transition">Sessions</a>
+                <a href="/referrals" class="text-gray-700 hover:text-blue-600 transition">Referrals</a>
+                <a href="/ai-tools" class="text-gray-700 hover:text-blue-600 transition">AI Tools</a>
+            </div>
+            
+            <!-- User Menu -->
+            <div class="flex items-center space-x-4">
+                <!-- Notifications -->
+                <button class="relative text-gray-700 hover:text-blue-600">
+                    <i class="fas fa-bell text-xl"></i>
+                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">3</span>
+                </button>
+                
+                <!-- Profile Dropdown -->
+                <div class="relative">
+                    <button class="flex items-center space-x-2 text-gray-700 hover:text-blue-600">
+                        <img src="https://via.placeholder.com/40" alt="Profile" class="w-10 h-10 rounded-full">
+                        <i class="fas fa-chevron-down text-sm"></i>
+                    </button>
+                </div>
+                
+                <!-- Mobile Menu Toggle -->
+                <button class="md:hidden text-gray-700">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>

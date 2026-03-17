@@ -1,0 +1,350 @@
+{% extends 'base.html' %}
+{% block title %}Sign In — AlumniAI{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex">
+
+  <!-- ── Left panel ── -->
+  <div class="hidden lg:flex lg:w-5/12 bg-gradient-to-br from-blue-700 to-blue-500 flex-col justify-between p-12 text-white">
+    <a href="/" class="flex items-center gap-2">
+      <svg class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M12 3L1 9l11 6 9-4.91V17M1 9v8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M5 12.5v5a7 7 0 0014 0v-5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="text-xl font-bold tracking-tight">AlumniAI</span>
+    </a>
+    <div>
+      <h2 class="text-3xl font-extrabold leading-snug mb-6">Welcome back.</h2>
+      <ul class="space-y-4">
+        <li class="flex items-start gap-3 text-sm text-blue-100">
+          <svg class="w-4 h-4 text-white mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          Secure OTP-based login — no passwords stored
+        </li>
+        <li class="flex items-start gap-3 text-sm text-blue-100">
+          <svg class="w-4 h-4 text-white mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          Access your dashboard, sessions, and referrals
+        </li>
+        <li class="flex items-start gap-3 text-sm text-blue-100">
+          <svg class="w-4 h-4 text-white mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          Trusted by 10,000+ students and alumni
+        </li>
+      </ul>
+    </div>
+    <p class="text-blue-200 text-sm">India's smartest alumni platform.</p>
+  </div>
+
+  <!-- ── Right panel ── -->
+  <div class="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-slate-50">
+
+    <!-- Mobile logo -->
+    <a href="/" class="flex items-center gap-2 mb-8 lg:hidden">
+      <svg class="w-7 h-7 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M12 3L1 9l11 6 9-4.91V17M1 9v8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M5 12.5v5a7 7 0 0014 0v-5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="text-xl font-bold text-blue-600 tracking-tight">AlumniAI</span>
+    </a>
+
+    <div class="w-full max-w-md">
+
+      <!-- ── STEP 1: Email + Role ── -->
+      <div id="step-1">
+        <h1 class="text-2xl font-extrabold text-slate-900 mb-1">Sign in to AlumniAI</h1>
+        <p class="text-sm text-slate-500 mb-8">Enter your email and we'll send you a one-time code.</p>
+
+        <form id="login-form-step1" novalidate class="space-y-5">
+
+          <!-- Role pills -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-2">I am a</label>
+            <div class="flex gap-2">
+              <button type="button" data-role="student"
+                class="role-pill flex-1 py-2 text-sm font-semibold border-2 rounded-lg transition-colors border-slate-200 text-slate-600 hover:border-blue-400">
+                Student
+              </button>
+              <button type="button" data-role="alumni"
+                class="role-pill flex-1 py-2 text-sm font-semibold border-2 rounded-lg transition-colors border-slate-200 text-slate-600 hover:border-blue-400">
+                Alumni
+              </button>
+              <button type="button" data-role="faculty"
+                class="role-pill flex-1 py-2 text-sm font-semibold border-2 rounded-lg transition-colors border-slate-200 text-slate-600 hover:border-blue-400">
+                Faculty
+              </button>
+            </div>
+            <p id="err-role" class="hidden text-xs text-red-500 mt-1">Please select your role.</p>
+          </div>
+
+          <!-- Email -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1" for="login-email">Email address</label>
+            <input id="login-email" type="email" autocomplete="email" placeholder="you@example.com"
+              class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+            <p id="err-email" class="hidden text-xs text-red-500 mt-1"></p>
+          </div>
+
+          <p id="err-step1-general" class="hidden text-xs text-red-500"></p>
+
+          <button type="submit" id="step1-btn"
+            class="w-full py-3 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60">
+            <span id="step1-btn-text">Send OTP</span>
+            <svg id="step1-spinner" class="hidden w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+            </svg>
+          </button>
+        </form>
+
+        <p class="mt-6 text-center text-sm text-slate-500">
+          Don't have an account?
+          <a href="/auth/choose-role/" class="text-blue-600 font-semibold hover:underline">Sign up free</a>
+        </p>
+      </div>
+
+      <!-- ── STEP 2: OTP ── -->
+      <div id="step-2" class="hidden">
+        <button id="back-btn" class="flex items-center gap-1 text-sm text-slate-500 hover:text-blue-600 mb-6 transition-colors">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+          </svg>
+          Back
+        </button>
+
+        <h1 class="text-2xl font-extrabold text-slate-900 mb-1">Enter your code</h1>
+        <p class="text-sm text-slate-500 mb-1">We sent a 6-digit code to</p>
+        <p class="text-sm font-semibold text-slate-800 mb-7" id="step2-email-display"></p>
+
+        <!-- 6-box OTP -->
+        <div class="flex items-center justify-center gap-2 mb-5" id="otp-boxes">
+          <input type="text" inputmode="numeric" maxlength="1" data-index="0"
+            class="otp-box w-11 h-12 text-center text-lg font-bold border-2 border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 bg-white transition-colors" />
+          <input type="text" inputmode="numeric" maxlength="1" data-index="1"
+            class="otp-box w-11 h-12 text-center text-lg font-bold border-2 border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 bg-white transition-colors" />
+          <input type="text" inputmode="numeric" maxlength="1" data-index="2"
+            class="otp-box w-11 h-12 text-center text-lg font-bold border-2 border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 bg-white transition-colors" />
+          <span class="text-slate-300 font-bold">—</span>
+          <input type="text" inputmode="numeric" maxlength="1" data-index="3"
+            class="otp-box w-11 h-12 text-center text-lg font-bold border-2 border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 bg-white transition-colors" />
+          <input type="text" inputmode="numeric" maxlength="1" data-index="4"
+            class="otp-box w-11 h-12 text-center text-lg font-bold border-2 border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 bg-white transition-colors" />
+          <input type="text" inputmode="numeric" maxlength="1" data-index="5"
+            class="otp-box w-11 h-12 text-center text-lg font-bold border-2 border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 bg-white transition-colors" />
+        </div>
+
+        <p id="otp-error" class="hidden text-xs text-red-500 text-center mb-4"></p>
+
+        <button id="verify-btn"
+          class="w-full py-3 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 mb-5">
+          <span id="verify-btn-text">Verify & Sign In</span>
+          <svg id="verify-spinner" class="hidden w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+          </svg>
+        </button>
+
+        <div class="text-center text-sm text-slate-500">
+          Didn't receive it?
+          <button id="resend-btn" disabled
+            class="text-blue-600 font-semibold hover:underline disabled:text-slate-400 disabled:no-underline disabled:cursor-not-allowed ml-1">
+            Resend OTP
+          </button>
+          <span id="countdown" class="text-slate-400 text-xs ml-1">(60s)</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  let selectedRole = '';
+  let loginEmail = '';
+  let resendTimer = null;
+  let resendSeconds = 60;
+
+  // ── Role pill selection ────────────────────────────────────
+  document.querySelectorAll('.role-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.role-pill').forEach(b => {
+        b.classList.remove('border-blue-600', 'text-blue-600', 'bg-blue-50');
+        b.classList.add('border-slate-200', 'text-slate-600');
+      });
+      btn.classList.remove('border-slate-200', 'text-slate-600');
+      btn.classList.add('border-blue-600', 'text-blue-600', 'bg-blue-50');
+      selectedRole = btn.dataset.role;
+      document.getElementById('err-role').classList.add('hidden');
+    });
+  });
+
+  // Pre-select role from query param if present
+  const preRole = getQueryParam('role');
+  if (preRole) {
+    const pill = document.querySelector(`.role-pill[data-role="${preRole}"]`);
+    if (pill) pill.click();
+  }
+
+  // ── Step 1 submit ──────────────────────────────────────────
+  document.getElementById('login-form-step1').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (!selectedRole) {
+      document.getElementById('err-role').classList.remove('hidden');
+      return;
+    }
+
+    const email = document.getElementById('login-email').value.trim().toLowerCase();
+    if (!email) {
+      document.getElementById('err-email').textContent = 'Email is required.';
+      document.getElementById('err-email').classList.remove('hidden');
+      return;
+    }
+
+    const btn = document.getElementById('step1-btn');
+    const btnText = document.getElementById('step1-btn-text');
+    const spinner = document.getElementById('step1-spinner');
+
+    btn.disabled = true;
+    btnText.textContent = 'Sending…';
+    spinner.classList.remove('hidden');
+
+    const result = await apiPost('/api/accounts/login/', { email, role: selectedRole });
+
+    btn.disabled = false;
+    btnText.textContent = 'Send OTP';
+    spinner.classList.add('hidden');
+
+    if (result.ok) {
+      loginEmail = email;
+      document.getElementById('step2-email-display').textContent = email;
+      document.getElementById('step-1').classList.add('hidden');
+      document.getElementById('step-2').classList.remove('hidden');
+      startResendTimer();
+      setTimeout(() => document.querySelectorAll('.otp-box')[0].focus(), 100);
+    } else {
+      const msg = extractErrorMessage(result.error);
+      document.getElementById('err-step1-general').textContent = msg;
+      document.getElementById('err-step1-general').classList.remove('hidden');
+      showToast(msg, 'error');
+    }
+  });
+
+  // ── Back button ────────────────────────────────────────────
+  document.getElementById('back-btn').addEventListener('click', () => {
+    document.getElementById('step-2').classList.add('hidden');
+    document.getElementById('step-1').classList.remove('hidden');
+    clearInterval(resendTimer);
+  });
+
+  // ── OTP boxes ──────────────────────────────────────────────
+  const boxes = Array.from(document.querySelectorAll('.otp-box'));
+
+  boxes.forEach((box, i) => {
+    box.addEventListener('input', (e) => {
+      const val = e.target.value.replace(/\D/g, '');
+      e.target.value = val.slice(-1);
+      if (val && i < boxes.length - 1) boxes[i + 1].focus();
+      if (getOTP().length === 6) attemptVerify();
+    });
+
+    box.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && !box.value && i > 0) {
+        boxes[i - 1].focus();
+        boxes[i - 1].value = '';
+      }
+    });
+
+    box.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+      pasted.split('').slice(0, 6).forEach((ch, idx) => { if (boxes[idx]) boxes[idx].value = ch; });
+      boxes[Math.min(pasted.length, 5)].focus();
+      if (pasted.length === 6) attemptVerify();
+    });
+  });
+
+  function getOTP() { return boxes.map(b => b.value).join(''); }
+
+  function setBoxError(hasError) {
+    boxes.forEach(b => {
+      b.classList.toggle('border-red-400', hasError);
+      b.classList.toggle('border-slate-300', !hasError);
+    });
+  }
+
+  // ── Verify OTP ─────────────────────────────────────────────
+  async function attemptVerify() {
+    const otp = getOTP();
+    if (otp.length !== 6) return;
+
+    const btn = document.getElementById('verify-btn');
+    const btnText = document.getElementById('verify-btn-text');
+    const spinner = document.getElementById('verify-spinner');
+    const errEl = document.getElementById('otp-error');
+
+    btn.disabled = true;
+    btnText.textContent = 'Verifying…';
+    spinner.classList.remove('hidden');
+    errEl.classList.add('hidden');
+    setBoxError(false);
+
+    const result = await apiPost('/api/accounts/login/verify/', {
+      email: loginEmail,
+      otp_code: otp,
+      purpose: 'login',
+    });
+
+    btn.disabled = false;
+    btnText.textContent = 'Verify & Sign In';
+    spinner.classList.add('hidden');
+
+    if (result.ok) {
+      saveTokens(result.data.access, result.data.refresh);
+      showToast('Logged in successfully!', 'success');
+      // Redirect to role-based dashboard
+      const role = result.data.user && result.data.user.role;
+      const dashMap = { alumni: '/dashboard/alumni/', student: '/dashboard/student/', faculty: '/dashboard/faculty/' };
+      setTimeout(() => { window.location.href = dashMap[role] || '/dashboard/student/'; }, 800);
+    } else {
+      const msg = extractErrorMessage(result.error);
+      errEl.textContent = msg;
+      errEl.classList.remove('hidden');
+      setBoxError(true);
+      boxes.forEach(b => b.value = '');
+      boxes[0].focus();
+    }
+  }
+
+  document.getElementById('verify-btn').addEventListener('click', attemptVerify);
+
+  // ── Resend countdown ───────────────────────────────────────
+  function startResendTimer() {
+    resendSeconds = 60;
+    const resendBtn = document.getElementById('resend-btn');
+    const countdownEl = document.getElementById('countdown');
+    resendBtn.disabled = true;
+    countdownEl.textContent = '(60s)';
+
+    resendTimer = setInterval(() => {
+      resendSeconds--;
+      countdownEl.textContent = resendSeconds > 0 ? `(${resendSeconds}s)` : '';
+      if (resendSeconds <= 0) {
+        clearInterval(resendTimer);
+        resendBtn.disabled = false;
+      }
+    }, 1000);
+  }
+
+  document.getElementById('resend-btn').addEventListener('click', async () => {
+    const result = await apiPost('/api/accounts/resend-otp/', { email: loginEmail, purpose: 'login' });
+    if (result.ok) {
+      showToast('New OTP sent.', 'success');
+      boxes.forEach(b => b.value = '');
+      boxes[0].focus();
+      startResendTimer();
+    } else {
+      showToast(extractErrorMessage(result.error), 'error');
+    }
+  });
+</script>
+{% endblock %}

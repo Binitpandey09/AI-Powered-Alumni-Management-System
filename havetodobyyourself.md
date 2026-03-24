@@ -35,8 +35,7 @@ How to get it:
 ```
 GEMINI_API_KEY=AIzaSy...
 ```
-Your current key `[REDACTED_GEMINI_KEY]` is committed to the
-repo and must be regenerated immediately.
+Your current key is committed to the repo and must be regenerated immediately.
 - Go to https://aistudio.google.com/apikey
 - Delete the old key, generate a new one
 - Update .env with the new key
@@ -47,7 +46,7 @@ repo and must be regenerated immediately.
 EMAIL_HOST_USER=your-email@gmail.com
 EMAIL_HOST_PASSWORD=xxxx xxxx xxxx xxxx
 ```
-Your current Gmail app password `[REDACTED_EMAIL_PASSWORD]` is exposed in the repo.
+Your current Gmail app password is exposed in the repo.
 - Go to https://myaccount.google.com/apppasswords
 - Revoke the old app password
 - Generate a new one (select "Mail" + "Other device")

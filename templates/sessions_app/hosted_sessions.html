@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}My Hosted Sessions — AlumniAI{% endblock %}
+
+{% block extra_css %}
+<style>
+.stat-card{background:white;border:1px solid #E2E8F0;border-radius:12px;padding:16px;text-align:center}
+.hosted-tab{padding:7px 16px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #E2E8F0;background:white;color:#64748B;transition:all .15s}
+.hosted-tab.active-tab{background:#2563EB;color:white;border-color:#2563EB}
+.form-input{width:100%;border:1px solid #E2E8F0;border-radius:8px;padding:9px 12px;font-size:14px;outline:none;box-sizing:border-box}
+.form-input:focus{border-color:#2563EB}
+.form-label{display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:5px}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="min-height:100vh;background:#F8FAFC">
+
+  <div style="background:white;border-bottom:1px solid #E2E8F0;padding:12px 24px">
+    <a href="/dashboard/{{ user_role }}/" style="font-size:14px;color:#2563EB;text-decoration:none">Back to Dashboard</a>
+  </div>
+
+  <div style="max-width:1100px;margin:0 auto;padding:20px 24px">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+      <div>
+        <h1 style="font-size:22px;font-weight:700;color:#0F172A;margin:0 0 2px">My Hosted Sessions</h1>
+        <p style="font-size:14px;color:#64748B;margin:0">Manage your sessions and track bookings</p>
+      </div>
+      <button id="host-session-btn"
+        style="background:#2563EB;color:white;border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer">
+        + Host a Session
+      </button>
+    </div>
+
+    <!-- Stats row -->
+    <div id="hosted-stats-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px">
+      <div class="stat-card">
+        <div style="font-size:24px;font-weight:700;color:#2563EB" id="stat-total-sessions">—</div>
+        <div style="font-size:12px;color:#64748B;margin-top:4px">Sessions hosted</div>
+      </div>
+      <div class="stat-card">
+        <div style="font-size:24px;font-weight:700;color:#0F6E56" id="stat-total-bookings">—</div>
+        <div style="font-size:12px;color:#64748B;margin-top:4px">Total bookings</div>
+      </div>
+      <div class="stat-card">
+        <div style="font-size:24px;font-weight:700;color:#F59E0B" id="stat-avg-rating">—</div>
+        <div style="font-size:12px;color:#64748B;margin-top:4px">Avg rating</div>
+      </div>
+      <div class="stat-card">
+        <div style="font-size:24px;font-weight:700;color:#7C3AED" id="stat-total-earned">—</div>
+        <div style="font-size:12px;color:#64748B;margin-top:4px">Total earned</div>
+      </div>
+    </div>
+
+    <!-- Filter tabs -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+      <button class="hosted-tab active-tab" id="hosted-tab-all" data-filter="">All</button>
+      <button class="hosted-tab" id="hosted-tab-upcoming" data-filter="upcoming">Upcoming</button>
+      <button class="hosted-tab" id="hosted-tab-live" data-filter="live">Live</button>
+      <button class="hosted-tab" id="hosted-tab-completed" data-filter="completed">Completed</button>
+      <button class="hosted-tab" id="hosted-tab-cancelled" data-filter="cancelled">Cancelled</button>
+    </div>
+
+    <!-- Sessions list -->
+    <div id="hosted-sessions-container"></div>
+
+    <!-- Empty state -->
+    <div id="hosted-empty" style="display:none;text-align:center;padding:80px 20px">
+      <div style="font-size:40px;margin-bottom:12px">🎓</div>
+      <p style="font-size:16px;color:#64748B;margin:0 0 12px">No sessions yet</p>
+      <p style="font-size:14px;color:#94A3B8">Click "Host a Session" to create your first session</p>
+    </div>
+  </div>
+</div>
+
+<!-- ADD MEETING LINK MODAL -->
+<div id="meeting-link-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;align-items:center;justify-content:center">
+  <div style="background:white;border-radius:16px;width:100%;max-width:440px;padding:24px;margin:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3 style="font-size:18px;font-weight:600;color:#0F172A;margin:0">Add Meeting Link</h3>
+      <button onclick="document.getElementById('meeting-link-modal').style.display='none'"
+        style="background:none;border:none;font-size:20px;color:#94A3B8;cursor:pointer">x</button>
+    </div>
+    <p style="font-size:13px;color:#64748B;margin:0 0 14px">Share this with all confirmed students</p>
+    <div style="margin-bottom:14px">
+      <label class="form-label">Meeting link</label>
+      <input id="meeting-link-input" class="form-input" type="url" placeholder="https://meet.google.com/...">
+    </div>
+    <div id="meeting-link-error" style="display:none;color:#DC2626;font-size:13px;margin-bottom:10px"></div>
+    <button id="save-meeting-link-btn"
+      style="width:100%;background:#2563EB;color:white;border:none;border-radius:8px;padding:10px;font-size:14px;font-weight:600;cursor:pointer">
+      Save and Notify Students
+    </button>
+  </div>
+</div>
+
+<!-- CANCEL SESSION MODAL -->
+<div id="cancel-session-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;align-items:center;justify-content:center">
+  <div style="background:white;border-radius:16px;width:100%;max-width:440px;padding:24px;margin:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3 style="font-size:18px;font-weight:600;color:#DC2626;margin:0">Cancel Session</h3>
+      <button onclick="document.getElementById('cancel-session-modal').style.display='none'"
+        style="background:none;border:none;font-size:20px;color:#94A3B8;cursor:pointer">x</button>
+    </div>
+    <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:10px 14px;margin-bottom:14px">
+      <p class="booking-count-msg" style="font-size:13px;color:#92400E;margin:0">
+        All confirmed students will be notified and fully refunded.
+      </p>
+    </div>
+    <div style="margin-bottom:16px">
+      <label class="form-label">Reason for cancellation</label>
+      <textarea id="cancel-reason" class="form-input" rows="3"
+        placeholder="Reason for cancellation (visible to students)"></textarea>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="document.getElementById('cancel-session-modal').style.display='none'"
+        style="flex:1;background:white;color:#374151;border:1px solid #E2E8F0;border-radius:8px;padding:10px;font-size:14px;cursor:pointer">
+        Keep Session
+      </button>
+      <button id="confirm-cancel-session-btn"
+        style="flex:2;background:#DC2626;color:white;border:none;border-radius:8px;padding:10px;font-size:14px;font-weight:600;cursor:pointer">
+        Yes, Cancel Session
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE SESSION MODAL (reused from marketplace) -->
+<div id="create-session-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;align-items:center;justify-content:center">
+  <div style="background:white;border-radius:16px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;margin:16px">
+    <div style="padding:20px 24px;border-bottom:1px solid #E2E8F0;display:flex;align-items:center;justify-content:space-between">
+      <h3 style="font-size:18px;font-weight:600;color:#0F172A;margin:0">Host a session</h3>
+      <button id="close-create-modal" style="background:none;border:none;font-size:20px;color:#94A3B8;cursor:pointer">x</button>
+    </div>
+    <div style="padding:16px 24px;border-bottom:1px solid #F1F5F9;display:flex;align-items:center">
+      <div class="step-dot active" id="dot-1" style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#2563EB;color:white">1</div>
+      <div style="flex:1;height:2px;background:#E2E8F0;margin:0 4px" id="line-1"></div>
+      <div id="dot-2" style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#E2E8F0;color:#94A3B8">2</div>
+      <div style="flex:1;height:2px;background:#E2E8F0;margin:0 4px" id="line-2"></div>
+      <div id="dot-3" style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#E2E8F0;color:#94A3B8">3</div>
+    </div>
+    <div id="step-1" style="padding:24px">
+      <div style="margin-bottom:14px">
+        <label class="form-label">Session type *</label>
+        <select id="session-type-select" class="form-input">
+          <option value="group">Group Session</option>
+          <option value="one_on_one">1:1 Session</option>
+          <option value="cohort">Cohort Bundle</option>
+          <option value="doubt">Doubt Clearing Class</option>
+          <option value="project">Project Guidance</option>
+          <option value="career">Career Path Guidance</option>
+          <option value="recorded">Recorded Session</option>
+        </select>
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="form-label">Session title *</label>
+        <input id="session-title" class="form-input" type="text" placeholder="e.g. DSA Masterclass for FAANG">
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="form-label">Description *</label>
+        <textarea id="session-description" class="form-input" rows="4" placeholder="What will students learn?"></textarea>
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="form-label">Topic / Niche</label>
+        <input id="session-niche" class="form-input" type="text" placeholder="e.g. DSA, Interview Prep">
+      </div>
+      <div style="margin-bottom:20px">
+        <label class="form-label">Skills covered</label>
+        <input id="session-skills" class="form-input" type="text" placeholder="Python, LeetCode (comma separated)">
+      </div>
+      <button onclick="showStep(2)" style="width:100%;background:#2563EB;color:white;border:none;border-radius:8px;padding:10px;font-size:14px;font-weight:600;cursor:pointer">Next</button>
+    </div>
+    <div id="step-2" style="padding:24px;display:none">
+      <div style="margin-bottom:14px">
+        <label class="form-label">Date and Time *</label>
+        <input id="session-datetime" class="form-input" type="datetime-local">
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="form-label">Duration</label>
+        <select id="session-duration" class="form-input">
+          <option value="30">30 minutes</option>
+          <option value="60" selected>60 minutes</option>
+          <option value="90">90 minutes</option>
+          <option value="120">120 minutes</option>
+        </select>
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="form-label">Max seats</label>
+        <input id="session-max-seats" class="form-input" type="number" value="10" min="1">
+      </div>
+      <div style="margin-bottom:14px;display:flex;align-items:center;gap:10px">
+        <label class="form-label" style="margin:0">Free session</label>
+        <input type="checkbox" id="session-is-free" onchange="document.getElementById('price-field').style.display=this.checked?'none':'block'">
+      </div>
+      <div id="price-field" style="margin-bottom:14px">
+        <label class="form-label">Price per seat (Rs) *</label>
+        <input id="session-price" class="form-input" type="number" placeholder="e.g. 499" min="1">
+      </div>
+      <div style="margin-bottom:20px">
+        <label class="form-label">Co-host email (optional)</label>
+        <input id="cohost-email" class="form-input" type="email" placeholder="Co-host email">
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="showStep(1)" style="flex:1;background:white;color:#374151;border:1px solid #E2E8F0;border-radius:8px;padding:10px;font-size:14px;cursor:pointer">Back</button>
+        <button onclick="showStep(3)" style="flex:2;background:#2563EB;color:white;border:none;border-radius:8px;padding:10px;font-size:14px;font-weight:600;cursor:pointer">Next</button>
+      </div>
+    </div>
+    <div id="step-3" style="padding:24px;display:none">
+      <h4 style="font-size:15px;font-weight:600;color:#0F172A;margin:0 0 16px">Review your session</h4>
+      <div id="session-summary" style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:16px;margin-bottom:20px;font-size:13px;line-height:1.8"></div>
+      <div id="create-modal-error" style="display:none;color:#DC2626;font-size:13px;margin-bottom:12px;padding:10px;background:#FEF2F2;border-radius:8px"></div>
+      <div style="display:flex;gap:8px">
+        <button onclick="showStep(2)" style="flex:1;background:white;color:#374151;border:1px solid #E2E8F0;border-radius:8px;padding:10px;font-size:14px;cursor:pointer">Back</button>
+        <button id="publish-session-btn" style="flex:2;background:#2563EB;color:white;border:none;border-radius:8px;padding:10px;font-size:14px;font-weight:600;cursor:pointer">Publish Session</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/sessions.js' %}?v={{ CACHE_BUST }}"></script>
+{% endblock %}

@@ -7,9 +7,13 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
     TokenVerifyView,
 )
-
 urlpatterns = [
     path('', include('apps.accounts.page_urls')),
+    path('', include('apps.feed.page_urls')),
+    path('sessions/', include('apps.sessions_app.page_urls')),
+    path('referrals/', include('apps.referrals.page_urls')),
+    path('payments/', include('apps.payments.page_urls')),
+    path('tools/', include('apps.ai_tools.page_urls')),
     path('admin/', admin.site.urls),
     
     # JWT Authentication endpoints
@@ -24,9 +28,13 @@ urlpatterns = [
     path('api/referrals/', include('apps.referrals.urls')),
     path('api/payments/', include('apps.payments.urls')),
     path('api/ai/', include('apps.ai_tools.urls')),
+    path('notifications/', include('apps.notifications.page_urls')),
     path('api/notifications/', include('apps.notifications.urls')),
     # Dashboard page routes
     path('dashboard/', include('apps.dashboard.urls')),
+    path('api/dashboard/', include('apps.dashboard.urls')),
+    # Admin panel
+    path('admin-panel/', include('apps.dashboard.admin_urls')),
 ]
 
 # Serve media files in development

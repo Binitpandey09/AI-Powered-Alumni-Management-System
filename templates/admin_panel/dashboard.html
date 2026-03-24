@@ -1,0 +1,144 @@
+{% extends "admin_panel/base_admin.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Stat cards -->
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px;">
+  <div class="stat-card">
+    <div style="font-size:12px; color:#64748B; font-weight:600; text-transform:uppercase; letter-spacing:.05em;">Total Users</div>
+    <div style="font-size:28px; font-weight:800; color:#0F172A; margin:6px 0 2px;" id="stat-total-users">—</div>
+    <div style="font-size:12px; color:#22C55E;" id="stat-new-week">+0 this week</div>
+  </div>
+  <div class="stat-card">
+    <div style="font-size:12px; color:#64748B; font-weight:600; text-transform:uppercase; letter-spacing:.05em;">Alumni</div>
+    <div style="font-size:28px; font-weight:800; color:#2563EB; margin:6px 0 2px;" id="stat-alumni">—</div>
+    <div style="font-size:12px; color:#64748B;" id="stat-pending-verify">0 pending verification</div>
+  </div>
+  <div class="stat-card">
+    <div style="font-size:12px; color:#64748B; font-weight:600; text-transform:uppercase; letter-spacing:.05em;">Monthly Revenue</div>
+    <div style="font-size:28px; font-weight:800; color:#22C55E; margin:6px 0 2px;" id="stat-month-rev">—</div>
+    <div style="font-size:12px; color:#64748B;" id="stat-total-rev">₹0 total</div>
+  </div>
+  <div class="stat-card">
+    <div style="font-size:12px; color:#64748B; font-weight:600; text-transform:uppercase; letter-spacing:.05em;">Pending Payouts</div>
+    <div style="font-size:28px; font-weight:800; color:#F59E0B; margin:6px 0 2px;" id="stat-pending-payouts">—</div>
+    <div style="font-size:12px; color:#64748B;" id="stat-payout-count">0 requests</div>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px;">
+  <div class="stat-card">
+    <div style="font-size:12px; color:#64748B; font-weight:600; text-transform:uppercase; letter-spacing:.05em;">Students</div>
+    <div style="font-size:24px; font-weight:700; color:#0F172A; margin:4px 0;" id="stat-students">—</div>
+  </div>
+  <div class="stat-card">
+    <div style="font-size:12px; color:#64748B; font-weight:600; text-transform:uppercase; letter-spacing:.05em;">Active Posts</div>
+    <div style="font-size:24px; font-weight:700; color:#0F172A; margin:4px 0;" id="stat-posts">—</div>
+    <div style="font-size:12px; color:#EF4444;" id="stat-flagged">0 flagged</div>
+  </div>
+  <div class="stat-card">
+    <div style="font-size:12px; color:#64748B; font-weight:600; text-transform:uppercase; letter-spacing:.05em;">Sessions</div>
+    <div style="font-size:24px; font-weight:700; color:#0F172A; margin:4px 0;" id="stat-sessions">—</div>
+    <div style="font-size:12px; color:#64748B;" id="stat-upcoming">0 upcoming</div>
+  </div>
+  <div class="stat-card">
+    <div style="font-size:12px; color:#64748B; font-weight:600; text-transform:uppercase; letter-spacing:.05em;">AI Tool Uses</div>
+    <div style="font-size:24px; font-weight:700; color:#0F172A; margin:4px 0;" id="stat-ai">—</div>
+    <div style="font-size:12px; color:#64748B;" id="stat-ai-rev">₹0 revenue</div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:28px;">
+  <div class="stat-card">
+    <div style="font-size:15px; font-weight:700; color:#0F172A; margin-bottom:16px;">Signups — Last 7 Days</div>
+    <canvas id="signupsChart" height="180"></canvas>
+  </div>
+  <div class="stat-card">
+    <div style="font-size:15px; font-weight:700; color:#0F172A; margin-bottom:16px;">Revenue — Last 6 Months</div>
+    <canvas id="revenueChart" height="180"></canvas>
+  </div>
+</div>
+
+<!-- Quick actions -->
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:28px;">
+  <a href="/admin-panel/alumni-verification/" style="text-decoration:none;">
+    <div style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px; padding:16px; text-align:center; cursor:pointer;">
+      <div style="font-size:22px; margin-bottom:6px;">✅</div>
+      <div style="font-size:13px; font-weight:600; color:#1D4ED8;">Verify Alumni</div>
+    </div>
+  </a>
+  <a href="/admin-panel/moderation/" style="text-decoration:none;">
+    <div style="background:#FFF7ED; border:1px solid #FED7AA; border-radius:10px; padding:16px; text-align:center; cursor:pointer;">
+      <div style="font-size:22px; margin-bottom:6px;">🚩</div>
+      <div style="font-size:13px; font-weight:600; color:#C2410C;">Review Flags</div>
+    </div>
+  </a>
+  <a href="/admin-panel/payouts/" style="text-decoration:none;">
+    <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:10px; padding:16px; text-align:center; cursor:pointer;">
+      <div style="font-size:22px; margin-bottom:6px;">💸</div>
+      <div style="font-size:13px; font-weight:600; color:#15803D;">Process Payouts</div>
+    </div>
+  </a>
+  <a href="/admin-panel/broadcast/" style="text-decoration:none;">
+    <div style="background:#F5F3FF; border:1px solid #DDD6FE; border-radius:10px; padding:16px; text-align:center; cursor:pointer;">
+      <div style="font-size:22px; margin-bottom:6px;">📢</div>
+      <div style="font-size:13px; font-weight:600; color:#6D28D9;">Broadcast</div>
+    </div>
+  </a>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+(async () => {
+  const r = await apiGet('/api/dashboard/admin/overview/');
+  if (!r.ok) { showToast('Failed to load overview', 'error'); return; }
+  const d = r.data;
+
+  setEl('stat-total-users', d.users.total.toLocaleString('en-IN'));
+  setEl('stat-new-week', `+${d.users.new_this_week} this week`);
+  setEl('stat-alumni', d.users.alumni.toLocaleString('en-IN'));
+  setEl('stat-pending-verify', `${d.verification.pending_alumni_verification} pending verification`);
+  setEl('stat-month-rev', fmtRs(d.financial.this_month_revenue));
+  setEl('stat-total-rev', fmtRs(d.financial.total_platform_revenue) + ' total');
+  setEl('stat-pending-payouts', fmtRs(d.financial.pending_payouts));
+  setEl('stat-payout-count', `${d.financial.pending_payout_count} requests`);
+  setEl('stat-students', d.users.students.toLocaleString('en-IN'));
+  setEl('stat-posts', d.content.total_posts.toLocaleString('en-IN'));
+  setEl('stat-flagged', `${d.content.flagged_posts} flagged`);
+  setEl('stat-sessions', d.content.total_sessions.toLocaleString('en-IN'));
+  setEl('stat-upcoming', `${d.content.upcoming_sessions} upcoming`);
+  setEl('stat-ai', d.ai_tools.total_usages.toLocaleString('en-IN'));
+  setEl('stat-ai-rev', fmtRs(d.ai_tools.total_revenue) + ' revenue');
+
+  // Signups chart
+  const signups = d.charts.signups_last_7_days || [];
+  new Chart(document.getElementById('signupsChart'), {
+    type: 'bar',
+    data: {
+      labels: signups.map(s => s.day),
+      datasets: [{ label: 'Signups', data: signups.map(s => s.count), backgroundColor: '#2563EB', borderRadius: 6 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+  });
+
+  // Revenue chart
+  const rev = d.charts.revenue_last_6_months || [];
+  new Chart(document.getElementById('revenueChart'), {
+    type: 'line',
+    data: {
+      labels: rev.map(r => r.month),
+      datasets: [{ label: 'Revenue (₹)', data: rev.map(r => r.revenue), borderColor: '#22C55E', backgroundColor: 'rgba(34,197,94,.1)', fill: true, tension: 0.4, pointBackgroundColor: '#22C55E' }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Skill Gap Analyzer — AlumniAI{% endblock %}
+
+{% block dashboard_content %}
+<div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+<div class="p-6 max-w-4xl mx-auto space-y-6">
+
+  <a href="/dashboard/student/" class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors">
+    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+    </svg>
+    Back to Dashboard
+  </a>
+
+  <div class="bg-white rounded-xl border border-slate-200 p-6">
+    <div class="flex items-start gap-4">
+      <div class="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+        <svg class="w-7 h-7 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+      </div>
+      <div class="flex-1">
+        <div class="flex items-center gap-3 flex-wrap">
+          <h1 class="text-xl font-bold text-slate-800">Skill Gap Analyzer</h1>
+          <span id="price-badge" class="hidden px-2.5 py-0.5 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full">₹79</span>
+        </div>
+        <p class="text-sm text-slate-500 mt-1">{{ tool_description }}</p>
+        <div id="usage-info" class="mt-2 text-xs text-slate-400"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tool-gate" class="hidden bg-white rounded-xl border border-slate-200 p-8 text-center">
+    <div class="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+      </svg>
+    </div>
+    <h3 class="text-base font-semibold text-slate-700 mb-1">Unlock Skill Gap Analyzer</h3>
+    <p class="text-sm text-slate-500 mb-5">Find out exactly what skills you need to land your dream role.</p>
+    <button onclick="initiateToolPayment('skill_gap')"
+      class="px-6 py-2.5 bg-amber-500 text-white text-sm font-semibold rounded-xl hover:bg-amber-600 transition-colors">
+      Pay ₹79 &amp; Analyze Skills
+    </button>
+  </div>
+
+  <div id="tool-interface" class="hidden space-y-5">
+    <div class="bg-white rounded-xl border border-slate-200 p-6">
+      <h2 class="font-semibold text-slate-800 mb-2">Skill Gap Analysis</h2>
+      <p class="text-sm text-slate-500 mb-5">Enter your target role and we'll compare it against your current skills.</p>
+      <div class="mb-4">
+        <label class="block text-xs font-medium text-slate-600 mb-1">Target Role / Job Title</label>
+        <input type="text" id="target-role-gap" placeholder="e.g. Full Stack Developer, Data Scientist…"
+          class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
+      </div>
+      <button onclick="analyzeSkillGap()"
+        class="w-full py-3 bg-amber-500 text-white text-sm font-semibold rounded-xl hover:bg-amber-600 transition-colors">
+        Analyze Skill Gap
+      </button>
+    </div>
+    <div id="gap-results" class="hidden bg-white rounded-xl border border-slate-200 p-6">
+      <div id="gap-content"></div>
+    </div>
+  </div>
+
+  <div id="previous-uses" class="hidden bg-white rounded-xl border border-slate-200 p-6">
+    <h2 class="font-semibold text-slate-800 mb-3">Previous Analyses</h2>
+    <div id="previous-uses-list" class="space-y-2"></div>
+  </div>
+
+</div>
+
+{% include 'partials/payment_modal.html' %}
+{% endblock %}
+
+{% block dashboard_js %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+  const PAGE_NAME = 'tool';
+  const TOOL_TYPE = '{{ tool_type }}';
+  const TOOL_NAME = '{{ tool_name }}';
+  const TOOL_PRICE = '{{ tool_price }}';
+  const RAZORPAY_KEY_ID = '{{ razorpay_key_id }}';
+</script>
+<script src="{% static 'js/payments.js' %}"></script>
+{% endblock %}

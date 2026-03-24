@@ -5,7 +5,7 @@ from .models import (
     AlumniProfile, StudentProfile, FacultyProfile, EmailOTP,
     StudentEducation, StudentProject, StudentInternship,
     StudentCertification, StudentAward, StudentCompetitiveExam,
-    StudentLanguage, StudentEmployment,
+    StudentLanguage, StudentEmployment, AdminActionLog,
 )
 
 User = get_user_model()
@@ -182,3 +182,11 @@ class StudentEmploymentAdmin(admin.ModelAdmin):
     list_display  = ['user', 'company_name', 'job_title', 'is_current']
     list_filter   = ['is_current']
     search_fields = ['user__email', 'company_name', 'job_title']
+
+
+@admin.register(AdminActionLog)
+class AdminActionLogAdmin(admin.ModelAdmin):
+    list_display = ['admin', 'action_type', 'target_user', 'created_at']
+    list_filter = ['action_type']
+    search_fields = ['admin__email', 'target_user__email']
+    readonly_fields = ['created_at']

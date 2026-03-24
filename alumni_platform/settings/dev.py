@@ -5,6 +5,14 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
+# Serve static files directly without caching in dev
+# This overrides base.py's CompressedManifestStaticFilesStorage (which caches aggressively)
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+
+# Disable WhiteNoise compression/caching in dev
+WHITENOISE_AUTOREFRESH = True
+WHITENOISE_USE_FINDERS = True
+
 # Database
 DATABASES = {
     'default': {

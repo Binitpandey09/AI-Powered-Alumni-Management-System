@@ -31,18 +31,59 @@ function clearTokens() {
   localStorage.removeItem('refresh_token');
 }
 
+// ── Handle expired/invalid token ──────────────────────────────
+const _PUBLIC_PATHS = ['/', '/auth/'];
+
+function _handleUnauthorized() {
+  const path = window.location.pathname;
+  // Don't redirect on public pages — just silently fail
+  if (path === '/' || _PUBLIC_PATHS.some(p => path.startsWith(p))) return;
+  clearTokens();
+  document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+  window.location.href = '/auth/login/?next=' + encodeURIComponent(path);
+}
+
 // ── Fetch helpers ─────────────────────────────────────────────
-async function apiPost(url, data) {
+async function apiPost(url, data, method = 'POST') {
   try {
     const res = await fetch(url, {
-      method: 'POST',
+      method,
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getAccessToken()}`,
         'X-CSRFToken': getCSRFToken(),
       },
+      credentials: 'include',
       body: JSON.stringify(data),
     });
+    if (res.status === 401) {
+      // Don't auto-redirect for logout calls — they're intentional
+      if (!url.includes('/logout/')) _handleUnauthorized();
+      return { ok: false, status: 401, data: null, error: { detail: 'Session expired.' } };
+    }
     const json = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data: json, error: res.ok ? null : json };
+  } catch (err) {
+    return { ok: false, status: 0, data: null, error: { detail: 'Network error. Please try again.' } };
+  }
+}
+
+async function apiPatch(url, data) {
+  return apiPost(url, data, 'PATCH');
+}
+
+async function apiDelete(url) {
+  try {
+    const res = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${getAccessToken()}`,
+        'X-CSRFToken': getCSRFToken(),
+      },
+      credentials: 'include',
+    });
+    if (res.status === 401) { _handleUnauthorized(); return { ok: false, status: 401, data: null, error: { detail: 'Session expired.' } }; }
+    const json = res.status === 204 ? {} : await res.json().catch(() => ({}));
     return { ok: res.ok, status: res.status, data: json, error: res.ok ? null : json };
   } catch (err) {
     return { ok: false, status: 0, data: null, error: { detail: 'Network error. Please try again.' } };
@@ -59,6 +100,10 @@ async function apiGet(url) {
       },
       credentials: 'include',
     });
+    if (res.status === 401) {
+      _handleUnauthorized();
+      return { ok: false, status: 401, data: null, error: { detail: 'Session expired.' } };
+    }
     const json = await res.json().catch(() => ({}));
     return { ok: res.ok, status: res.status, data: json, error: res.ok ? null : json };
   } catch (err) {

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Admin Panel{% endblock %} — AlumniAI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            sidebar: '#0F172A',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; background: #F8FAFC; }
+    .sidebar-link { display:flex; align-items:center; gap:10px; padding:10px 16px; border-radius:8px; color:#94A3B8; font-size:14px; font-weight:500; transition:all .15s; text-decoration:none; }
+    .sidebar-link:hover { background:rgba(255,255,255,.07); color:#fff; }
+    .sidebar-link.active { background:#2563EB; color:#fff; }
+    .sidebar-link .badge { margin-left:auto; background:#EF4444; color:#fff; font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; }
+    .stat-card { background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:20px 24px; }
+    .btn-primary { background:#2563EB; color:#fff; padding:8px 18px; border-radius:8px; font-size:14px; font-weight:600; border:none; cursor:pointer; transition:background .15s; }
+    .btn-primary:hover { background:#1D4ED8; }
+    .btn-danger { background:#EF4444; color:#fff; padding:6px 14px; border-radius:6px; font-size:13px; font-weight:600; border:none; cursor:pointer; }
+    .btn-success { background:#22C55E; color:#fff; padding:6px 14px; border-radius:6px; font-size:13px; font-weight:600; border:none; cursor:pointer; }
+    .btn-warning { background:#F59E0B; color:#fff; padding:6px 14px; border-radius:6px; font-size:13px; font-weight:600; border:none; cursor:pointer; }
+    .btn-ghost { background:transparent; color:#64748B; padding:6px 14px; border-radius:6px; font-size:13px; font-weight:500; border:1px solid #E2E8F0; cursor:pointer; }
+    .btn-ghost:hover { background:#F1F5F9; }
+    .table-wrap { background:#fff; border:1px solid #E2E8F0; border-radius:12px; overflow:hidden; }
+    table { width:100%; border-collapse:collapse; }
+    thead th { background:#F8FAFC; padding:12px 16px; text-align:left; font-size:12px; font-weight:600; color:#64748B; text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid #E2E8F0; }
+    tbody td { padding:12px 16px; font-size:14px; color:#1E293B; border-bottom:1px solid #F1F5F9; }
+    tbody tr:last-child td { border-bottom:none; }
+    tbody tr:hover { background:#F8FAFC; }
+    .badge-role { display:inline-block; padding:2px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+    .badge-alumni { background:#DBEAFE; color:#1D4ED8; }
+    .badge-student { background:#D1FAE5; color:#065F46; }
+    .badge-faculty { background:#FEF3C7; color:#92400E; }
+    .badge-admin { background:#EDE9FE; color:#5B21B6; }
+    .badge-pending { background:#FEF3C7; color:#92400E; }
+    .badge-verified { background:#D1FAE5; color:#065F46; }
+    .badge-rejected { background:#FEE2E2; color:#991B1B; }
+    .badge-active { background:#D1FAE5; color:#065F46; }
+    .badge-inactive { background:#F1F5F9; color:#64748B; }
+    .badge-suspended { background:#FEE2E2; color:#991B1B; }
+    .tab-btn { padding:8px 18px; border-radius:8px; font-size:14px; font-weight:500; border:none; cursor:pointer; background:transparent; color:#64748B; }
+    .tab-btn.active { background:#2563EB; color:#fff; }
+    input[type=text], input[type=search], select, textarea { border:1px solid #E2E8F0; border-radius:8px; padding:8px 12px; font-size:14px; color:#1E293B; background:#fff; outline:none; }
+    input[type=text]:focus, input[type=search]:focus, select:focus, textarea:focus { border-color:#2563EB; box-shadow:0 0 0 3px rgba(37,99,235,.1); }
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:50; display:flex; align-items:center; justify-content:center; }
+    .modal-box { background:#fff; border-radius:16px; padding:28px; width:100%; max-width:480px; }
+    #toast-container { position:fixed; bottom:24px; right:24px; z-index:100; display:flex; flex-direction:column; gap:8px; }
+    .fade-in-up { animation:fadeInUp .25s ease; }
+    @keyframes fadeInUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    ::-webkit-scrollbar { width:6px; height:6px; }
+    ::-webkit-scrollbar-track { background:#F1F5F9; }
+    ::-webkit-scrollbar-thumb { background:#CBD5E1; border-radius:3px; }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="flex h-screen overflow-hidden">
+
+  <!-- Sidebar -->
+  <aside id="sidebar" style="background:#0F172A; width:240px; min-width:240px; height:100vh; overflow-y:auto; display:flex; flex-direction:column; flex-shrink:0;">
+    <!-- Logo -->
+    <div style="padding:20px 20px 16px; border-bottom:1px solid rgba(255,255,255,.08);">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div style="width:34px; height:34px; background:#2563EB; border-radius:8px; display:flex; align-items:center; justify-content:center;">
+          <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div>
+          <div style="color:#fff; font-size:15px; font-weight:700; line-height:1.2;">AlumniAI</div>
+          <div style="color:#64748B; font-size:11px;">Admin Panel</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav style="padding:12px 12px; flex:1;">
+      <div style="color:#475569; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; padding:8px 8px 4px;">Overview</div>
+      <a href="/admin-panel/" class="sidebar-link {% block nav_dashboard %}{% endblock %}">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/></svg>
+        Dashboard
+      </a>
+
+      <div style="color:#475569; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; padding:16px 8px 4px;">Users</div>
+      <a href="/admin-panel/users/" class="sidebar-link {% block nav_users %}{% endblock %}">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        All Users
+      </a>
+      <a href="/admin-panel/alumni-verification/" class="sidebar-link {% block nav_verification %}{% endblock %}">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Alumni Verification
+        <span class="badge" id="sb-verification" style="display:none;"></span>
+      </a>
+
+      <div style="color:#475569; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; padding:16px 8px 4px;">Content</div>
+      <a href="/admin-panel/moderation/" class="sidebar-link {% block nav_moderation %}{% endblock %}">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Moderation
+        <span class="badge" id="sb-moderation" style="display:none;"></span>
+      </a>
+      <a href="/admin-panel/sessions/" class="sidebar-link {% block nav_sessions %}{% endblock %}">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Sessions
+      </a>
+      <a href="/admin-panel/referrals/" class="sidebar-link {% block nav_referrals %}{% endblock %}">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="currentColor" stroke-width="2"/></svg>
+        Referrals
+      </a>
+
+      <div style="color:#475569; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; padding:16px 8px 4px;">Finance</div>
+      <a href="/admin-panel/revenue/" class="sidebar-link {% block nav_revenue %}{% endblock %}">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Revenue
+      </a>
+      <a href="/admin-panel/payouts/" class="sidebar-link {% block nav_payouts %}{% endblock %}">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" stroke-width="2"/><path d="M2 10h20" stroke="currentColor" stroke-width="2"/></svg>
+        Payouts
+        <span class="badge" id="sb-payouts" style="display:none;"></span>
+      </a>
+
+      <div style="color:#475569; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; padding:16px 8px 4px;">Tools</div>
+      <a href="/admin-panel/ai-usage/" class="sidebar-link {% block nav_ai %}{% endblock %}">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" stroke="currentColor" stroke-width="2"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        AI Usage
+      </a>
+      <a href="/admin-panel/broadcast/" class="sidebar-link {% block nav_broadcast %}{% endblock %}">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16.92z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Broadcast
+      </a>
+      <a href="/admin-panel/audit-log/" class="sidebar-link {% block nav_audit %}{% endblock %}">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Audit Log
+      </a>
+    </nav>
+
+    <!-- Admin user info -->
+    <div style="padding:16px; border-top:1px solid rgba(255,255,255,.08);">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div style="width:32px; height:32px; background:#2563EB; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:13px; font-weight:700;" id="admin-avatar">A</div>
+        <div style="flex:1; min-width:0;">
+          <div style="color:#fff; font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" id="admin-name">Admin</div>
+          <div style="color:#64748B; font-size:11px;">Administrator</div>
+        </div>
+        <a href="/auth/logout/" onclick="localStorage.clear()" title="Logout" style="color:#64748B; text-decoration:none;">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main style="flex:1; overflow-y:auto; display:flex; flex-direction:column;">
+    <!-- Top bar -->
+    <header style="background:#fff; border-bottom:1px solid #E2E8F0; padding:0 28px; height:60px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; position:sticky; top:0; z-index:10;">
+      <h1 style="font-size:18px; font-weight:700; color:#0F172A;">{% block page_title %}Dashboard{% endblock %}</h1>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="font-size:13px; color:#64748B;" id="header-date"></span>
+        <a href="/dashboard/alumni/" style="font-size:13px; color:#2563EB; text-decoration:none;">← Back to site</a>
+      </div>
+    </header>
+
+    <!-- Page content -->
+    <div style="padding:28px; flex:1;">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <!-- Toast container -->
+  <div id="toast-container"></div>
+
+  <!-- Global scripts (api.js helpers) -->
+  <script>
+    // Inline minimal versions of api.js helpers for admin panel
+    function getCSRFToken() {
+      const name = 'csrftoken';
+      for (let c of document.cookie.split(';')) {
+        c = c.trim();
+        if (c.startsWith(name + '=')) return decodeURIComponent(c.slice(name.length + 1));
+      }
+      return '';
+    }
+    function getAccessToken() { return localStorage.getItem('access_token') || ''; }
+    async function apiGet(url) {
+      try {
+        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${getAccessToken()}` }, credentials: 'include' });
+        const json = await res.json().catch(() => ({}));
+        return { ok: res.ok, status: res.status, data: json };
+      } catch { return { ok: false, data: {} }; }
+    }
+    async function apiPost(url, data, method = 'POST') {
+      try {
+        const res = await fetch(url, {
+          method, credentials: 'include',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAccessToken()}`, 'X-CSRFToken': getCSRFToken() },
+          body: JSON.stringify(data),
+        });
+        const json = await res.json().catch(() => ({}));
+        return { ok: res.ok, status: res.status, data: json };
+      } catch { return { ok: false, data: {} }; }
+    }
+    function showToast(msg, type = 'success') {
+      const colors = { success: '#22C55E', error: '#EF4444', info: '#2563EB', warning: '#F59E0B' };
+      const t = document.createElement('div');
+      t.style.cssText = `background:${colors[type]||colors.info};color:#fff;padding:12px 18px;border-radius:10px;font-size:14px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,.15);animation:fadeInUp .2s ease;`;
+      t.textContent = msg;
+      document.getElementById('toast-container').appendChild(t);
+      setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 300); }, 3000);
+    }
+    function fmtRs(val) {
+      const n = parseFloat(val) || 0;
+      return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function fmtDate(iso) {
+      if (!iso) return '—';
+      return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+    function setEl(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+
+    // Set header date
+    document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+    // Load admin name from API
+    (async () => {
+      const r = await apiGet('/api/accounts/me/');
+      if (r.ok && r.data) {
+        const name = ((r.data.first_name || '') + ' ' + (r.data.last_name || '')).trim() || 'Admin';
+        setEl('admin-name', name);
+        const av = document.getElementById('admin-avatar');
+        if (av) av.textContent = name.charAt(0).toUpperCase();
+      }
+    })();
+
+    // Load sidebar badges from overview
+    (async () => {
+      const r = await apiGet('/api/dashboard/admin/overview/');
+      if (!r.ok) return;
+      const d = r.data;
+      const pending = d.verification?.pending_alumni_verification || 0;
+      const flagged = d.content?.flagged_posts || 0;
+      const payouts = d.financial?.pending_payout_count || 0;
+      if (pending > 0) { const el = document.getElementById('sb-verification'); if (el) { el.textContent = pending; el.style.display = ''; } }
+      if (flagged > 0) { const el = document.getElementById('sb-moderation'); if (el) { el.textContent = flagged; el.style.display = ''; } }
+      if (payouts > 0) { const el = document.getElementById('sb-payouts'); if (el) { el.textContent = payouts; el.style.display = ''; } }
+    })();
+  </script>
+
+  {% block page_scripts %}{% endblock %}
+</body>
+</html>

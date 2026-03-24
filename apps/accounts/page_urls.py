@@ -11,6 +11,13 @@ from .views import (
     BrowseAlumniPageView,
     PublicAlumniProfilePageView,
     StudentProfilePageView,
+    PublicStudentProfilePageView,
+    ConnectPageView,
+    AlumniProfilePageView,
+    FacultyProfilePageView,
+    AlumniProfileSelfPageView,
+    FacultyProfileSelfPageView,
+    DevRoleSwitchView,
 )
 
 urlpatterns = [
@@ -23,6 +30,16 @@ urlpatterns = [
     path('profile/setup/', ProfileSetupPageView.as_view(), name='profile_setup'),
     path('profile/edit/', EditProfilePageView.as_view(), name='profile_edit_new'),
     path('profile/student/', StudentProfilePageView.as_view(), name='student_profile'),
+    path('profile/alumni/', AlumniProfileSelfPageView.as_view(), name='alumni_profile_self'),
+    path('profile/faculty/', FacultyProfileSelfPageView.as_view(), name='faculty_profile_self'),
+    # Connect page (replaces Browse Alumni for students)
+    path('connect/', ConnectPageView.as_view(), name='connect'),
+    # Public profiles
+    path('alumni/<int:user_id>/', AlumniProfilePageView.as_view(), name='alumni_public'),
+    path('faculty/<int:user_id>/', FacultyProfilePageView.as_view(), name='faculty_public'),
+    path('students/<int:user_id>/profile/', PublicStudentProfilePageView.as_view(), name='student_public_profile'),
+    # Keep old /alumni/ route for backward compat (redirects to /connect/)
     path('alumni/', BrowseAlumniPageView.as_view(), name='browse_alumni'),
-    path('alumni/<int:user_id>/', PublicAlumniProfilePageView.as_view(), name='alumni_public'),
+    # DEV ONLY — instant role switcher (returns 404 when DEBUG=False)
+    path('__dev__/switch/<str:role>/', DevRoleSwitchView.as_view(), name='dev_role_switch'),
 ]

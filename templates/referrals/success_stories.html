@@ -1,0 +1,62 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Success Stories — AlumniAI{% endblock %}
+
+{% block sidebar_links %}
+  {% if user.role == 'student' %}
+    {% include 'partials/sidebar_student.html' %}
+  {% elif user.role == 'alumni' %}
+    {% include 'partials/sidebar_alumni.html' %}
+  {% elif user.role == 'faculty' %}
+    {% include 'partials/sidebar_faculty.html' %}
+  {% endif %}
+{% endblock %}
+
+{% block dashboard_content %}
+<div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- Header -->
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold text-slate-800">🎉 Success Stories</h1>
+    <p class="text-sm text-slate-500 mt-0.5">Students who landed jobs through alumni referrals</p>
+  </div>
+  <a href="/referrals/" class="flex items-center gap-2 px-4 py-2 border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors">
+    ← Referral Board
+  </a>
+</div>
+
+<!-- Stories grid -->
+<div id="stories-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+  {% for i in "123456" %}
+  <div class="story-skeleton bg-white rounded-xl border border-slate-200 p-5 animate-pulse">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-10 h-10 bg-slate-200 rounded-full flex-shrink-0"></div>
+      <div class="flex-1">
+        <div class="h-4 bg-slate-200 rounded w-2/3 mb-2"></div>
+        <div class="h-3 bg-slate-100 rounded w-1/2"></div>
+      </div>
+    </div>
+    <div class="h-3 bg-slate-100 rounded w-full mb-2"></div>
+    <div class="h-3 bg-slate-100 rounded w-5/6"></div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Empty state -->
+<div id="empty-state" class="hidden text-center py-20">
+  <div class="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">🌟</div>
+  <p class="text-slate-600 font-medium text-lg">No success stories yet</p>
+  <p class="text-slate-400 text-sm mt-1">Be the first to land a job through a referral!</p>
+  <a href="/referrals/" class="inline-block mt-4 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">Browse Referrals</a>
+</div>
+{% endblock %}
+
+{% block dashboard_js %}
+<script>
+  const USER_ROLE = '{{ user_role }}';
+  const PAGE = 'success_stories';
+</script>
+<script src="{% static 'js/referrals.js' %}"></script>
+{% endblock %}

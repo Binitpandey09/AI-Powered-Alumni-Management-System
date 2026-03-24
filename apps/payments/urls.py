@@ -1,17 +1,29 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-
-app_name = 'payments'
-
-router = DefaultRouter()
-# ViewSets will be registered here on Day 2:
-# router.register(r'transactions', TransactionViewSet, basename='transaction')
-# router.register(r'wallet', WalletViewSet, basename='wallet')
-# router.register(r'withdrawals', WithdrawalViewSet, basename='withdrawal')
+from django.urls import path
+from .views import (
+    WalletView,
+    TransactionListView,
+    PayoutRequestView,
+    AIToolPaymentInitView,
+    AIToolPaymentVerifyView,
+    ReferralBoostPaymentView,
+    InvoiceView,
+    AdminPayoutManageView,
+    PlatformRevenueView,
+    AIToolUsageCheckView,
+)
 
 urlpatterns = [
-    path('', include(router.urls)),
-    # Additional URL patterns will be added on Day 2:
-    # path('razorpay/webhook/', RazorpayWebhookView.as_view(), name='razorpay-webhook'),
-    # path('initiate/', PaymentInitiateView.as_view(), name='payment-initiate'),
+    path('wallet/', WalletView.as_view()),
+    path('transactions/', TransactionListView.as_view()),
+    path('payout/', PayoutRequestView.as_view()),
+    path('payout/<int:pk>/', PayoutRequestView.as_view()),
+    path('ai-tools/init/', AIToolPaymentInitView.as_view()),
+    path('ai-tools/verify/', AIToolPaymentVerifyView.as_view()),
+    path('ai-tools/check/<str:tool_type>/', AIToolUsageCheckView.as_view()),
+    path('boost/', ReferralBoostPaymentView.as_view()),
+    path('boost/verify/', ReferralBoostPaymentView.as_view()),
+    path('invoice/<str:invoice_number>/', InvoiceView.as_view()),
+    path('admin/payouts/', AdminPayoutManageView.as_view()),
+    path('admin/payouts/<int:pk>/', AdminPayoutManageView.as_view()),
+    path('admin/revenue/', PlatformRevenueView.as_view()),
 ]

@@ -133,7 +133,7 @@ class CVUploadView(APIView):
     """
     POST /api/accounts/profile/cv-upload/
     Upload a CV (PDF/DOCX), extract text, parse with AI,
-    and pre-fill the user's profile fields.
+    and pre-fill the user's profile fields using apply_cv_data_to_profile.
     """
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
@@ -143,142 +143,75 @@ class CVUploadView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        user = request.user
         cv_file = serializer.validated_data['cv_file']
-        filename = cv_file.name
 
-        # 1. Extract raw text
-        cv_text = extract_cv_text(cv_file, filename)
+        # ── Parse with Gemini ─────────────────────────────────────────────────
+        from django.conf import settings
+        from utils.ai_cv_parser import apply_cv_data_to_profile
+
+        cv_data = {}
+        parse_error = None
+
+        cv_file.seek(0)
+        cv_text = extract_cv_text(cv_file, cv_file.name)
         if not cv_text:
             return Response(
                 {'message': 'Could not extract text from the uploaded file.'},
                 status=status.HTTP_422_UNPROCESSABLE_ENTITY,
             )
+        try:
+            cv_data = parse_cv_with_ai(cv_text)
+        except RuntimeError as exc:
+            parse_error = str(exc)
 
-        # 2. Parse with AI
-        parsed = parse_cv_with_ai(cv_text)
+        # ── Save resume file regardless of parse outcome ───────────────────────
+        if hasattr(user, 'student_profile'):
+            try:
+                cv_file.seek(0)
+                profile = user.student_profile
+                profile.resume_file = cv_file
+                profile.save(update_fields=['resume_file'])
+            except Exception:
+                pass
 
-        # 3. Apply parsed data to the correct profile
-        user = request.user
-        applied = self._apply_to_profile(user, parsed, cv_file if user.is_student else None)
+        if parse_error:
+            return Response(
+                {'message': parse_error, 'applied_fields': [], 'resume_saved': True},
+                status=status.HTTP_200_OK,
+            )
 
+        if not cv_data:
+            return Response(
+                {'message': 'Resume saved. Parsing returned no data — fill details manually.',
+                 'applied_fields': [], 'resume_saved': True},
+                status=status.HTTP_200_OK,
+            )
+
+        # ── Apply parsed data to profile ───────────────────────────────────────
+        result = apply_cv_data_to_profile(user, cv_data)
         return Response(
             {
                 'message': 'CV parsed and profile pre-filled.',
-                'parsed_fields': parsed,
-                'applied_fields': applied,
+                'applied_fields': result.get('updated_sections', []),
+                'profile_completeness': result.get('profile_completeness', 0),
+                'is_complete': result.get('is_complete', False),
             },
             status=status.HTTP_200_OK,
         )
-
-    def _apply_to_profile(self, user, parsed: dict, cv_file=None) -> list:
-        """Apply AI-parsed fields to the role-specific profile. Returns list of applied field names."""
-        applied = []
-
-        # Update base user fields
-        user_fields_map = {
-            'phone': 'phone',
-            'college': 'college',
-        }
-        user_dirty = False
-        for parsed_key, user_attr in user_fields_map.items():
-            val = parsed.get(parsed_key)
-            if val and not getattr(user, user_attr):
-                setattr(user, user_attr, val)
-                applied.append(user_attr)
-                user_dirty = True
-        if user_dirty:
-            user.save(update_fields=list(user_fields_map.values()))
-
-        if user.is_alumni:
-            try:
-                profile = user.alumni_profile
-            except AlumniProfile.DoesNotExist:
-                return applied
-
-            mapping = {
-                'company': 'company',
-                'designation': 'designation',
-                'linkedin_url': 'linkedin_url',
-                'years_of_experience': 'years_of_experience',
-                'skills': 'skills',
-                'bio': 'bio',
-            }
-            dirty = False
-            for parsed_key, field in mapping.items():
-                val = parsed.get(parsed_key)
-                if val and not getattr(profile, field):
-                    setattr(profile, field, val)
-                    applied.append(field)
-                    dirty = True
-            if dirty:
-                profile.save()
-
-        elif user.is_student:
-            try:
-                profile = user.student_profile
-            except StudentProfile.DoesNotExist:
-                return applied
-
-            mapping = {
-                'degree': 'degree',
-                'branch': 'branch',
-                'graduation_year': 'graduation_year',
-                'skills': 'skills',
-                'github_url': 'github_url',
-                'linkedin_url': 'portfolio_url',
-                'portfolio_url': 'portfolio_url',
-            }
-            dirty = False
-            for parsed_key, field in mapping.items():
-                val = parsed.get(parsed_key)
-                if val and not getattr(profile, field):
-                    setattr(profile, field, val)
-                    applied.append(field)
-                    dirty = True
-
-            # Save the actual CV file on the student profile
-            if cv_file:
-                profile.resume_file = cv_file
-                applied.append('resume_file')
-                dirty = True
-
-            if dirty:
-                profile.save()
-
-        elif user.is_faculty:
-            try:
-                profile = user.faculty_profile
-            except FacultyProfile.DoesNotExist:
-                return applied
-
-            mapping = {
-                'designation': 'designation',
-                'bio': 'bio',
-            }
-            dirty = False
-            for parsed_key, field in mapping.items():
-                val = parsed.get(parsed_key)
-                if val and not getattr(profile, field):
-                    setattr(profile, field, val)
-                    applied.append(field)
-                    dirty = True
-            if dirty:
-                profile.save()
-
-        return applied
 
 
 # ── Basic User Fields Update ──────────────────────────────────────────────────
 
 class BasicProfileUpdateView(APIView):
-    """PATCH /api/accounts/profile/basic/ — update first_name, last_name, phone, college, batch_year"""
+    """PATCH /api/accounts/profile/basic/ — update user fields + student profile fields"""
     permission_classes = [IsAuthenticated]
 
     def patch(self, request):
         user = request.user
-        allowed = ['first_name', 'last_name', 'phone', 'college', 'batch_year']
-        dirty = False
-        for field in allowed:
+        user_fields = ['first_name', 'last_name', 'phone', 'college', 'batch_year']
+        user_dirty = False
+        for field in user_fields:
             if field in request.data:
                 val = request.data[field]
                 if field == 'batch_year':
@@ -288,9 +221,28 @@ class BasicProfileUpdateView(APIView):
                         from rest_framework.exceptions import ValidationError
                         raise ValidationError({'batch_year': 'Must be a valid year.'})
                 setattr(user, field, val)
-                dirty = True
-        if dirty:
+                user_dirty = True
+        if user_dirty:
             user.save()
+
+        # Student-profile fields that live on StudentProfile, not User
+        student_profile_fields = ['gender', 'date_of_birth', 'current_location']
+        profile_dirty = False
+        if user.is_student:
+            try:
+                profile = user.student_profile
+            except Exception:
+                profile = None
+            if profile:
+                for field in student_profile_fields:
+                    if field in request.data:
+                        val = request.data[field]
+                        if field == 'date_of_birth' and val == '':
+                            val = None
+                        setattr(profile, field, val)
+                        profile_dirty = True
+                if profile_dirty:
+                    profile.save()
 
         from .serializers import UserProfileSerializer
         return Response(UserProfileSerializer(user).data)

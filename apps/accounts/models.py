@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
 
@@ -26,6 +27,9 @@ class User(AbstractUser):
     batch_year = models.IntegerField(null=True, blank=True)
     is_verified = models.BooleanField(default=False)
     is_profile_complete = models.BooleanField(default=False)
+    is_suspended = models.BooleanField(default=False)
+    suspended_reason = models.TextField(blank=True)
+    suspended_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -69,6 +73,7 @@ class AlumniProfile(models.Model):
     skills = models.JSONField(default=list, blank=True)
     wallet_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     total_earned = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    bank_details = models.JSONField(default=dict, blank=True)
     bank_verified = models.BooleanField(default=False)
     impact_score = models.IntegerField(default=0)
     verification_document = models.FileField(
@@ -78,6 +83,27 @@ class AlumniProfile(models.Model):
     price_per_30min = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
     price_per_60min = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
     bio = models.TextField(blank=True)
+    # Verification fields
+    is_verified = models.BooleanField(default=False)
+    verification_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', 'Pending Review'),
+            ('verified', 'Verified'),
+            ('rejected', 'Rejected'),
+            ('not_submitted', 'Not Submitted'),
+        ],
+        default='not_submitted',
+    )
+    verification_document_url = models.URLField(blank=True)
+    verification_note = models.TextField(blank=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='alumni_verifications_done',
+    )
 
     class Meta:
         verbose_name = 'Alumni Profile'
@@ -295,6 +321,7 @@ class FacultyProfile(models.Model):
     subjects = models.JSONField(default=list, blank=True)
     wallet_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     total_earned = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    bank_details = models.JSONField(default=dict, blank=True)
     bank_verified = models.BooleanField(default=False)
     bio = models.TextField(blank=True)
 
@@ -342,3 +369,48 @@ class EmailOTP(models.Model):
 
     def is_valid(self):
         return not self.is_used and not self.is_expired()
+
+
+class AdminActionLog(models.Model):
+    ACTION_TYPES = [
+        ('user_verified', 'User Verified'),
+        ('user_suspended', 'User Suspended'),
+        ('user_unsuspended', 'User Unsuspended'),
+        ('user_deleted', 'User Deleted'),
+        ('post_hidden', 'Post Hidden'),
+        ('post_deleted', 'Post Deleted'),
+        ('post_approved', 'Post Approved'),
+        ('session_cancelled', 'Session Cancelled'),
+        ('referral_deactivated', 'Referral Deactivated'),
+        ('payout_approved', 'Payout Approved'),
+        ('payout_processed', 'Payout Processed'),
+        ('payout_rejected', 'Payout Rejected'),
+        ('alumni_verified', 'Alumni Profile Verified'),
+        ('alumni_rejected', 'Alumni Verification Rejected'),
+        ('broadcast_sent', 'Broadcast Notification Sent'),
+        ('other', 'Other'),
+    ]
+
+    admin = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='admin_actions',
+    )
+    action_type = models.CharField(max_length=30, choices=ACTION_TYPES)
+    target_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='admin_actions_received',
+    )
+    target_object_type = models.CharField(max_length=50, blank=True)
+    target_object_id = models.IntegerField(null=True, blank=True)
+    note = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.admin} — {self.action_type} — {self.created_at.date()}"

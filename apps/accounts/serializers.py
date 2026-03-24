@@ -571,3 +571,22 @@ class FullStudentProfileSerializer(serializers.Serializer):
     def get_profile_completeness(self, obj):
         from utils.profile_helpers import get_full_profile_completeness
         return get_full_profile_completeness(obj)
+
+
+class FacultyPublicSerializer(serializers.Serializer):
+    """Public-facing faculty profile — excludes private fields."""
+    user_id = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
+    first_name = serializers.SerializerMethodField()
+    profile_pic = serializers.SerializerMethodField()
+    college = serializers.SerializerMethodField()
+    department = serializers.CharField()
+    designation = serializers.CharField()
+    subjects = serializers.JSONField()
+    bio = serializers.CharField()
+
+    def get_user_id(self, obj): return obj.user.id
+    def get_full_name(self, obj): return obj.user.full_name
+    def get_first_name(self, obj): return obj.user.first_name
+    def get_profile_pic(self, obj): return obj.user.profile_pic.url if obj.user.profile_pic else None
+    def get_college(self, obj): return obj.user.college

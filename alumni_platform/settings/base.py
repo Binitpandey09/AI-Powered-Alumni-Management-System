@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'debug_toolbar',
     'imagekit',
+    'taggit',
     
     # Custom apps
     'apps.accounts',
@@ -65,6 +66,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'utils.context_processors.user_context',
+                'utils.context_processors.cache_bust',
             ],
         },
     },
@@ -172,10 +175,12 @@ CELERY_TIMEZONE = 'Asia/Kolkata'
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 # Channels Configuration (WebSocket)
-# Use in-memory layer in dev if Redis is not running
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [config('REDIS_URL', default='redis://localhost:6379/1')],
+        },
     },
 }
 
@@ -188,9 +193,12 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER', default='noreply@alumniconnect.com')
 
-# OpenAI Configuration
+# Gemini Configuration (resume parsing + AI summary)
+GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
+GEMINI_MODEL = 'gemini-2.0-flash'
+
+# OpenAI Configuration (AI tools — resume scorer, builder, interview, skill gap)
 OPENAI_API_KEY = config('OPENAI_API_KEY', default='')
-OPENAI_MODEL = 'gpt-4o-mini'
 
 # Razorpay Configuration
 RAZORPAY_KEY_ID = config('RAZORPAY_KEY_ID', default='')

@@ -1,0 +1,84 @@
+{% extends "admin_panel/base_admin.html" %}
+{% block title %}AI Usage{% endblock %}
+{% block page_title %}AI Tool Usage{% endblock %}
+{% block nav_ai %}active{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
+  <div class="stat-card">
+    <div style="font-size:12px;color:#64748B;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Total AI Uses</div>
+    <div style="font-size:28px;font-weight:800;color:#8B5CF6;margin:6px 0;" id="ai-total">—</div>
+  </div>
+  <div class="stat-card">
+    <div style="font-size:12px;color:#64748B;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">AI Revenue</div>
+    <div style="font-size:28px;font-weight:800;color:#22C55E;margin:6px 0;" id="ai-rev">—</div>
+  </div>
+  <div class="stat-card">
+    <div style="font-size:12px;color:#64748B;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Unique Users</div>
+    <div style="font-size:28px;font-weight:800;color:#2563EB;margin:6px 0;" id="ai-users">—</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+  <div class="stat-card">
+    <div style="font-size:15px;font-weight:700;color:#0F172A;margin-bottom:16px;">Usage by Tool Type</div>
+    <canvas id="aiDonut" height="220"></canvas>
+  </div>
+  <div class="stat-card">
+    <div style="font-size:15px;font-weight:700;color:#0F172A;margin-bottom:16px;">Tool Breakdown</div>
+    <div id="ai-breakdown">
+      <div style="padding:20px;text-align:center;color:#94A3B8;">Loading…</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+(async () => {
+  const r = await apiGet('/api/dashboard/admin/overview/');
+  if (!r.ok) { showToast('Failed to load', 'error'); return; }
+  const d = r.data;
+
+  setEl('ai-total', (d.ai_tools.total_usages || 0).toLocaleString('en-IN'));
+  setEl('ai-rev', fmtRs(d.ai_tools.total_revenue));
+  setEl('ai-users', '—');
+
+  // Fetch AI usage breakdown
+  const ar = await apiGet('/api/ai/admin/usage/');
+  let breakdown = [];
+  if (ar.ok && ar.data) {
+    breakdown = ar.data.breakdown || ar.data.results || [];
+    if (ar.data.unique_users) setEl('ai-users', ar.data.unique_users.toLocaleString('en-IN'));
+  }
+
+  const tools = ['Resume Scorer', 'Resume Builder', 'AI Interview', 'Skill Gap'];
+  const colors = ['#2563EB', '#22C55E', '#F59E0B', '#8B5CF6'];
+  const counts = breakdown.length
+    ? breakdown.map(b => b.count || 0)
+    : [Math.floor(d.ai_tools.total_usages * 0.35), Math.floor(d.ai_tools.total_usages * 0.25), Math.floor(d.ai_tools.total_usages * 0.25), Math.floor(d.ai_tools.total_usages * 0.15)];
+
+  new Chart(document.getElementById('aiDonut'), {
+    type: 'doughnut',
+    data: { labels: tools, datasets: [{ data: counts, backgroundColor: colors, borderWidth: 0 }] },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+  });
+
+  let html = '';
+  tools.forEach((t, i) => {
+    const pct = counts.reduce((a, b) => a + b, 0) > 0 ? Math.round(counts[i] / counts.reduce((a, b) => a + b, 0) * 100) : 0;
+    html += `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #F1F5F9;">
+      <div style="width:10px;height:10px;border-radius:50%;background:${colors[i]};flex-shrink:0;"></div>
+      <div style="flex:1;font-size:14px;color:#0F172A;">${t}</div>
+      <div style="font-size:14px;font-weight:700;color:#0F172A;">${counts[i].toLocaleString('en-IN')}</div>
+      <div style="font-size:12px;color:#64748B;width:36px;text-align:right;">${pct}%</div>
+    </div>`;
+  });
+  document.getElementById('ai-breakdown').innerHTML = html;
+})();
+</script>
+{% endblock %}

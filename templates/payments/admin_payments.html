@@ -1,0 +1,110 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Payment Management — AlumniAI Admin{% endblock %}
+
+{% block dashboard_content %}
+<div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+<div class="p-6 max-w-7xl mx-auto space-y-6">
+
+  <!-- Breadcrumb -->
+  <a href="/admin/" class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors">
+    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+    </svg>
+    Admin Panel
+  </a>
+
+  <div>
+    <h1 class="text-2xl font-bold text-slate-800">Payment Management</h1>
+    <p class="text-sm text-slate-500 mt-0.5">Platform revenue, payout approvals, and transaction oversight</p>
+  </div>
+
+  <!-- Metric cards -->
+  <div class="grid grid-cols-2 lg:grid-cols-5 gap-4" id="admin-metric-cards">
+    <div class="bg-white rounded-xl border border-slate-200 p-5 animate-pulse h-24"></div>
+    <div class="bg-white rounded-xl border border-slate-200 p-5 animate-pulse h-24"></div>
+    <div class="bg-white rounded-xl border border-slate-200 p-5 animate-pulse h-24"></div>
+    <div class="bg-white rounded-xl border border-slate-200 p-5 animate-pulse h-24"></div>
+    <div class="bg-white rounded-xl border border-slate-200 p-5 animate-pulse h-24"></div>
+  </div>
+
+  <!-- Revenue chart + by type -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-6">
+      <h2 class="font-semibold text-slate-800 mb-4">Monthly Platform Revenue</h2>
+      <div class="relative h-52">
+        <canvas id="revenueChart"></canvas>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-200 p-6">
+      <h2 class="font-semibold text-slate-800 mb-4">Revenue by Category</h2>
+      <div id="revenue-by-type" class="space-y-3">
+        <div class="animate-pulse h-6 bg-slate-100 rounded"></div>
+        <div class="animate-pulse h-6 bg-slate-100 rounded"></div>
+        <div class="animate-pulse h-6 bg-slate-100 rounded"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payout management -->
+  <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3">
+      <h2 class="font-semibold text-slate-800">Payout Management</h2>
+      <!-- Status filter tabs -->
+      <div class="flex gap-1 bg-slate-100 rounded-lg p-1">
+        <button onclick="loadAdminPayouts('pending')" data-pstatus="pending"
+          class="payout-tab-btn px-3 py-1 text-xs font-medium rounded-md bg-white text-slate-700 shadow-sm transition-all">Pending</button>
+        <button onclick="loadAdminPayouts('approved')" data-pstatus="approved"
+          class="payout-tab-btn px-3 py-1 text-xs font-medium rounded-md text-slate-500 hover:text-slate-700 transition-all">Approved</button>
+        <button onclick="loadAdminPayouts('processed')" data-pstatus="processed"
+          class="payout-tab-btn px-3 py-1 text-xs font-medium rounded-md text-slate-500 hover:text-slate-700 transition-all">Processed</button>
+        <button onclick="loadAdminPayouts('rejected')" data-pstatus="rejected"
+          class="payout-tab-btn px-3 py-1 text-xs font-medium rounded-md text-slate-500 hover:text-slate-700 transition-all">Rejected</button>
+      </div>
+    </div>
+    <div id="admin-payouts-list" class="p-6 space-y-3">
+      <div class="animate-pulse h-20 bg-slate-50 rounded-xl"></div>
+      <div class="animate-pulse h-20 bg-slate-50 rounded-xl"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Reject reason modal -->
+<div id="reject-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+    <h3 class="text-base font-bold text-slate-800 mb-4">Reject Payout</h3>
+    <textarea id="reject-reason" rows="3" placeholder="Reason for rejection (required)…"
+      class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none mb-4"></textarea>
+    <div class="flex gap-3">
+      <button onclick="closeRejectModal()" class="flex-1 py-2.5 border border-slate-200 text-slate-600 text-sm font-medium rounded-xl hover:bg-slate-50">Cancel</button>
+      <button onclick="submitReject()" class="flex-1 py-2.5 bg-red-600 text-white text-sm font-semibold rounded-xl hover:bg-red-700">Reject</button>
+    </div>
+  </div>
+</div>
+
+<!-- Process reference modal -->
+<div id="process-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+    <h3 class="text-base font-bold text-slate-800 mb-4">Mark as Processed</h3>
+    <p class="text-xs text-slate-500 mb-3">Enter the bank transaction reference number</p>
+    <input type="text" id="process-reference" placeholder="e.g. NEFT/IMPS reference number"
+      class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 mb-4">
+    <div class="flex gap-3">
+      <button onclick="closeProcessModal()" class="flex-1 py-2.5 border border-slate-200 text-slate-600 text-sm font-medium rounded-xl hover:bg-slate-50">Cancel</button>
+      <button onclick="submitProcess()" class="flex-1 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-xl hover:bg-emerald-700">Confirm</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block dashboard_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  const PAGE_NAME = 'admin_payments';
+</script>
+<script src="{% static 'js/payments.js' %}"></script>
+{% endblock %}

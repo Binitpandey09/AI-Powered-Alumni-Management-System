@@ -17,6 +17,8 @@ from .views import (
     StudentLanguageListView, StudentLanguageDetailView,
     StudentEmploymentListView, StudentEmploymentDetailView,
     FullStudentProfileView,
+    FacultyListView,
+    PublicFacultyProfileView,
 )
 from .profile_views import (
     AlumniProfileView,
@@ -90,4 +92,8 @@ urlpatterns = [
     # Alumni browse / public profile
     path('alumni/',               AlumniBrowseView.as_view(),        name='alumni-browse'),
     path('alumni/<int:user_id>/', PublicAlumniProfileView.as_view(), name='alumni-public'),
+
+    # Faculty list / public profile
+    path('faculty/',               FacultyListView.as_view(),          name='faculty-list'),
+    path('faculty/<int:user_id>/', PublicFacultyProfileView.as_view(), name='faculty-public'),
 ]

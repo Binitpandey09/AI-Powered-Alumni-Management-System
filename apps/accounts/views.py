@@ -24,6 +24,7 @@ class RegisterView(APIView):
     Register a new user and send OTP to their email.
     """
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
@@ -43,6 +44,7 @@ class VerifyRegistrationOTPView(APIView):
     Verify the registration OTP and activate the account.
     """
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = OTPVerificationSerializer(data=request.data)
@@ -62,6 +64,7 @@ class LoginRequestView(APIView):
     Validate credentials and send a login OTP.
     """
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = LoginRequestSerializer(data=request.data)
@@ -81,6 +84,7 @@ class LoginVerifyOTPView(APIView):
     Verify login OTP and return JWT tokens + set httponly cookie.
     """
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = LoginOTPSerializer(data=request.data)
@@ -108,6 +112,7 @@ class ResendOTPView(APIView):
     Resend OTP with a 60-second rate limit.
     """
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         email = request.data.get('email', '').strip().lower()
@@ -183,25 +188,18 @@ class LogoutView(APIView):
     """
     POST /api/accounts/logout/
     Blacklist the refresh token and clear the httponly cookie.
+    Accepts unauthenticated requests so stale/expired tokens don't block logout.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def post(self, request):
         refresh_token = request.data.get('refresh')
-        if not refresh_token:
-            return Response(
-                {'message': 'Refresh token is required.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        try:
-            token = RefreshToken(refresh_token)
-            token.blacklist()
-        except TokenError as e:
-            return Response(
-                {'message': str(e)},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            except TokenError:
+                pass  # Already expired/blacklisted — that's fine, just clear and go
 
         response = Response({'message': 'Logged out successfully.'}, status=status.HTTP_200_OK)
         response.delete_cookie('access_token')
@@ -229,6 +227,14 @@ from django.conf import settings as django_settings
 
 class HomeView(TemplateView):
     template_name = 'home.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        from utils.auth_helpers import get_user_from_token, get_dashboard_url
+        token = request.COOKIES.get('access_token', '')
+        user = get_user_from_token(token)
+        if user:
+            return redirect(get_dashboard_url(user))
+        return super().dispatch(request, *args, **kwargs)
 
 
 class ChooseRoleView(TemplateView):
@@ -318,6 +324,15 @@ class EditProfilePageView(JWTLoginRequiredMixin, TemplateView):
 class BrowseAlumniPageView(JWTLoginRequiredMixin, TemplateView):
     template_name = 'accounts/browse_alumni.html'
 
+    def dispatch(self, request, *args, **kwargs):
+        # Redirect old /alumni/ URL to the new /connect/ page
+        from utils.auth_helpers import get_user_from_token
+        token = request.COOKIES.get('access_token', '')
+        user = get_user_from_token(token)
+        if not user:
+            return redirect(f'/auth/login/?next=/connect/')
+        return redirect('/connect/')
+
 
 class PublicAlumniProfilePageView(JWTLoginRequiredMixin, TemplateView):
     template_name = 'accounts/alumni_profile.html'
@@ -349,9 +364,22 @@ class StudentProfilePageView(JWTLoginRequiredMixin, TemplateView):
         return ctx
 
 
+class PublicStudentProfilePageView(JWTLoginRequiredMixin, TemplateView):
+    template_name = 'accounts/public_student_profile.html'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['student_id'] = self.kwargs.get('user_id')
+        from utils.auth_helpers import get_user_from_token
+        token = self.request.COOKIES.get('access_token', '')
+        user = get_user_from_token(token)
+        ctx['viewer_role'] = user.role if user else ''
+        return ctx
+
+
 # ── Student Profile Section Views ─────────────────────────────────────────────
 
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.contrib.auth import get_user_model
 from .models import (
     StudentEducation, StudentProject, StudentInternship,
@@ -459,3 +487,256 @@ class FullStudentProfileView(APIView):
             return Response({'error': 'Not a student'}, status=status.HTTP_404_NOT_FOUND)
 
         return Response(FullStudentProfileSerializer(target).data)
+
+
+# ── Connect Page View ─────────────────────────────────────────────────────────
+
+class ConnectPageView(JWTLoginRequiredMixin, TemplateView):
+    template_name = 'connect/connect.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        from utils.auth_helpers import get_user_from_token
+        token = request.COOKIES.get('access_token', '')
+        user = get_user_from_token(token)
+        if not user:
+            return redirect(f'/auth/login/?next={request.path}')
+        # Alumni and faculty redirect to their own dashboard
+        if user.role in ('alumni', 'faculty'):
+            return redirect(f'/dashboard/{user.role}/')
+        request.user = user
+        return TemplateView.dispatch(self, request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['user'] = self.request.user
+        ctx['user_role'] = 'student'
+        return ctx
+
+
+# ── Alumni Profile Page View ──────────────────────────────────────────────────
+
+class AlumniProfilePageView(JWTLoginRequiredMixin, TemplateView):
+    template_name = 'accounts/alumni_profile.html'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['alumni_user_id'] = kwargs.get('user_id')
+        return ctx
+
+
+# ── Faculty Profile Page View ─────────────────────────────────────────────────
+
+class FacultyProfilePageView(JWTLoginRequiredMixin, TemplateView):
+    template_name = 'accounts/faculty_profile.html'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['faculty_user_id'] = kwargs.get('user_id')
+        return ctx
+
+
+# ── Alumni Profile Page View (placeholder for /profile/alumni/) ───────────────
+
+class AlumniProfileSelfPageView(JWTLoginRequiredMixin, TemplateView):
+    template_name = 'accounts/alumni_profile_self.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        from utils.auth_helpers import get_user_from_token
+        token = request.COOKIES.get('access_token', '')
+        user = get_user_from_token(token)
+        if not user:
+            return redirect(f'/auth/login/?next={request.path}')
+        if user.role != 'alumni':
+            return redirect(f'/dashboard/{user.role}/')
+        request.user = user
+        return TemplateView.dispatch(self, request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['user'] = self.request.user
+        ctx['user_role'] = 'alumni'
+        return ctx
+
+
+# ── Faculty Profile Self Page View (placeholder for /profile/faculty/) ────────
+
+class FacultyProfileSelfPageView(JWTLoginRequiredMixin, TemplateView):
+    template_name = 'accounts/faculty_profile_self.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        from utils.auth_helpers import get_user_from_token
+        token = request.COOKIES.get('access_token', '')
+        user = get_user_from_token(token)
+        if not user:
+            return redirect(f'/auth/login/?next={request.path}')
+        if user.role != 'faculty':
+            return redirect(f'/dashboard/{user.role}/')
+        request.user = user
+        return TemplateView.dispatch(self, request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['user'] = self.request.user
+        ctx['user_role'] = 'faculty'
+        return ctx
+
+
+# ── Faculty List API ──────────────────────────────────────────────────────────
+
+class FacultyListView(APIView):
+    """GET /api/accounts/faculty/ — paginated list of verified faculty"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from .models import FacultyProfile
+        from .serializers import FacultyPublicSerializer
+
+        qs = FacultyProfile.objects.select_related('user').filter(
+            user__is_verified=True, user__is_active=True, user__role='faculty'
+        ).order_by('-user__date_joined')
+
+        search = request.query_params.get('search', '').strip()
+        if search:
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(user__first_name__icontains=search) |
+                Q(user__last_name__icontains=search) |
+                Q(department__icontains=search) |
+                Q(designation__icontains=search)
+            )
+
+        page = max(int(request.query_params.get('page', 1)), 1)
+        page_size = 12
+        total = qs.count()
+        start = (page - 1) * page_size
+        profiles = qs[start:start + page_size]
+
+        results = []
+        for p in profiles:
+            u = p.user
+            pic_url = u.profile_pic.url if u.profile_pic else None
+            results.append({
+                'user_id': u.id,
+                'full_name': u.full_name,
+                'first_name': u.first_name,
+                'profile_pic': pic_url,
+                'college': u.college,
+                'batch_year': u.batch_year,
+                'department': p.department,
+                'designation': p.designation,
+                'subjects': p.subjects,
+                'bio': p.bio,
+            })
+
+        return Response({
+            'results': results,
+            'total': total,
+            'page': page,
+            'has_next': (start + page_size) < total,
+        })
+
+
+# ── Public Faculty Profile API ────────────────────────────────────────────────
+
+# ── DEV ONLY: Role Switcher ───────────────────────────────────────────────────
+
+from django.views import View
+
+
+class DevRoleSwitchView(View):
+    """
+    DEV ONLY — instantly logs in as a test user for the given role.
+    Completely disabled when DEBUG=False.
+    """
+
+    def get(self, request, role):
+        # Hard block in production — must be the very first check
+        if not django_settings.DEBUG:
+            return HttpResponse('Not available in production.', status=404)
+
+        role_emails = {
+            'student': 'dev.student@college.ac.in',
+            'alumni':  'dev.alumni@techcompany.com',
+            'faculty': 'dev.faculty@college.ac.in',
+            'admin':   'dev.admin@alumniai.com',
+        }
+
+        email = role_emails.get(role)
+        if not email:
+            return HttpResponse('Invalid role.', status=400)
+
+        from django.contrib.auth import get_user_model
+        _User = get_user_model()
+        try:
+            user = _User.objects.get(email=email, is_verified=True)
+        except _User.DoesNotExist:
+            return HttpResponse(
+                f'Dev user for role "{role}" not found. Run: python manage.py create_dev_users',
+                status=404,
+            )
+
+        from rest_framework_simplejwt.tokens import RefreshToken as _RefreshToken
+        refresh = _RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        refresh_token = str(refresh)
+
+        redirects = {
+            'student': '/dashboard/student/',
+            'alumni':  '/dashboard/alumni/',
+            'faculty': '/dashboard/faculty/',
+            'admin':   '/admin-panel/',
+        }
+        redirect_url = redirects.get(role, '/')
+
+        response = HttpResponse(f'''<html>
+<head><title>Switching to {role}...</title></head>
+<body>
+<script>
+  localStorage.setItem('access_token', '{access_token}');
+  localStorage.setItem('refresh_token', '{refresh_token}');
+  window.location.href = '{redirect_url}';
+</script>
+<p>Switching to <strong>{role}</strong>... if not redirected <a href="{redirect_url}">click here</a></p>
+</body>
+</html>''')
+
+        response.set_cookie(
+            'access_token',
+            access_token,
+            httponly=True,
+            samesite='Lax',
+            max_age=3600,
+        )
+        return response
+
+
+# ── Public Faculty Profile API ────────────────────────────────────────────────
+
+class PublicFacultyProfileView(APIView):
+    """GET /api/accounts/faculty/{user_id}/ — public faculty profile"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, user_id):
+        User = get_user_model()
+        try:
+            user = User.objects.get(id=user_id, role='faculty', is_verified=True, is_active=True)
+            from .models import FacultyProfile
+            profile = user.faculty_profile
+        except (User.DoesNotExist, Exception):
+            return Response({'detail': 'Faculty not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        pic_url = user.profile_pic.url if user.profile_pic else None
+        return Response({
+            'user_id': user.id,
+            'full_name': user.full_name,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'profile_pic': pic_url,
+            'college': user.college,
+            'batch_year': user.batch_year,
+            'department': profile.department,
+            'designation': profile.designation,
+            'subjects': profile.subjects,
+            'bio': profile.bio,
+            'employee_id': profile.employee_id,
+        })

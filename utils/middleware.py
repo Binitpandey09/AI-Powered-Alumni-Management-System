@@ -1,4 +1,5 @@
 from django.shortcuts import redirect
+from django.http import JsonResponse
 from .auth_helpers import get_user_from_token
 
 # Page URL prefixes that require authentication
@@ -8,6 +9,8 @@ PROTECTED_PREFIXES = (
     '/sessions/',
     '/referrals/',
     '/profile/',
+    '/admin-panel/',
+    '/tools/',
 )
 
 # Prefixes that are always public — never redirect
@@ -29,6 +32,7 @@ class JWTAuthMiddleware:
     Reads the httponly 'access_token' cookie set by LoginVerifyOTPView.
     If a protected page is requested without a valid token, redirects to /auth/login/.
     API routes are untouched — DRF handles those independently.
+    Suspended users are blocked from all protected pages and API routes.
     """
 
     def __init__(self, get_response):
@@ -42,6 +46,16 @@ class JWTAuthMiddleware:
             user = get_user_from_token(token)
             if user is None:
                 return redirect(f'/auth/login/?next={path}')
+
+            # Block suspended users (never block admin users)
+            if getattr(user, 'is_suspended', False) and user.role != 'admin':
+                if path.startswith('/api/'):
+                    return JsonResponse(
+                        {'error': 'Your account has been suspended. Contact support.'},
+                        status=403,
+                    )
+                return redirect('/auth/login/?suspended=1')
+
             # Attach user so templates can access request.user
             request.user = user
 

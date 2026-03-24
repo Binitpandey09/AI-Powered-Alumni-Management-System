@@ -1,0 +1,152 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Manage Applications — AlumniAI{% endblock %}
+
+{% block sidebar_links %}
+  {% if user.role == 'alumni' %}
+    {% include 'partials/sidebar_alumni.html' %}
+  {% elif user.role == 'faculty' %}
+    {% include 'partials/sidebar_faculty.html' %}
+  {% endif %}
+{% endblock %}
+
+{% block dashboard_content %}
+<div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- Back -->
+<a id="back-link" href="/referrals/" class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 mb-6 transition-colors">
+  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+  </svg>
+  Back to Referral Board
+</a>
+
+<!-- Referral summary skeleton -->
+<div id="referral-summary-skeleton" class="bg-white rounded-xl border border-slate-200 p-5 mb-6 animate-pulse">
+  <div class="flex items-center gap-4">
+    <div class="w-12 h-12 bg-slate-200 rounded-xl flex-shrink-0"></div>
+    <div class="flex-1">
+      <div class="h-4 bg-slate-200 rounded w-1/3 mb-2"></div>
+      <div class="h-3 bg-slate-100 rounded w-1/4"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Referral summary -->
+<div id="referral-summary" class="hidden bg-white rounded-xl border border-slate-200 p-5 mb-6">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <div id="manage-logo" class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-lg font-bold flex-shrink-0"></div>
+      <div>
+        <h1 id="manage-title" class="text-lg font-bold text-slate-800"></h1>
+        <p id="manage-company" class="text-sm text-slate-500"></p>
+      </div>
+    </div>
+    <div class="flex items-center gap-4 flex-wrap">
+      <div class="flex items-center gap-4 text-center">
+        <div>
+          <p id="stat-total" class="text-2xl font-bold text-slate-800">—</p>
+          <p class="text-xs text-slate-500">Total</p>
+        </div>
+        <div>
+          <p id="stat-shortlisted" class="text-2xl font-bold text-blue-600">—</p>
+          <p class="text-xs text-slate-500">Shortlisted</p>
+        </div>
+        <div>
+          <p id="stat-hired" class="text-2xl font-bold text-emerald-600">—</p>
+          <p class="text-xs text-slate-500">Hired</p>
+        </div>
+        <div>
+          <p id="stat-slots" class="text-2xl font-bold text-violet-600">—</p>
+          <p class="text-xs text-slate-500">Slots Left</p>
+        </div>
+      </div>
+      <!-- Boost button — rendered by JS based on boost status -->
+      <div id="boost-btn-container"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Status filter tabs -->
+<div class="flex gap-2 mb-5 flex-wrap">
+  <button onclick="filterApplications('')" data-status="" class="manage-tab px-4 py-2 text-sm font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors active-tab">All</button>
+  <button onclick="filterApplications('applied')" data-status="applied" class="manage-tab px-4 py-2 text-sm font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">Applied</button>
+  <button onclick="filterApplications('under_review')" data-status="under_review" class="manage-tab px-4 py-2 text-sm font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">Under Review</button>
+  <button onclick="filterApplications('shortlisted')" data-status="shortlisted" class="manage-tab px-4 py-2 text-sm font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">Shortlisted</button>
+  <button onclick="filterApplications('interview_scheduled')" data-status="interview_scheduled" class="manage-tab px-4 py-2 text-sm font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">Interview</button>
+  <button onclick="filterApplications('hired')" data-status="hired" class="manage-tab px-4 py-2 text-sm font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">Hired</button>
+  <button onclick="filterApplications('rejected')" data-status="rejected" class="manage-tab px-4 py-2 text-sm font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">Rejected</button>
+</div>
+
+<!-- Applications list -->
+<div id="manage-applications-list" class="space-y-4">
+  {% for i in "123" %}
+  <div class="manage-skeleton bg-white rounded-xl border border-slate-200 p-5 animate-pulse">
+    <div class="flex items-center gap-4">
+      <div class="w-10 h-10 bg-slate-200 rounded-full flex-shrink-0"></div>
+      <div class="flex-1">
+        <div class="h-4 bg-slate-200 rounded w-1/4 mb-2"></div>
+        <div class="h-3 bg-slate-100 rounded w-1/3"></div>
+      </div>
+      <div class="h-8 bg-slate-100 rounded-lg w-28"></div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Empty state -->
+<div id="empty-state" class="hidden text-center py-16">
+  <p class="text-slate-500 font-medium">No applications yet</p>
+  <p class="text-slate-400 text-sm mt-1">Applications will appear here once students apply</p>
+</div>
+
+<!-- Update status modal -->
+<div id="update-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+    <div class="flex items-center justify-between p-6 border-b border-slate-100">
+      <h2 class="text-lg font-bold text-slate-800">Update Application</h2>
+      <button onclick="closeUpdateModal()" class="text-slate-400 hover:text-slate-600">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="p-6 space-y-4">
+      <div id="update-student-info" class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg"></div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">New Status</label>
+        <select id="update-status-select" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+          <option value="applied">Applied</option>
+          <option value="under_review">Under Review</option>
+          <option value="shortlisted">Shortlisted</option>
+          <option value="interview_scheduled">Interview Scheduled</option>
+          <option value="rejected">Rejected</option>
+          <option value="hired">Hired</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">Note to Student (optional)</label>
+        <textarea id="update-note" rows="3" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" placeholder="Add a note for the student…"></textarea>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="closeUpdateModal()" class="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors">Cancel</button>
+        <button id="update-submit-btn" onclick="submitStatusUpdate()"
+          class="flex-1 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+          Update Status
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block dashboard_js %}
+<script>
+  const USER_ROLE = '{{ user_role }}';
+  const REFERRAL_ID = {{ referral_id }};
+  const PAGE = 'manage_applications';
+</script>
+<script src="{% static 'js/referrals.js' %}"></script>
+<script src="{% static 'js/payments.js' %}"></script>
+{% endblock %}

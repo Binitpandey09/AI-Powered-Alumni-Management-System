@@ -1,0 +1,59 @@
+{% comment %}
+Shared AI Tool Payment Gate Modal.
+Requires in page context: tool_type, tool_name, tool_price, razorpay_key_id
+Requires payments.js to be loaded.
+{% endcomment %}
+<div id="payment-gate-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4">
+    <!-- Header -->
+    <div class="p-6 pb-4 text-center">
+      <div id="pgm-icon" class="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-4">
+        <svg class="w-7 h-7 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+      <h3 id="pgm-title" class="text-lg font-bold text-slate-800"></h3>
+      <p class="text-xs text-slate-500 mt-1">One-time payment · Instant access</p>
+    </div>
+
+    <!-- Price -->
+    <div class="px-6 pb-4 text-center">
+      <p id="pgm-price" class="text-4xl font-bold text-blue-600"></p>
+      <p class="text-xs text-slate-400 mt-1">One-time · No subscription</p>
+    </div>
+
+    <!-- Features -->
+    <div class="px-6 pb-5 space-y-2">
+      <div class="flex items-center gap-2 text-sm text-slate-700">
+        <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+        </svg>
+        Instant access after payment
+      </div>
+      <div class="flex items-center gap-2 text-sm text-slate-700">
+        <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+        </svg>
+        Secure payment via Razorpay
+      </div>
+      <div class="flex items-center gap-2 text-sm text-slate-700">
+        <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+        </svg>
+        Invoice generated automatically
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="px-6 pb-6 space-y-2">
+      <button id="pgm-pay-btn" onclick="triggerToolPayment()"
+        class="w-full py-3 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors">
+        Pay <span id="pgm-btn-price"></span>
+      </button>
+      <button onclick="hidePaymentGateModal()"
+        class="w-full py-2.5 border border-slate-200 text-slate-600 text-sm font-medium rounded-xl hover:bg-slate-50 transition-colors">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>

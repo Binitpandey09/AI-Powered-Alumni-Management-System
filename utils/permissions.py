@@ -118,3 +118,90 @@ class ReadOnly(permissions.BasePermission):
     """
     def has_permission(self, request, view):
         return request.method in permissions.SAFE_METHODS
+
+
+class CanCreatePost(permissions.BasePermission):
+    """Only alumni and faculty can create posts. Students cannot."""
+    message = 'Only alumni and faculty can create posts.'
+
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            return request.user and request.user.is_authenticated
+        return (
+            request.user and
+            request.user.is_authenticated and
+            request.user.role in ['alumni', 'faculty']
+        )
+
+
+class IsPostAuthorOrAdmin(permissions.BasePermission):
+    """Only the post author or admin can edit/delete."""
+    message = 'Only the post author or an admin can perform this action.'
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return obj.author == request.user or request.user.role == 'admin'
+
+
+class CanHostSession(permissions.BasePermission):
+    """Only alumni and faculty can create/manage sessions."""
+    message = 'Only alumni and faculty can host sessions.'
+
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            return request.user and request.user.is_authenticated
+        return (
+            request.user and
+            request.user.is_authenticated and
+            request.user.role in ['alumni', 'faculty']
+        )
+
+
+class IsSessionHostOrAdmin(permissions.BasePermission):
+    """Only session host or admin can edit/cancel session."""
+    message = 'Only the session host or an admin can perform this action.'
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return obj.host == request.user or request.user.role == 'admin'
+
+
+class IsBookingOwner(permissions.BasePermission):
+    """Only the student who made the booking can view/cancel it."""
+    message = 'Only the booking owner or an admin can perform this action.'
+
+    def has_object_permission(self, request, view, obj):
+        return obj.student == request.user or request.user.role == 'admin'
+
+
+class CanPostReferral(permissions.BasePermission):
+    """Only alumni and faculty can create referrals. All authenticated users can read."""
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return request.user.role in ['alumni', 'faculty']
+
+
+class IsReferralAuthorOrAdmin(permissions.BasePermission):
+    """Only referral author or admin can edit/deactivate."""
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return obj.posted_by == request.user or request.user.role == 'admin'
+
+
+class IsApplicationOwnerOrReferralAuthor(permissions.BasePermission):
+    """Student who applied OR referral author can view/update application."""
+
+    def has_object_permission(self, request, view, obj):
+        return (
+            obj.student == request.user
+            or obj.referral.posted_by == request.user
+            or request.user.role == 'admin'
+        )

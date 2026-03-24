@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Invoice {{ invoice_number }} — AlumniAI{% endblock %}
+
+{% block extra_css %}
+<style>
+  @media print {
+    .no-print { display: none !important; }
+    body { background: white !important; }
+    .invoice-card { box-shadow: none !important; border: none !important; }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none no-print"></div>
+
+<!-- Top bar -->
+<div class="no-print bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between">
+  <a href="javascript:history.back()" class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors">
+    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+    </svg>
+    Back
+  </a>
+  <button onclick="window.print()"
+    class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors">
+    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+    </svg>
+    Print / Save PDF
+  </button>
+</div>
+
+<!-- Loading state -->
+<div id="invoice-loading" class="flex items-center justify-center min-h-[60vh]">
+  <div class="text-center">
+    <div class="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+    <p class="text-sm text-slate-500">Loading invoice…</p>
+  </div>
+</div>
+
+<!-- Error state -->
+<div id="invoice-error" class="hidden flex items-center justify-center min-h-[60vh]">
+  <div class="text-center">
+    <p class="text-slate-600 font-medium">Invoice not found</p>
+    <p class="text-slate-400 text-sm mt-1">This invoice may not exist or you don't have access.</p>
+  </div>
+</div>
+
+<!-- Invoice card -->
+<div id="invoice-card" class="hidden max-w-2xl mx-auto my-8 px-4">
+  <div class="invoice-card bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
+    <!-- Invoice header -->
+    <div class="px-8 pt-8 pb-6 flex items-start justify-between">
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <svg class="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M12 3L1 9l11 6 9-4.91V17M1 9v8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5 12.5v5a7 7 0 0014 0v-5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="text-lg font-bold text-blue-600">AlumniAI</span>
+        </div>
+        <p class="text-xs text-slate-400 uppercase tracking-widest font-medium">Tax Invoice</p>
+      </div>
+      <div class="text-right">
+        <p id="inv-number" class="text-xl font-bold text-slate-800 font-mono"></p>
+        <p id="inv-date" class="text-sm text-slate-500 mt-0.5"></p>
+      </div>
+    </div>
+
+    <div class="border-t border-slate-100 mx-8"></div>
+
+    <!-- Billed from / to -->
+    <div class="px-8 py-6 grid grid-cols-2 gap-6">
+      <div>
+        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Billed From</p>
+        <p class="text-sm font-semibold text-slate-800">AlumniAI Platform</p>
+        <p class="text-xs text-slate-500 mt-0.5">support@alumniai.in</p>
+        <p class="text-xs text-slate-500">alumniai.in</p>
+      </div>
+      <div>
+        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Billed To</p>
+        <p id="inv-payer-name" class="text-sm font-semibold text-slate-800"></p>
+        <p id="inv-payer-email" class="text-xs text-slate-500 mt-0.5"></p>
+      </div>
+    </div>
+
+    <div class="border-t border-slate-100 mx-8"></div>
+
+    <!-- Transaction details table -->
+    <div class="px-8 py-6">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-xs font-semibold text-slate-400 uppercase tracking-wide border-b border-slate-100">
+            <th class="pb-3 text-left">Description</th>
+            <th class="pb-3 text-center">Qty</th>
+            <th class="pb-3 text-right">Unit Price</th>
+            <th class="pb-3 text-right">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-b border-slate-50">
+            <td id="inv-description" class="py-4 text-slate-700"></td>
+            <td class="py-4 text-center text-slate-600">1</td>
+            <td id="inv-unit-price" class="py-4 text-right text-slate-700 font-mono"></td>
+            <td id="inv-total-col" class="py-4 text-right text-slate-700 font-mono font-semibold"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Subtotals -->
+    <div class="px-8 pb-6">
+      <div class="ml-auto max-w-xs space-y-2">
+        <div class="flex justify-between text-sm text-slate-600">
+          <span>Subtotal</span>
+          <span id="inv-subtotal" class="font-mono"></span>
+        </div>
+        <div id="inv-fee-row" class="hidden flex justify-between text-sm text-slate-500">
+          <span>Platform fee (30%)</span>
+          <span id="inv-platform-fee" class="font-mono"></span>
+        </div>
+        <div id="inv-payee-row" class="hidden flex justify-between text-sm text-slate-500">
+          <span>Amount to host</span>
+          <span id="inv-payee-amount" class="font-mono text-emerald-600"></span>
+        </div>
+        <div class="border-t border-slate-200 pt-2 flex justify-between text-base font-bold text-slate-800">
+          <span>Total Paid</span>
+          <span id="inv-total-paid" class="font-mono text-blue-600"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="border-t border-slate-100 mx-8"></div>
+
+    <!-- Payment details -->
+    <div class="px-8 py-6">
+      <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Payment Details</p>
+      <div class="grid grid-cols-2 gap-y-2 text-sm">
+        <span class="text-slate-500">Payment method</span>
+        <span class="text-slate-700 font-medium">Razorpay</span>
+        <span class="text-slate-500">Transaction ID</span>
+        <span id="inv-razorpay-id" class="text-slate-700 font-mono text-xs break-all"></span>
+        <span class="text-slate-500">Status</span>
+        <span class="inline-flex items-center gap-1 text-emerald-700 font-semibold text-xs">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+          </svg>
+          PAID
+        </span>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="bg-slate-50 px-8 py-5 text-center border-t border-slate-100">
+      <p class="text-sm font-medium text-slate-600">Thank you for using AlumniAI</p>
+      <p class="text-xs text-slate-400 mt-1">This is a computer-generated invoice and does not require a signature.</p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const INVOICE_NUMBER = '{{ invoice_number }}';
+</script>
+<script src="{% static 'js/api.js' %}"></script>
+<script src="{% static 'js/payments.js' %}"></script>
+{% endblock %}

@@ -181,55 +181,205 @@ async function apiCall(method, url, body) {
   return res.data;
 }
 
-// ── Header ────────────────────────────────────────────────────────────────────
+// ── Header (Naukri-style) ─────────────────────────────────────────────────────
+
 function renderHeader(data) {
   const u = data.user || {};
   const p = data.profile || {};
-  const edu = (data.educations || []).find(e => e.education_type === 'graduation') || {};
-  const pct = (data.profile_completeness || {}).percentage || 0;
-  const r = 44; const circ = 2 * Math.PI * r;
-  const dash = circ - (pct / 100) * circ;
-  const picSrc = u.profile_pic || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.first_name||'?')}&background=2563eb&color=fff&size=100`;
+  const educations = data.educations || [];
+  const completeness = data.profile_completeness || {};
 
-  document.getElementById('profile-header').innerHTML = `
-    <div class="flex flex-col sm:flex-row gap-6 items-start">
-      <div class="relative flex-shrink-0 cursor-pointer" onclick="document.getElementById('pic-file-input').click()">
-        <svg width="108" height="108" class="absolute top-0 left-0" style="transform:rotate(-90deg)">
-          <circle cx="54" cy="54" r="${r}" fill="none" stroke="#e2e8f0" stroke-width="5"/>
-          <circle cx="54" cy="54" r="${r}" fill="none" stroke="#2563eb" stroke-width="5"
-            stroke-dasharray="${circ}" stroke-dashoffset="${dash}" stroke-linecap="round"
-            style="transition:stroke-dashoffset 0.6s ease"/>
-        </svg>
-        <img id="header-pic" src="${picSrc}" alt="Profile"
-          class="w-24 h-24 rounded-full object-cover border-2 border-white shadow m-[6px]"
-          onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(u.first_name||'?')}&background=2563eb&color=fff&size=100'" />
-        <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">${pct}%</div>
-        <input id="pic-file-input" type="file" accept="image/jpeg,image/png" class="hidden" onchange="uploadProfilePic(this)" />
-      </div>
-      <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-2 flex-wrap">
-          <h1 class="text-xl font-extrabold text-slate-900">${esc(u.first_name)} ${esc(u.last_name)}</h1>
-          ${editBtn('openBasicInfoModal()')}
-        </div>
-        ${edu.degree ? `<p class="text-sm text-slate-600 mt-0.5">${esc(edu.degree)}${edu.specialization ? ' — ' + esc(edu.specialization) : ''}</p>` : ''}
-        ${edu.institute_name ? `<p class="text-sm text-slate-500">${esc(edu.institute_name)}</p>` : ''}
-        <div class="flex flex-wrap gap-3 mt-2 text-xs text-slate-500">
-          ${p.current_location ? `<span>📍 ${esc(p.current_location)}</span>` : ''}
-          ${u.phone ? `<span>📞 ${esc(u.phone)}</span>` : ''}
-          ${u.email ? `<span>✉️ ${esc(u.email)}</span>` : ''}
-          ${p.date_of_birth ? `<span>🎂 ${esc(p.date_of_birth)}</span>` : ''}
-          ${p.gender ? `<span class="capitalize">${esc(p.gender)}</span>` : ''}
-        </div>
-      </div>
-    </div>`;
+  // 1. Name
+  const fullName = (u.first_name + ' ' + u.last_name).trim() || u.email || '';
+  const nameEl = document.getElementById('profile-header-name');
+  if (nameEl) nameEl.textContent = fullName;
+
+  // 2. Degree line — first graduation entry
+  const gradEdu = educations.find(e => e.education_type === 'graduation');
+  const degreeEl = document.getElementById('profile-header-degree');
+  if (degreeEl) {
+    if (gradEdu && gradEdu.degree) {
+      degreeEl.textContent = [gradEdu.degree, gradEdu.specialization].filter(Boolean).join(' - ');
+      degreeEl.style.color = '#475569';
+      degreeEl.style.cursor = 'default';
+    } else {
+      degreeEl.textContent = '+ Add your education';
+      degreeEl.style.color = '#2563eb';
+      degreeEl.style.cursor = 'pointer';
+      degreeEl.onclick = () => openEducationModal(null);
+    }
+  }
+
+  // 3. College line
+  const collegeEl = document.getElementById('profile-header-college');
+  if (collegeEl) {
+    const parts = [];
+    if (gradEdu && gradEdu.institute_name) parts.push(gradEdu.institute_name);
+    if (u.college) parts.push(u.college);
+    collegeEl.textContent = parts.join(', ');
+  }
+
+  // 4. Info grid items
+  _setInfoItem('profile-header-location', p.current_location, 'Add location',
+    () => openBasicInfoModal());
+  _setInfoItem('profile-header-phone', u.phone, 'Add phone',
+    () => openBasicInfoModal());
+  _setInfoItem('profile-header-gender',
+    p.gender ? ({male:'Male',female:'Female',other:'Other',prefer_not_to_say:'Prefer not to say'}[p.gender] || p.gender) : null,
+    'Add gender', () => openBasicInfoModal());
+  _setInfoItem('profile-header-dob',
+    p.date_of_birth ? _formatDob(p.date_of_birth) : null,
+    'Add date of birth', () => openBasicInfoModal());
+
+  // Email — always show, always verified dot
+  const emailEl = document.getElementById('profile-header-email');
+  if (emailEl && u.email) {
+    const short = u.email.length > 22 ? u.email.substring(0, 22) + '…' : u.email;
+    emailEl.textContent = short;
+    emailEl.style.color = '#475569';
+  }
+  const emailDot = document.getElementById('profile-email-dot');
+  if (emailDot && u.email) emailDot.style.display = 'inline-block';
+
+  // 5. Profile picture
+  _renderHeaderPic(u);
+
+  // 6. Completeness ring
+  updateCompletenessRing(completeness.percentage || 0);
+
+  // 7. Missing details card
+  updateMissingDetailsCard(completeness);
+}
+
+function _setInfoItem(id, value, placeholder, onClickFn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (value) {
+    el.textContent = value;
+    el.style.color = '#475569';
+    el.style.cursor = 'default';
+    el.onclick = null;
+    el.classList.remove('info-add');
+  } else {
+    el.textContent = placeholder;
+    el.style.color = '#2563eb';
+    el.style.cursor = 'pointer';
+    el.onclick = onClickFn;
+    el.classList.add('info-add');
+  }
+}
+
+function _formatDob(dateStr) {
+  try {
+    const d = new Date(dateStr);
+    const months = ['January','February','March','April','May','June',
+                    'July','August','September','October','November','December'];
+    const day = d.getDate();
+    const suffix = day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th';
+    return `${day}${suffix} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  } catch { return dateStr; }
+}
+
+function _renderHeaderPic(u) {
+  const inner = document.getElementById('profile-pic-inner');
+  if (!inner) return;
+  if (u.profile_pic) {
+    inner.innerHTML = `<img src="${esc(u.profile_pic)}?t=${Date.now()}" alt="Profile"
+      style="width:100%;height:100%;object-fit:cover;border-radius:50%;"
+      onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+      <span style="display:none;font-size:32px;font-weight:500;color:#2563eb;">
+        ${((u.first_name||'?')[0]).toUpperCase()}
+      </span>`;
+  } else {
+    const initials = ((u.first_name||'')[0]||'').toUpperCase() + ((u.last_name||'')[0]||'').toUpperCase() || '?';
+    inner.innerHTML = `<span id="profile-header-initials" style="font-size:32px;font-weight:500;color:#2563eb;">${initials}</span>`;
+  }
+}
+
+function updateCompletenessRing(pct) {
+  // r=54, circumference = 2 * PI * 54 ≈ 339.292
+  const circumference = 339.292;
+  const offset = circumference - (circumference * pct / 100);
+
+  const arc = document.getElementById('profile-ring-arc');
+  const pctEl = document.getElementById('profile-completeness-pct');
+  if (!arc || !pctEl) return;
+
+  arc.style.strokeDashoffset = offset;
+  arc.style.transition = 'stroke-dashoffset 0.6s ease';
+
+  let color = '#ef4444'; // red < 50
+  if (pct >= 80) color = '#22c55e';       // green
+  else if (pct >= 50) color = '#f97316';  // orange
+  arc.style.stroke = color;
+
+  pctEl.textContent = pct + '%';
+  pctEl.style.color = color;
+}
+
+function updateMissingDetailsCard(completeness) {
+  if (!completeness) return;
+
+  // The completeness API returns missing_fields (flat array) and percentage.
+  // Build a display list from missing_fields.
+  const missing = completeness.missing_fields || [];
+  const sectionLabels = {
+    basic_info: 'Basic Info', first_name: 'Full Name', phone: 'Phone Number',
+    college: 'College', education: 'Education', degree: 'Degree',
+    branch: 'Branch', graduation_year: 'Graduation Year',
+    skills: 'Key Skills', profile_summary: 'Profile Summary',
+    projects: 'Projects', internships: 'Internships',
+    certifications: 'Certifications', languages: 'Languages',
+    resume: 'Resume', resume_file: 'Resume',
+  };
+  // Section weights for display
+  const weights = {
+    resume_file: 20, skills: 15, degree: 10, branch: 10,
+    graduation_year: 10, phone: 8, college: 8,
+    first_name: 5, profile_summary: 5,
+  };
+
+  const countEl = document.getElementById('missing-details-count');
+  if (countEl) countEl.textContent = missing.length;
+
+  // Update top missing section name + boost in the card header
+  const topMissing = missing.sort((a, b) => (weights[b] || 3) - (weights[a] || 3))[0];
+  const nameEl = document.getElementById('missing-section-name');
+  const boostEl = document.getElementById('missing-section-boost');
+  if (nameEl && topMissing) {
+    nameEl.textContent = 'Add ' + (sectionLabels[topMissing] || topMissing.replace(/_/g, ' '));
+  }
+  if (boostEl && topMissing) {
+    boostEl.textContent = '↑ ' + (weights[topMissing] || 5) + '%';
+  }
 }
 
 async function uploadProfilePic(input) {
   const file = input.files[0]; if (!file) return;
-  const fd = new FormData(); fd.append('profile_pic', file);
+
+  // Validate
+  if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+    showToast('Please upload a JPG or PNG image.', 'error'); return;
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    showToast('Image must be under 2MB.', 'error'); return;
+  }
+
+  // Immediate preview
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const inner = document.getElementById('profile-pic-inner');
+    if (inner) {
+      inner.innerHTML = `<img src="${ev.target.result}" alt="Profile"
+        style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;
+    }
+  };
+  reader.readAsDataURL(file);
+
+  const fd = new FormData();
+  fd.append('profile_pic', file);
   const res = await apiFetch('/api/accounts/profile/picture/', { method: 'POST', body: fd });
   if (res.ok) {
-    document.getElementById('header-pic').src = res.data.profile_pic + '?t=' + Date.now();
     showToast('Profile picture updated', 'success');
   } else {
     showToast(Object.values(res.data || {}).flat().join(' ') || 'Upload failed', 'error');
@@ -239,6 +389,73 @@ async function uploadProfilePic(input) {
 function openBasicInfoModal() {
   const p = window.studentProfile.profile || {};
   const u = window.studentProfile.user || {};
+
+  // Pre-fill the dedicated basic-info modal (from Bit 1 HTML)
+  const modal = document.getElementById('basic-info-modal');
+  if (!modal) {
+    // Fallback: use shared modal
+    _openBasicInfoSharedModal(u, p);
+    return;
+  }
+
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  set('bi-first-name', u.first_name);
+  set('bi-last-name', u.last_name);
+  set('bi-gender', p.gender);
+  set('bi-dob', p.date_of_birth);
+  set('bi-location', p.current_location);
+  set('bi-phone', u.phone);
+
+  const errEl = document.getElementById('bi-error');
+  if (errEl) errEl.textContent = '';
+
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeBasicInfoModal() {
+  const modal = document.getElementById('basic-info-modal');
+  if (modal) modal.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+async function saveBasicInfo() {
+  const btn = document.getElementById('bi-save-btn');
+  const errEl = document.getElementById('bi-error');
+  if (errEl) errEl.textContent = '';
+
+  const firstName = (document.getElementById('bi-first-name')?.value || '').trim();
+  const lastName = (document.getElementById('bi-last-name')?.value || '').trim();
+  if (!firstName || !lastName) {
+    if (errEl) errEl.textContent = 'First name and last name are required.';
+    return;
+  }
+
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+
+  try {
+    // PATCH user fields + student profile fields in one call
+    await apiCall('PATCH', '/api/accounts/profile/basic/', {
+      first_name: firstName,
+      last_name: lastName,
+      phone: (document.getElementById('bi-phone')?.value || '').trim(),
+      gender: document.getElementById('bi-gender')?.value || '',
+      date_of_birth: document.getElementById('bi-dob')?.value || null,
+      current_location: (document.getElementById('bi-location')?.value || '').trim(),
+    });
+
+    closeBasicInfoModal();
+    await refreshSection('header');
+    showToast('Profile updated successfully', 'success');
+  } catch (e) {
+    if (errEl) errEl.textContent = e.message || 'Save failed.';
+  } finally {
+    if (btn) { btn.textContent = 'Save changes'; btn.disabled = false; }
+  }
+}
+
+// Fallback: open basic info inside the shared modal (if dedicated modal not in DOM)
+function _openBasicInfoSharedModal(u, p) {
   const body = `
     <div class="grid grid-cols-2 gap-3">
       <div><label class="label">First Name</label><input id="bi-first_name" class="inp" value="${esc(u.first_name||'')}"/></div>
@@ -256,33 +473,54 @@ function openBasicInfoModal() {
         </select>
       </div>
       <div><label class="label">Current Location</label><input id="bi-location" class="inp" value="${esc(p.current_location||'')}"/></div>
-    </div>`;
+    </div>
+    <div class="mt-3"><label class="label">College / University</label><input id="bi-college" class="inp" value="${esc(u.college||'')}"/></div>
+    <div class="grid grid-cols-2 gap-3 mt-3">
+      <div><label class="label">Degree</label><input id="bi-degree" class="inp" value="${esc(p.degree||'')}" placeholder="B.Tech, MCA…"/></div>
+      <div><label class="label">Branch</label><input id="bi-branch" class="inp" value="${esc(p.branch||'')}"/></div>
+    </div>
+    <div class="grid grid-cols-2 gap-3 mt-3">
+      <div><label class="label">Graduation Year</label><input id="bi-grad-year" type="number" class="inp" value="${esc(p.graduation_year||'')}" min="2000" max="2035"/></div>
+      <div><label class="label">GitHub URL</label><input id="bi-github" type="url" class="inp" value="${esc(p.github_url||'')}"/></div>
+    </div>
+    <div class="mt-3"><label class="label">Portfolio URL</label><input id="bi-portfolio" type="url" class="inp" value="${esc(p.portfolio_url||'')}"/></div>`;
   openModal('Edit Basic Info', body, async () => {
     await apiCall('PATCH', '/api/accounts/profile/basic/', {
       first_name: document.getElementById('bi-first_name').value,
       last_name: document.getElementById('bi-last_name').value,
       phone: document.getElementById('bi-phone').value,
-    });
-    await apiCall('PATCH', '/api/accounts/profile/student/', {
+      college: document.getElementById('bi-college').value,
       gender: document.getElementById('bi-gender').value,
       date_of_birth: document.getElementById('bi-dob').value || null,
       current_location: document.getElementById('bi-location').value,
+    });
+    const gradYear = document.getElementById('bi-grad-year').value;
+    await apiCall('PATCH', '/api/accounts/profile/student/', {
+      degree: document.getElementById('bi-degree').value,
+      branch: document.getElementById('bi-branch').value,
+      graduation_year: gradYear ? parseInt(gradYear) : null,
+      github_url: document.getElementById('bi-github').value,
+      portfolio_url: document.getElementById('bi-portfolio').value,
     });
     await refreshSection('header');
     showToast('Basic info updated', 'success');
   });
 }
 
-// ── Completeness ──────────────────────────────────────────────────────────────
+// ── Completeness (right sidebar card) ────────────────────────────────────────
 function renderCompleteness(data) {
   if (!data) return;
   const pct = data.percentage || 0;
-  const sections = data.sections || {};
-  const missing = Object.entries(sections).filter(([,v]) => !v.complete);
+  const missing = data.missing_fields || [];
   const el = document.getElementById('completeness-card');
   if (!el) return;
   const color = pct >= 80 ? 'text-emerald-600' : pct >= 50 ? 'text-amber-500' : 'text-red-500';
   const barColor = pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-400' : 'bg-red-400';
+  const sectionLabels = {
+    first_name:'Full Name', phone:'Phone', college:'College',
+    degree:'Degree', branch:'Branch', graduation_year:'Graduation Year',
+    skills:'Key Skills', resume_file:'Resume',
+  };
   el.innerHTML = `
     <div class="flex items-center justify-between mb-2">
       <span class="text-sm font-semibold text-slate-700">Profile Strength</span>
@@ -294,11 +532,10 @@ function renderCompleteness(data) {
     ${missing.length ? `
       <p class="text-xs text-slate-500 mb-2 font-medium">Complete these to boost your profile:</p>
       <ul class="space-y-1">
-        ${missing.slice(0,5).map(([k,v]) => `
+        ${missing.slice(0,5).map(k => `
           <li class="flex items-center gap-2 text-xs text-slate-600">
             <span class="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0"></span>
-            <span class="capitalize">${k.replace(/_/g,' ')}</span>
-            <span class="ml-auto text-blue-600 font-medium">+${v.weight}%</span>
+            <span>${sectionLabels[k] || k.replace(/_/g,' ')}</span>
           </li>`).join('')}
       </ul>` : `<p class="text-xs text-emerald-600 font-medium">🎉 Profile complete!</p>`}`;
 }
@@ -953,13 +1190,43 @@ async function deleteItem(endpoint, id, sectionKey) {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  // Close modal on overlay click
-  document.getElementById('modal-overlay').addEventListener('click', (e) => {
-    if (e.target === document.getElementById('modal-overlay')) closeModal();
+  // Shared section modal — close on overlay click / Escape
+  const overlay = document.getElementById('modal-overlay');
+  if (overlay) {
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeModal();
+      closeBasicInfoModal();
+    }
   });
-  // Close on Escape
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
-  // Sidebar scroll
+
+  // Basic info modal — close on backdrop click
+  const biModal = document.getElementById('basic-info-modal');
+  if (biModal) {
+    biModal.addEventListener('click', (e) => { if (e.target === biModal) closeBasicInfoModal(); });
+  }
+
+  // Camera icon → file input
+  const trigger = document.getElementById('profile-pic-upload-trigger');
+  const picInput = document.getElementById('profile-pic-file-input');
+  if (trigger && picInput) {
+    // onclick already set in HTML, but also wire change event here
+    picInput.addEventListener('change', () => uploadProfilePic(picInput));
+  }
+
+  // Jump-to anchor links — smooth scroll
+  document.querySelectorAll('.profile-jump-link').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const id = link.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  // Legacy data-scroll-to links (kept for safety)
   document.querySelectorAll('[data-scroll-to]').forEach(link => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
@@ -967,5 +1234,30 @@ document.addEventListener('DOMContentLoaded', () => {
       if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   });
+
+  initScrollSpy();
   loadFullProfile();
 });
+
+// ── Scroll spy for jump-to links ──────────────────────────────────────────────
+function initScrollSpy() {
+  const sections = document.querySelectorAll(
+    '#preferences-section,#education-section,#skills-section,#languages-section,' +
+    '#internships-section,#projects-section,#summary-section,#accomplishments-section,' +
+    '#exams-section,#employment-section,#resume-section'
+  );
+  const jumpLinks = document.querySelectorAll('.profile-jump-link');
+  if (!sections.length || !jumpLinks.length) return;
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        jumpLinks.forEach(l => l.classList.remove('active-jump'));
+        const active = document.querySelector('.profile-jump-link[href="#' + entry.target.id + '"]');
+        if (active) active.classList.add('active-jump');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+
+  sections.forEach(s => observer.observe(s));
+}

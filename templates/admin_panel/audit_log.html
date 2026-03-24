@@ -1,0 +1,89 @@
+{% extends "admin_panel/base_admin.html" %}
+{% block title %}Audit Log{% endblock %}
+{% block page_title %}Audit Log{% endblock %}
+{% block nav_audit %}active{% endblock %}
+
+{% block content %}
+<div style="background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+  <select id="filter-action" onchange="loadLog()" style="min-width:200px;">
+    <option value="">All Actions</option>
+    <option value="user_verified">User Verified</option>
+    <option value="user_suspended">User Suspended</option>
+    <option value="user_unsuspended">User Unsuspended</option>
+    <option value="user_deleted">User Deleted</option>
+    <option value="post_hidden">Post Hidden</option>
+    <option value="post_deleted">Post Deleted</option>
+    <option value="post_approved">Post Approved</option>
+    <option value="session_cancelled">Session Cancelled</option>
+    <option value="referral_deactivated">Referral Deactivated</option>
+    <option value="payout_approved">Payout Approved</option>
+    <option value="payout_processed">Payout Processed</option>
+    <option value="payout_rejected">Payout Rejected</option>
+    <option value="alumni_verified">Alumni Verified</option>
+    <option value="alumni_rejected">Alumni Rejected</option>
+    <option value="broadcast_sent">Broadcast Sent</option>
+  </select>
+  <button class="btn-primary" onclick="loadLog()">Filter</button>
+  <span style="font-size:13px;color:#64748B;margin-left:auto;" id="log-count"></span>
+</div>
+
+<div class="table-wrap">
+  <div id="log-body"><div style="padding:40px;text-align:center;color:#94A3B8;">Loading…</div></div>
+  <div style="padding:14px 20px;border-top:1px solid #E2E8F0;display:flex;align-items:center;justify-content:space-between;">
+    <button class="btn-ghost" id="btn-prev" onclick="changePage(-1)" disabled>← Prev</button>
+    <span style="font-size:13px;color:#64748B;" id="page-info">Page 1</span>
+    <button class="btn-ghost" id="btn-next" onclick="changePage(1)">Next →</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+let currentPage = 1;
+
+const ACTION_COLORS = {
+  user_verified: '#22C55E', user_suspended: '#EF4444', user_unsuspended: '#22C55E',
+  user_deleted: '#EF4444', post_hidden: '#F59E0B', post_deleted: '#EF4444',
+  post_approved: '#22C55E', session_cancelled: '#EF4444', referral_deactivated: '#EF4444',
+  payout_approved: '#22C55E', payout_processed: '#2563EB', payout_rejected: '#EF4444',
+  alumni_verified: '#22C55E', alumni_rejected: '#EF4444', broadcast_sent: '#8B5CF6',
+};
+
+async function loadLog(page = 1) {
+  currentPage = page;
+  const action = document.getElementById('filter-action').value;
+  let url = `/api/dashboard/admin/action-log/?page=${page}`;
+  if (action) url += `&action_type=${action}`;
+
+  document.getElementById('log-body').innerHTML = '<div style="padding:40px;text-align:center;color:#94A3B8;">Loading…</div>';
+  const r = await apiGet(url);
+  if (!r.ok) { showToast('Failed to load', 'error'); return; }
+
+  const { count, next, previous, results } = r.data;
+  document.getElementById('btn-prev').disabled = !previous;
+  document.getElementById('btn-next').disabled = !next;
+  setEl('page-info', `Page ${currentPage}`);
+  setEl('log-count', `${count} total entries`);
+
+  if (!results.length) { document.getElementById('log-body').innerHTML = '<div style="padding:40px;text-align:center;color:#94A3B8;">No log entries.</div>'; return; }
+
+  let html = `<table><thead><tr><th>Time</th><th>Admin</th><th>Action</th><th>Target User</th><th>Note</th></tr></thead><tbody>`;
+  for (const log of results) {
+    const color = ACTION_COLORS[log.action_type] || '#64748B';
+    html += `<tr style="border-left:3px solid ${color};">
+      <td style="font-size:12px;color:#64748B;white-space:nowrap;">${fmtDate(log.created_at)}</td>
+      <td style="font-size:13px;font-weight:600;">${log.admin_name || '—'}</td>
+      <td><span style="background:${color}22;color:${color};font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;">${log.action_type.replace(/_/g,' ')}</span></td>
+      <td style="font-size:13px;">${log.target_user_email || log.target_object_type || '—'}</td>
+      <td style="font-size:13px;color:#475569;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${log.note || ''}">${log.note || '—'}</td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  document.getElementById('log-body').innerHTML = html;
+}
+
+function changePage(dir) { loadLog(currentPage + dir); }
+
+loadLog();
+</script>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}My Profile — AlumniAI{% endblock %}
+
+{% block sidebar_links %}
+  {% include 'partials/sidebar_alumni.html' %}
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="max-w-2xl mx-auto">
+
+  <div class="mb-6">
+    <h1 class="text-2xl font-extrabold text-slate-900">My Profile</h1>
+    <p class="text-slate-500 text-sm mt-1">Manage your alumni profile and availability</p>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-2xl p-8 text-center">
+    <div class="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+      <svg class="w-7 h-7 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+      </svg>
+    </div>
+    <h2 class="text-base font-bold text-slate-800 mb-1">Alumni Profile Editor</h2>
+    <p class="text-sm text-slate-500 max-w-sm mx-auto">
+      A full profile editor for alumni — including availability, pricing, and skills — is coming soon.
+    </p>
+    <span class="inline-block mt-4 px-3 py-1 bg-blue-50 text-blue-600 text-xs font-semibold rounded-full">Coming soon</span>
+  </div>
+
+</div>
+{% endblock %}

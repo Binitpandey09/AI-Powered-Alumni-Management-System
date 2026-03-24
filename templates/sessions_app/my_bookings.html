@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load static %}
+{# ------------------------------------------------------------------ #}
+{# my_bookings.html — Student view: lists all session bookings         #}
+{# Tabs: All / Confirmed / Completed / Cancelled                       #}
+{# Data loaded via sessions.js → loadMyBookings()                      #}
+{# ------------------------------------------------------------------ #}
+{% block title %}My Bookings — AlumniAI{% endblock %}
+
+{% block content %}
+<div style="min-height:100vh;background:#F8FAFC">
+
+  <!-- Breadcrumb -->
+  <div style="background:white;border-bottom:1px solid #E2E8F0;padding:12px 24px">
+    <a href="/sessions/" style="font-size:14px;color:#2563EB;text-decoration:none">← Back to Sessions</a>
+  </div>
+
+  <!-- Header -->
+  <div style="padding:20px 24px 0;max-width:900px;margin:0 auto">
+    <h1 style="font-size:22px;font-weight:700;color:#0F172A;margin:0 0 2px">My Bookings</h1>
+    <p style="font-size:14px;color:#64748B;margin:0 0 20px">Track your booked sessions</p>
+
+    <!-- Filter tabs -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+      <button class="booking-tab active-tab" id="tab-all-bookings" data-filter="all"
+        style="padding:7px 16px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #2563EB;background:#2563EB;color:white">
+        All
+      </button>
+      <button class="booking-tab" id="tab-confirmed" data-filter="confirmed"
+        style="padding:7px 16px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #E2E8F0;background:white;color:#64748B">
+        Confirmed
+      </button>
+      <button class="booking-tab" id="tab-completed" data-filter="completed"
+        style="padding:7px 16px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #E2E8F0;background:white;color:#64748B">
+        Completed
+      </button>
+      <button class="booking-tab" id="tab-cancelled" data-filter="cancelled_by_student"
+        style="padding:7px 16px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #E2E8F0;background:white;color:#64748B">
+        Cancelled
+      </button>
+    </div>
+  </div>
+
+  <!-- Bookings list -->
+  <div id="bookings-container" style="max-width:900px;margin:0 auto;padding:0 24px 40px"></div>
+
+  <!-- Empty state -->
+  <div id="bookings-empty" style="display:none;text-align:center;padding:80px 20px">
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5" style="margin:0 auto 16px;display:block">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+      <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+    <p style="font-size:16px;color:#64748B;margin:0 0 12px">No bookings yet</p>
+    <a href="/sessions/" style="font-size:14px;color:#2563EB;font-weight:500;text-decoration:none">Browse Sessions →</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/sessions.js' %}?v={{ CACHE_BUST }}"></script>
+{% endblock %}

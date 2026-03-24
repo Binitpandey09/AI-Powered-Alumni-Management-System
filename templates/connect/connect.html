@@ -1,0 +1,443 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Connect — AlumniAI{% endblock %}
+
+{% block role_badge %}
+  <span class="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full">Student</span>
+{% endblock %}
+
+{% block sidebar_links %}
+  {% include 'partials/sidebar_student.html' %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .tab-pill { padding: 8px 20px; font-size: 0.875rem; font-weight: 500; border-radius: 9999px; border: 1.5px solid #2563eb; cursor: pointer; transition: all 0.15s; }
+  .tab-pill.active { background: #2563eb; color: #fff; }
+  .tab-pill:not(.active) { background: #fff; color: #2563eb; }
+  .tab-pill:not(.active):hover { background: #eff6ff; }
+  .filter-pill { padding: 4px 14px; font-size: 0.75rem; font-weight: 500; border-radius: 9999px; border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.15s; color: #475569; background: #fff; }
+  .filter-pill.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+  .filter-pill:not(.active):hover { border-color: #93c5fd; color: #2563eb; }
+  .alumni-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; transition: box-shadow 0.15s; }
+  .alumni-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+  .faculty-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; transition: box-shadow 0.15s; }
+  .faculty-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+  .skeleton-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="max-w-6xl mx-auto">
+
+  <!-- Page heading -->
+  <div class="mb-6">
+    <h1 class="text-2xl font-extrabold text-slate-900">Connect</h1>
+    <p class="text-slate-500 text-sm mt-1">Discover alumni mentors and faculty members from your network</p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-3 mb-6">
+    <button id="tab-alumni" class="tab-pill active" onclick="switchTab('alumni')">Alumni</button>
+    <button id="tab-faculty" class="tab-pill" onclick="switchTab('faculty')">Faculty</button>
+  </div>
+
+  <!-- ── ALUMNI TAB ── -->
+  <div id="panel-alumni">
+    <!-- Search + filters -->
+    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-4 mb-5">
+      <div class="flex flex-col sm:flex-row gap-3 mb-3">
+        <div class="relative flex-1">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input id="alumni-search" type="text" placeholder="Search alumni by name or company..."
+            class="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <input id="alumni-skill-filter" type="text" placeholder="Filter by skill..."
+          class="sm:w-44 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button onclick="setAlumniFilter('all')" class="filter-pill active" id="filter-all">All</button>
+        <button onclick="setAlumniFilter('available')" class="filter-pill" id="filter-available">Available for 1-on-1</button>
+      </div>
+    </div>
+
+    <!-- Alumni grid -->
+    <div id="alumni-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- Skeleton -->
+      {% for i in "123456" %}
+      <div class="skeleton-card animate-pulse">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-12 h-12 bg-slate-200 rounded-full flex-shrink-0"></div>
+          <div class="flex-1 space-y-1.5">
+            <div class="h-4 bg-slate-200 rounded w-3/4"></div>
+            <div class="h-3 bg-slate-200 rounded w-1/2"></div>
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <div class="h-3 bg-slate-200 rounded w-full"></div>
+          <div class="h-3 bg-slate-200 rounded w-2/3"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    <div id="alumni-pagination" class="flex items-center justify-center gap-3 mt-6 hidden">
+      <button id="alumni-prev" onclick="loadAlumni(alumniPage - 1)"
+        class="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">
+        ← Previous
+      </button>
+      <span id="alumni-page-info" class="text-sm text-slate-500"></span>
+      <button id="alumni-next" onclick="loadAlumni(alumniPage + 1)"
+        class="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">
+        Next →
+      </button>
+    </div>
+  </div>
+
+  <!-- ── FACULTY TAB ── -->
+  <div id="panel-faculty" class="hidden">
+    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-4 mb-5">
+      <div class="relative">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input id="faculty-search" type="text" placeholder="Search faculty by name or department..."
+          class="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+      </div>
+    </div>
+
+    <div id="faculty-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- Skeleton -->
+      {% for i in "123456" %}
+      <div class="skeleton-card animate-pulse">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-12 h-12 bg-slate-200 rounded-full flex-shrink-0"></div>
+          <div class="flex-1 space-y-1.5">
+            <div class="h-4 bg-slate-200 rounded w-3/4"></div>
+            <div class="h-3 bg-slate-200 rounded w-1/2"></div>
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <div class="h-3 bg-slate-200 rounded w-full"></div>
+          <div class="h-3 bg-slate-200 rounded w-2/3"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    <div id="faculty-pagination" class="flex items-center justify-center gap-3 mt-6 hidden">
+      <button id="faculty-prev" onclick="loadFaculty(facultyPage - 1)"
+        class="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">
+        ← Previous
+      </button>
+      <span id="faculty-page-info" class="text-sm text-slate-500"></span>
+      <button id="faculty-next" onclick="loadFaculty(facultyPage + 1)"
+        class="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">
+        Next →
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Alumni Profile Modal ── -->
+<div id="alumni-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+      <h3 class="text-base font-bold text-slate-900">Alumni Profile</h3>
+      <button onclick="closeAlumniModal()" class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div id="alumni-modal-body" class="px-6 py-5"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block dashboard_js %}
+<script>
+let alumniPage = 1;
+let alumniFilter = 'all';
+let alumniSearchTimer = null;
+
+function switchTab(tab) {
+  document.getElementById('panel-alumni').classList.toggle('hidden', tab !== 'alumni');
+  document.getElementById('panel-faculty').classList.toggle('hidden', tab !== 'faculty');
+  document.getElementById('tab-alumni').classList.toggle('active', tab === 'alumni');
+  document.getElementById('tab-faculty').classList.toggle('active', tab === 'faculty');
+}
+
+function setAlumniFilter(filter) {
+  alumniFilter = filter;
+  document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+  document.getElementById('filter-' + filter).classList.add('active');
+  loadAlumni(1);
+}
+
+async function loadAlumni(page) {
+  alumniPage = page;
+  const search = document.getElementById('alumni-search').value.trim();
+  const skill = document.getElementById('alumni-skill-filter').value.trim();
+  const available = alumniFilter === 'available' ? '&available=true' : '';
+
+  const params = new URLSearchParams({ page });
+  if (search) params.set('search', search);
+  if (skill) params.set('skill', skill);
+  if (alumniFilter === 'available') params.set('available', 'true');
+
+  const grid = document.getElementById('alumni-grid');
+  grid.innerHTML = Array(6).fill(0).map(() => `
+    <div class="skeleton-card animate-pulse">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-12 h-12 bg-slate-200 rounded-full flex-shrink-0"></div>
+        <div class="flex-1 space-y-1.5">
+          <div class="h-4 bg-slate-200 rounded w-3/4"></div>
+          <div class="h-3 bg-slate-200 rounded w-1/2"></div>
+        </div>
+      </div>
+      <div class="space-y-1.5">
+        <div class="h-3 bg-slate-200 rounded w-full"></div>
+        <div class="h-3 bg-slate-200 rounded w-2/3"></div>
+      </div>
+    </div>`).join('');
+
+  const res = await apiFetch('/api/accounts/alumni/?' + params.toString());
+  if (!res.ok) {
+    grid.innerHTML = '<p class="col-span-full text-center text-slate-400 py-12">Failed to load alumni.</p>';
+    return;
+  }
+
+  const { results, total, has_next } = res.data;
+
+  if (!results || results.length === 0) {
+    grid.innerHTML = `
+      <div class="col-span-full text-center py-16">
+        <svg class="w-12 h-12 text-slate-200 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        <p class="text-slate-400 text-sm font-medium">No alumni found</p>
+        <p class="text-slate-300 text-xs mt-1">Try adjusting your search or filters</p>
+      </div>`;
+    document.getElementById('alumni-pagination').classList.add('hidden');
+    return;
+  }
+
+  grid.innerHTML = results.map(a => {
+    const initials = ((a.first_name || '?')[0]).toUpperCase();
+    const picHtml = a.profile_pic
+      ? `<img src="${a.profile_pic}" alt="" class="w-12 h-12 rounded-full object-cover flex-shrink-0" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+         <div class="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold flex-shrink-0" style="display:none">${initials}</div>`
+      : `<div class="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">${initials}</div>`;
+
+    const skills = (a.skills || []).slice(0, 3).map(s =>
+      `<span class="inline-block px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-full">${s}</span>`
+    ).join('');
+
+    const availBadge = a.is_available_for_1on1
+      ? `<span class="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
+           <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span> Available
+         </span>`
+      : '';
+
+    return `
+      <div class="alumni-card cursor-pointer" onclick="openAlumniModal(${a.user_id})">
+        <div class="flex items-start gap-3 mb-3">
+          <div class="flex-shrink-0 relative">${picHtml}</div>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-slate-900 text-sm truncate">${a.full_name}</p>
+            ${a.designation ? `<p class="text-xs text-slate-500 truncate">${a.designation}${a.company ? ' @ ' + a.company : ''}</p>` : ''}
+            ${a.college ? `<p class="text-xs text-slate-400 truncate">${a.college}</p>` : ''}
+          </div>
+        </div>
+        ${skills ? `<div class="flex flex-wrap gap-1 mb-3">${skills}${(a.skills||[]).length > 3 ? `<span class="text-xs text-slate-400">+${a.skills.length - 3}</span>` : ''}</div>` : ''}
+        <div class="flex items-center justify-between">
+          ${availBadge}
+          ${a.is_available_for_1on1 && a.price_per_30min > 0
+            ? `<span class="text-xs text-slate-500">From ₹${a.price_per_30min}/30min</span>`
+            : '<span></span>'}
+          <button class="text-xs text-blue-600 font-medium hover:underline">View Profile →</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  // Pagination
+  const pag = document.getElementById('alumni-pagination');
+  const info = document.getElementById('alumni-page-info');
+  const prev = document.getElementById('alumni-prev');
+  const next = document.getElementById('alumni-next');
+  pag.classList.toggle('hidden', total <= 12);
+  info.textContent = `Page ${page}`;
+  prev.disabled = page <= 1;
+  next.disabled = !has_next;
+}
+
+async function openAlumniModal(userId) {
+  const modal = document.getElementById('alumni-modal');
+  const body = document.getElementById('alumni-modal-body');
+  modal.classList.remove('hidden');
+  body.innerHTML = '<div class="animate-pulse space-y-3"><div class="h-16 bg-slate-200 rounded-lg"></div><div class="h-4 bg-slate-200 rounded w-3/4"></div><div class="h-4 bg-slate-200 rounded w-1/2"></div></div>';
+
+  const res = await apiFetch(`/api/accounts/alumni/${userId}/`);
+  if (!res.ok) {
+    body.innerHTML = '<p class="text-red-500 text-sm">Failed to load profile.</p>';
+    return;
+  }
+
+  const a = res.data;
+  const initials = ((a.first_name || '?')[0]).toUpperCase();
+  const picHtml = a.profile_pic
+    ? `<img src="${a.profile_pic}" alt="" class="w-16 h-16 rounded-full object-cover" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+       <div class="w-16 h-16 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg font-bold" style="display:none">${initials}</div>`
+    : `<div class="w-16 h-16 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg font-bold">${initials}</div>`;
+
+  const skills = (a.skills || []).map(s =>
+    `<span class="inline-block px-2.5 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-full">${s}</span>`
+  ).join('');
+
+  body.innerHTML = `
+    <div class="flex items-center gap-4 mb-4">
+      ${picHtml}
+      <div>
+        <h4 class="font-bold text-slate-900">${a.full_name}</h4>
+        ${a.designation ? `<p class="text-sm text-slate-600">${a.designation}${a.company ? ' @ ' + a.company : ''}</p>` : ''}
+        ${a.college ? `<p class="text-xs text-slate-400">${a.college}${a.batch_year ? ' · ' + a.batch_year : ''}</p>` : ''}
+      </div>
+    </div>
+    ${a.bio ? `<p class="text-sm text-slate-600 mb-4">${a.bio}</p>` : ''}
+    ${skills ? `<div class="flex flex-wrap gap-1.5 mb-4">${skills}</div>` : ''}
+    <div class="space-y-2 text-sm text-slate-600 mb-4">
+      ${a.years_of_experience ? `<p><span class="font-medium text-slate-700">Experience:</span> ${a.years_of_experience} year${a.years_of_experience !== 1 ? 's' : ''}</p>` : ''}
+      ${a.linkedin_url ? `<p><a href="${a.linkedin_url}" target="_blank" class="text-blue-600 hover:underline">LinkedIn Profile ↗</a></p>` : ''}
+    </div>
+    ${a.is_available_for_1on1 ? `
+      <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+        <p class="text-sm font-semibold text-emerald-800 mb-2">Available for 1-on-1 Sessions</p>
+        <div class="flex gap-3">
+          ${a.price_per_30min > 0 ? `<div class="flex-1 bg-white border border-emerald-200 rounded-lg p-3 text-center"><p class="text-xs text-slate-500">30 min</p><p class="font-bold text-slate-900">₹${a.price_per_30min}</p></div>` : ''}
+          ${a.price_per_60min > 0 ? `<div class="flex-1 bg-white border border-emerald-200 rounded-lg p-3 text-center"><p class="text-xs text-slate-500">60 min</p><p class="font-bold text-slate-900">₹${a.price_per_60min}</p></div>` : ''}
+        </div>
+        <button class="mt-3 w-full py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors" onclick="showToast('Session booking coming soon', 'info')">
+          Book a Session
+        </button>
+      </div>` : ''}`;
+}
+
+function closeAlumniModal() {
+  document.getElementById('alumni-modal').classList.add('hidden');
+}
+
+// ── Faculty ──────────────────────────────────────────────────────────────────
+let facultyPage = 1;
+let facultySearchTimer = null;
+
+async function loadFaculty(page) {
+  facultyPage = page;
+  const search = document.getElementById('faculty-search').value.trim();
+  const params = new URLSearchParams({ page });
+  if (search) params.set('search', search);
+
+  const grid = document.getElementById('faculty-grid');
+  grid.innerHTML = Array(6).fill(0).map(() => `
+    <div class="skeleton-card animate-pulse">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-12 h-12 bg-slate-200 rounded-full flex-shrink-0"></div>
+        <div class="flex-1 space-y-1.5">
+          <div class="h-4 bg-slate-200 rounded w-3/4"></div>
+          <div class="h-3 bg-slate-200 rounded w-1/2"></div>
+        </div>
+      </div>
+      <div class="space-y-1.5">
+        <div class="h-3 bg-slate-200 rounded w-full"></div>
+        <div class="h-3 bg-slate-200 rounded w-2/3"></div>
+      </div>
+    </div>`).join('');
+
+  const res = await apiFetch('/api/accounts/faculty/?' + params.toString());
+  if (!res.ok) {
+    grid.innerHTML = '<p class="col-span-full text-center text-slate-400 py-12">Failed to load faculty.</p>';
+    return;
+  }
+
+  const { results, total, has_next } = res.data;
+
+  if (!results || results.length === 0) {
+    grid.innerHTML = `
+      <div class="col-span-full text-center py-16">
+        <svg class="w-12 h-12 text-slate-200 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+        <p class="text-slate-400 text-sm font-medium">No faculty found</p>
+        <p class="text-slate-300 text-xs mt-1">Try adjusting your search</p>
+      </div>`;
+    document.getElementById('faculty-pagination').classList.add('hidden');
+    return;
+  }
+
+  grid.innerHTML = results.map(f => {
+    const initials = ((f.first_name || '?')[0]).toUpperCase();
+    const picHtml = f.profile_pic
+      ? `<img src="${f.profile_pic}" alt="" class="w-12 h-12 rounded-full object-cover flex-shrink-0" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+         <div class="w-12 h-12 rounded-full bg-teal-600 text-white flex items-center justify-center text-sm font-bold flex-shrink-0" style="display:none">${initials}</div>`
+      : `<div class="w-12 h-12 rounded-full bg-teal-600 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">${initials}</div>`;
+
+    const subjects = (f.subjects || []).slice(0, 3).map(s =>
+      `<span class="inline-block px-2 py-0.5 bg-teal-50 text-teal-700 text-xs rounded-full border border-teal-100">${s}</span>`
+    ).join('');
+
+    return `
+      <div class="faculty-card">
+        <div class="flex items-start gap-3 mb-3">
+          <div class="flex-shrink-0 relative">${picHtml}</div>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-slate-900 text-sm truncate">${f.full_name}</p>
+            ${f.designation ? `<p class="text-xs text-slate-500 truncate">${f.designation}</p>` : ''}
+            ${f.department ? `<p class="text-xs text-teal-600 truncate">${f.department}</p>` : ''}
+            ${f.college ? `<p class="text-xs text-slate-400 truncate">${f.college}</p>` : ''}
+          </div>
+        </div>
+        ${subjects ? `<div class="flex flex-wrap gap-1 mb-3">${subjects}${(f.subjects||[]).length > 3 ? `<span class="text-xs text-slate-400">+${f.subjects.length - 3}</span>` : ''}</div>` : ''}
+        <div class="flex justify-end">
+          <a href="/faculty/${f.user_id}/" class="text-xs text-teal-600 font-medium hover:underline">View Profile →</a>
+        </div>
+      </div>`;
+  }).join('');
+
+  // Pagination
+  const pag = document.getElementById('faculty-pagination');
+  const info = document.getElementById('faculty-page-info');
+  const prev = document.getElementById('faculty-prev');
+  const next = document.getElementById('faculty-next');
+  pag.classList.toggle('hidden', total <= 12);
+  info.textContent = `Page ${page}`;
+  prev.disabled = page <= 1;
+  next.disabled = !has_next;
+}
+
+// Search with debounce
+document.addEventListener('DOMContentLoaded', () => {
+  loadAlumni(1);
+  loadFaculty(1);
+
+  document.getElementById('alumni-search').addEventListener('input', () => {
+    clearTimeout(alumniSearchTimer);
+    alumniSearchTimer = setTimeout(() => loadAlumni(1), 400);
+  });
+
+  document.getElementById('alumni-skill-filter').addEventListener('input', () => {
+    clearTimeout(alumniSearchTimer);
+    alumniSearchTimer = setTimeout(() => loadAlumni(1), 400);
+  });
+
+  document.getElementById('faculty-search').addEventListener('input', () => {
+    clearTimeout(facultySearchTimer);
+    facultySearchTimer = setTimeout(() => loadFaculty(1), 400);
+  });
+
+  // Close modal on backdrop click
+  document.getElementById('alumni-modal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('alumni-modal')) closeAlumniModal();
+  });
+});
+</script>
+{% endblock %}

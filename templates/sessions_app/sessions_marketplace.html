@@ -1,0 +1,223 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+{% block title %}Mentorship Sessions — AlumniAI{% endblock %}
+
+{% block extra_css %}
+<style>
+.tab-pill{padding:7px 16px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #E2E8F0;color:#64748B;background:white;transition:all .15s;white-space:nowrap}
+.tab-pill.active-tab{background:#2563EB;color:white;border-color:#2563EB}
+.topic-pill{display:inline-block;padding:4px 10px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid #E2E8F0;color:#64748B;background:white;margin:2px;transition:all .15s}
+.topic-pill.active{background:#EFF6FF;color:#2563EB;border-color:#BFDBFE}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.step-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+.step-dot.active{background:#2563EB;color:white}
+.step-dot.future{background:#E2E8F0;color:#94A3B8}
+.step-line{flex:1;height:2px;background:#E2E8F0;margin:0 4px}
+.form-input{width:100%;border:1px solid #E2E8F0;border-radius:8px;padding:9px 12px;font-size:14px;outline:none;box-sizing:border-box}
+.form-input:focus{border-color:#2563EB;box-shadow:0 0 0 3px #EFF6FF}
+.form-label{display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:5px}
+.sessions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:1100px){.sessions-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.sessions-grid{grid-template-columns:1fr}}
+.session-card{background:white;border:1px solid #E2E8F0;border-radius:14px;overflow:hidden;cursor:pointer;transition:box-shadow .15s,transform .15s}
+.session-card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.1);transform:translateY(-2px)}
+.seats-bar-track{height:4px;background:#E2E8F0;border-radius:2px;overflow:hidden;margin-bottom:6px}
+.seats-bar-fill{height:100%;border-radius:2px;transition:width .3s}
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div style="max-width:1200px;margin:0 auto">
+
+  <!-- Page header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1 style="font-size:22px;font-weight:700;color:#0F172A;margin:0 0 2px">Mentorship Sessions</h1>
+      <p style="font-size:14px;color:#64748B;margin:0">Learn from verified alumni and faculty</p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <input id="session-search" type="text" placeholder="Search sessions..."
+        style="border:1px solid #E2E8F0;border-radius:8px;padding:8px 14px;font-size:13px;outline:none;width:220px"
+        onfocus="this.style.borderColor='#2563EB'" onblur="this.style.borderColor='#E2E8F0'">
+      {% if can_host %}
+      <button id="host-session-btn"
+        style="background:#2563EB;color:white;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">
+        + Host a Session
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Stats bar -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+    <div style="background:white;border:1px solid #E2E8F0;border-radius:12px;padding:14px 16px">
+      <div style="font-size:11px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Total Sessions</div>
+      <div id="stat-total" style="font-size:22px;font-weight:700;color:#0F172A">—</div>
+    </div>
+    <div style="background:white;border:1px solid #E2E8F0;border-radius:12px;padding:14px 16px">
+      <div style="font-size:11px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Group Sessions</div>
+      <div id="stat-group" style="font-size:22px;font-weight:700;color:#2563EB">—</div>
+    </div>
+    <div style="background:white;border:1px solid #E2E8F0;border-radius:12px;padding:14px 16px">
+      <div style="font-size:11px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">1:1 Sessions</div>
+      <div id="stat-1on1" style="font-size:22px;font-weight:700;color:#534AB7">—</div>
+    </div>
+    <div style="background:white;border:1px solid #E2E8F0;border-radius:12px;padding:14px 16px">
+      <div style="font-size:11px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Free Sessions</div>
+      <div id="stat-free" style="font-size:22px;font-weight:700;color:#0F6E56">—</div>
+    </div>
+  </div>
+
+  <!-- Filters row -->
+  <div style="background:white;border:1px solid #E2E8F0;border-radius:12px;padding:16px;margin-bottom:16px">
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="tab-pill active-tab" id="tab-all" data-filter="">All</button>
+        <button class="tab-pill" id="tab-group" data-filter="group">Group</button>
+        <button class="tab-pill" id="tab-one_on_one" data-filter="one_on_one">1:1</button>
+        <button class="tab-pill" id="tab-cohort" data-filter="cohort">Cohort</button>
+        <button class="tab-pill" id="tab-doubt" data-filter="doubt">Doubt class</button>
+        <button class="tab-pill" id="tab-recorded" data-filter="recorded">Recorded</button>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:#374151;cursor:pointer">
+          <input type="checkbox" id="filter-free"> Free only
+        </label>
+        <select id="sessions-sort"
+          style="border:1px solid #E2E8F0;border-radius:8px;padding:6px 10px;font-size:13px;color:#374151;outline:none;cursor:pointer">
+          <option value="scheduled_at">Soonest first</option>
+          <option value="price">Price: low to high</option>
+          <option value="-price">Price: high to low</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:2px;align-items:center">
+      <span style="font-size:12px;color:#94A3B8;margin-right:4px">Topics:</span>
+      <span class="topic-pill" data-niche="DSA">#DSA</span>
+      <span class="topic-pill" data-niche="Interview Prep">#Interview Prep</span>
+      <span class="topic-pill" data-niche="System Design">#System Design</span>
+      <span class="topic-pill" data-niche="Web Dev">#Web Dev</span>
+      <span class="topic-pill" data-niche="Python">#Python</span>
+      <span class="topic-pill" data-niche="React">#React</span>
+      <span class="topic-pill" data-niche="GATE">#GATE</span>
+      <span class="topic-pill" data-niche="ML">#ML</span>
+      <span class="topic-pill" data-niche="Career">#Career</span>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <span id="sessions-count" style="font-size:13px;color:#64748B">Loading sessions...</span>
+    <a id="clear-filters-link" href="#" style="font-size:13px;color:#94A3B8;text-decoration:none">Clear filters</a>
+  </div>
+
+  <div id="sessions-grid" class="sessions-grid"></div>
+
+  <div id="sessions-empty" style="display:none;text-align:center;padding:60px 20px">
+    <div style="font-size:40px;margin-bottom:12px">&#128197;</div>
+    <p style="font-size:15px;color:#64748B;margin-bottom:8px">No sessions found matching your filters.</p>
+    <a href="#" id="empty-clear-link" style="font-size:14px;color:#2563EB">Clear filters</a>
+  </div>
+
+  <div style="text-align:center;margin-top:24px">
+    <button id="load-more-btn" style="display:none;border:1px solid #2563EB;color:#2563EB;background:white;border-radius:8px;padding:10px 28px;font-size:14px;font-weight:500;cursor:pointer">
+      Load more sessions
+    </button>
+  </div>
+</div>
+
+<!-- CREATE SESSION MODAL -->
+<div id="create-session-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;align-items:center;justify-content:center">
+  <div style="background:white;border-radius:16px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;margin:16px">
+    <div style="padding:20px 24px;border-bottom:1px solid #E2E8F0;display:flex;align-items:center;justify-content:space-between">
+      <h3 style="font-size:18px;font-weight:600;color:#0F172A;margin:0">Host a session</h3>
+      <button id="close-create-modal" style="background:none;border:none;font-size:20px;color:#94A3B8;cursor:pointer;line-height:1">&#215;</button>
+    </div>
+    <div style="padding:16px 24px;border-bottom:1px solid #F1F5F9;display:flex;align-items:center">
+      <div class="step-dot active" id="dot-1">1</div>
+      <div class="step-line" id="line-1"></div>
+      <div class="step-dot future" id="dot-2">2</div>
+      <div class="step-line" id="line-2"></div>
+      <div class="step-dot future" id="dot-3">3</div>
+    </div>
+    <div id="step-1" style="padding:24px">
+      <div style="margin-bottom:14px"><label class="form-label">Session type *</label>
+        <select id="session-type-select" class="form-input">
+          <option value="group">Group Session</option><option value="one_on_one">1:1 Session</option>
+          <option value="cohort">Cohort Bundle</option><option value="doubt">Doubt Clearing Class</option>
+          <option value="project">Project Guidance</option><option value="career">Career Path Guidance</option>
+          <option value="recorded">Recorded Session</option>
+        </select>
+      </div>
+      <div style="margin-bottom:14px"><label class="form-label">Session title *</label><input id="session-title" class="form-input" type="text" placeholder="e.g. DSA Masterclass for FAANG"></div>
+      <div style="margin-bottom:14px"><label class="form-label">Description *</label><textarea id="session-description" class="form-input" rows="4" placeholder="What will students learn?"></textarea></div>
+      <div style="margin-bottom:14px"><label class="form-label">Topic / Niche</label><input id="session-niche" class="form-input" type="text" placeholder="e.g. DSA, Interview Prep, Web Dev"></div>
+      <div style="margin-bottom:20px"><label class="form-label">Skills covered</label><input id="session-skills" class="form-input" type="text" placeholder="Python, LeetCode, DP (comma separated)"></div>
+      <button id="step1-next" onclick="showStep(2)" style="width:100%;background:#2563EB;color:white;border:none;border-radius:8px;padding:10px;font-size:14px;font-weight:600;cursor:pointer">Next &#8594;</button>
+    </div>
+    <div id="step-2" style="padding:24px;display:none">
+      <div style="margin-bottom:14px"><label class="form-label">Date &amp; Time *</label><input id="session-datetime" class="form-input" type="datetime-local"></div>
+      <div style="margin-bottom:14px"><label class="form-label">Duration</label>
+        <select id="session-duration" class="form-input"><option value="30">30 minutes</option><option value="60" selected>60 minutes</option><option value="90">90 minutes</option><option value="120">120 minutes</option></select>
+      </div>
+      <div style="margin-bottom:14px"><label class="form-label">Max seats</label><input id="session-max-seats" class="form-input" type="number" value="10" min="1"></div>
+      <div style="margin-bottom:14px;display:flex;align-items:center;gap:10px"><label class="form-label" style="margin:0">Free session</label><input type="checkbox" id="session-is-free" onchange="document.getElementById('price-field').style.display=this.checked?'none':'block'"></div>
+      <div id="price-field" style="margin-bottom:14px"><label class="form-label">Price per seat (&#8377;) *</label><input id="session-price" class="form-input" type="number" placeholder="e.g. 499" min="1"></div>
+      <div style="margin-bottom:20px"><label class="form-label">Co-host email (optional)</label><input id="cohost-email" class="form-input" type="email" placeholder="Co-host email (alumni or faculty)"></div>
+      <div style="display:flex;gap:8px">
+        <button onclick="showStep(1)" style="flex:1;background:white;color:#374151;border:1px solid #E2E8F0;border-radius:8px;padding:10px;font-size:14px;font-weight:500;cursor:pointer">&#8592; Back</button>
+        <button id="step2-next" onclick="showStep(3)" style="flex:2;background:#2563EB;color:white;border:none;border-radius:8px;padding:10px;font-size:14px;font-weight:600;cursor:pointer">Next &#8594;</button>
+      </div>
+    </div>
+    <div id="step-3" style="padding:24px;display:none">
+      <h4 style="font-size:15px;font-weight:600;color:#0F172A;margin:0 0 16px">Review your session</h4>
+      <div id="session-summary" style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:16px;margin-bottom:20px;font-size:13px;line-height:1.8"></div>
+      <div id="create-modal-error" style="display:none;color:#DC2626;font-size:13px;margin-bottom:12px;padding:10px;background:#FEF2F2;border-radius:8px"></div>
+      <div style="display:flex;gap:8px">
+        <button onclick="showStep(2)" style="flex:1;background:white;color:#374151;border:1px solid #E2E8F0;border-radius:8px;padding:10px;font-size:14px;font-weight:500;cursor:pointer">&#8592; Back</button>
+        <button id="publish-session-btn" style="flex:2;background:#2563EB;color:white;border:none;border-radius:8px;padding:10px;font-size:14px;font-weight:600;cursor:pointer">Publish Session</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOOKING CONFIRM MODAL -->
+<div id="booking-confirm-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;align-items:center;justify-content:center">
+  <div style="background:white;border-radius:16px;width:100%;max-width:400px;padding:24px;margin:16px">
+    <h3 style="font-size:18px;font-weight:600;color:#0F172A;margin:0 0 16px">Confirm Booking</h3>
+    <div style="font-size:14px;color:#374151;line-height:2">
+      <div><span style="color:#64748B">Session:</span> <span id="confirm-session-title" style="font-weight:500"></span></div>
+      <div><span style="color:#64748B">Host:</span> <span id="confirm-host-name"></span></div>
+      <div><span style="color:#64748B">Date:</span> <span id="confirm-session-date"></span></div>
+      <div><span style="color:#64748B">Amount:</span> <span id="confirm-amount" style="font-weight:600;color:#2563EB"></span></div>
+    </div>
+    <hr style="border:none;border-top:1px solid #F1F5F9;margin:16px 0">
+    <div style="display:flex;gap:8px">
+      <button onclick="document.getElementById('booking-confirm-modal').style.display='none'" style="flex:1;background:white;color:#374151;border:1px solid #E2E8F0;border-radius:8px;padding:10px;font-size:14px;cursor:pointer">Cancel</button>
+      <button id="confirm-proceed-btn" style="flex:2;background:#2563EB;color:white;border:none;border-radius:8px;padding:10px;font-size:14px;font-weight:600;cursor:pointer">Proceed to Payment</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block dashboard_js %}
+<script src="{% static 'js/sessions.js' %}?v={{ CACHE_BUST }}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  // Update stats bar after initial load
+  setTimeout(updateStatsBar, 800);
+});
+async function updateStatsBar() {
+  const el = id => document.getElementById(id);
+  const [ra, rg, r1, rf] = await Promise.all([
+    apiGet("/api/sessions/?page=1"),
+    apiGet("/api/sessions/?type=group&page=1"),
+    apiGet("/api/sessions/?type=one_on_one&page=1"),
+    apiGet("/api/sessions/?free=true&page=1"),
+  ]);
+  if (ra.ok && el("stat-total")) el("stat-total").textContent = ra.data.total || 0;
+  if (rg.ok && el("stat-group")) el("stat-group").textContent = rg.data.total || 0;
+  if (r1.ok && el("stat-1on1")) el("stat-1on1").textContent = r1.data.total || 0;
+  if (rf.ok && el("stat-free")) el("stat-free").textContent = rf.data.total || 0;
+}
+</script>
+{% endblock %}

@@ -10,15 +10,23 @@ const CONFIG = {
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
     console.log('AlumniConnect initialized');
-    
+
     // Check authentication status
     checkAuthStatus();
-    
+
     // Initialize mobile menu toggle
     initMobileMenu();
-    
+
     // Initialize notification dropdown
     initNotifications();
+
+    // Avatar dropdown
+    initAvatarDropdown();
+    // Only load avatar if token exists AND avatar button is present on this page
+    if (document.getElementById('navbar-avatar-btn') &&
+        (localStorage.getItem('access_token') || document.cookie.includes('access_token'))) {
+        loadNavbarAvatar();
+    }
 });
 
 // Check if user is authenticated
@@ -183,3 +191,101 @@ window.AlumniConnect = {
     debounce,
     logout
 };
+
+// ── Avatar dropdown open/close ──
+function initAvatarDropdown() {
+    const btn = document.getElementById('navbar-avatar-btn');
+    const dropdown = document.getElementById('navbar-avatar-dropdown');
+    const closeBtn = document.getElementById('avatar-dropdown-close');
+    if (!btn || !dropdown) return;
+
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!dropdown.contains(e.target) && e.target !== btn) {
+            dropdown.classList.add('hidden');
+        }
+    });
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => dropdown.classList.add('hidden'));
+    }
+}
+
+// ── Load user data and populate dropdown ──
+async function loadNavbarAvatar() {
+    try {
+        const meResult = await apiGet('/api/accounts/me/');
+        if (!meResult.ok) return;
+        const user = meResult.data;
+
+        // Initials
+        const initials = ((user.first_name?.[0] || '') + (user.last_name?.[0] || '')).toUpperCase()
+            || user.email[0].toUpperCase();
+        const navInitials = document.getElementById('navbar-avatar-initials');
+        const dropInitials = document.getElementById('dropdown-avatar-initials');
+        if (navInitials) navInitials.textContent = initials;
+        if (dropInitials) dropInitials.textContent = initials;
+
+        // Avatar background color by role
+        const roleColors = { alumni: '#534AB7', student: '#2563EB', faculty: '#0F6E56', admin: '#1E293B' };
+        const color = roleColors[user.role] || '#2563EB';
+        const navBtn = document.getElementById('navbar-avatar-btn');
+        const dropCircle = document.getElementById('dropdown-avatar-circle');
+        if (navBtn) navBtn.style.background = color;
+        if (dropCircle) dropCircle.style.background = color;
+
+        // Name
+        const nameEl = document.getElementById('dropdown-user-name');
+        if (nameEl) nameEl.textContent = (user.first_name + ' ' + user.last_name).trim() || user.email;
+
+        // Profile link based on role
+        const profileLinks = { student: '/profile/student/', alumni: '/profile/alumni/', faculty: '/profile/faculty/' };
+        const linkEl = document.getElementById('dropdown-profile-link');
+        if (linkEl) linkEl.href = profileLinks[user.role] || '#';
+
+        // Completeness ring (r=28, circumference=175.929)
+        const compResult = await apiGet('/api/accounts/profile/completeness/');
+        if (compResult.ok) {
+            const pct = compResult.data.percentage || 0;
+            const circ = 175.929;
+            const offset = circ - (circ * pct / 100);
+            const ring = document.getElementById('dropdown-ring');
+            if (ring) {
+                ring.style.strokeDashoffset = offset;
+                ring.style.stroke = pct >= 80 ? '#22C55E' : pct >= 50 ? '#F97316' : '#EF4444';
+            }
+        }
+
+        // For students: get degree info
+        if (user.role === 'student') {
+            const fullResult = await apiGet('/api/accounts/profile/student/full/');
+            if (fullResult.ok && fullResult.data.educations?.length > 0) {
+                const gradEdu = fullResult.data.educations.find(e => e.education_type === 'graduation');
+                if (gradEdu) {
+                    const degreeText = [gradEdu.degree, gradEdu.specialization].filter(Boolean).join(' ');
+                    const shortDegree = degreeText.length > 35 ? degreeText.substring(0, 35) + '...' : degreeText;
+                    const degEl = document.getElementById('dropdown-user-degree');
+                    if (degEl) degEl.textContent = shortDegree;
+                }
+            }
+        }
+    } catch (e) {
+        console.log('Avatar load error:', e);
+    }
+}
+
+// ── Logout ──
+async function handleLogout() {
+    const refresh = localStorage.getItem('refresh_token');
+    try {
+        if (refresh) await apiPost('/api/accounts/logout/', { refresh });
+    } catch (e) {}
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    window.location.href = '/auth/login/';
+}

@@ -1,0 +1,109 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}AI Mock Interview — AlumniAI{% endblock %}
+
+{% block sidebar_links %}{% include 'partials/sidebar_student.html' %}{% endblock %}
+
+{% block dashboard_content %}
+<div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+<div class="max-w-4xl mx-auto space-y-6">
+
+  <!-- Breadcrumb -->
+  <a href="/dashboard/student/" class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors">
+    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+    </svg>
+    Back to Dashboard
+  </a>
+
+  <!-- Tool header -->
+  <div class="bg-white rounded-xl border border-slate-200 p-6">
+    <div class="flex items-start gap-4">
+      <div class="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+        <svg class="w-7 h-7 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      <div class="flex-1">
+        <div class="flex items-center gap-3 flex-wrap">
+          <h1 class="text-xl font-bold text-slate-800">AI Mock Interview</h1>
+          <span id="free-badge" class="hidden px-2.5 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">1 Free Session Available</span>
+          <span id="price-badge" class="hidden px-2.5 py-0.5 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full">₹99 per session</span>
+        </div>
+        <p class="text-sm text-slate-500 mt-1">{{ tool_description }}</p>
+        <div id="usage-info" class="mt-2 text-xs text-slate-400"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment gate -->
+  <div id="tool-gate" class="hidden bg-white rounded-xl border border-slate-200 p-8 text-center">
+    <div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+      </svg>
+    </div>
+    <h3 class="text-base font-semibold text-slate-700 mb-1">Payment Required</h3>
+    <p class="text-sm text-slate-500 mb-5">Pay ₹99 to start an AI mock interview session.</p>
+    <button onclick="initiateToolPayment('ai_interview')"
+      class="px-6 py-2.5 bg-amber-600 text-white text-sm font-semibold rounded-xl hover:bg-amber-700 transition-colors">
+      Pay ₹99 &amp; Start Interview
+    </button>
+  </div>
+
+  <!-- Tool interface -->
+  <div id="tool-interface" class="hidden space-y-5">
+
+    <!-- Loading state -->
+    <div id="tool-loading" class="hidden bg-white rounded-xl border border-slate-200 p-12 text-center">
+      <div class="w-16 h-16 mx-auto mb-4">
+        <svg class="animate-spin w-16 h-16 text-amber-600" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+        </svg>
+      </div>
+      <p id="loading-text" class="text-sm font-semibold text-slate-700">Generating interview questions...</p>
+      <p class="text-xs text-slate-400 mt-1">This may take 15–30 seconds</p>
+    </div>
+
+    <!-- Setup form (step 1) -->
+    <div id="tool-form" class="bg-white rounded-xl border border-slate-200 p-6">
+      <h2 class="font-semibold text-slate-800 mb-4">Set Up Your Interview</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Target Job Role</label>
+          <input id="job-role-input" type="text" placeholder="e.g. Software Engineer at Google"
+            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Number of Questions</label>
+          <select id="num-questions-input"
+            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+            <option value="3">3 questions (~12 min)</option>
+            <option value="5" selected>5 questions (~20 min)</option>
+            <option value="8">8 questions (~32 min)</option>
+          </select>
+        </div>
+        <button id="analyze-btn" onclick="runTool()"
+          class="w-full py-3 bg-amber-600 text-white text-sm font-semibold rounded-xl hover:bg-amber-700 transition-colors">
+          Start Interview
+        </button>
+      </div>
+    </div>
+
+    <!-- Interview in progress (step 2) -->
+    <div id="interview-section" class="hidden space-y-4">
+      <!-- Progress bar -->
+      <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-medium text-slate-700">Question <span id="current-q-num">1</span> of <span id="total-q-num">5</span></span>
+          <span id="interview-job-role" class="text-xs text-slate-400"></span>
+        </div>
+        <div class="w-full bg-slate-100 rounded-full h-2">
+          <div id="interview-progress-bar" class="bg-amber-500 h-2 rounded-full transition-all duration-500" style="width:0%"></div>
+        </div>
+      </div>
+
+    

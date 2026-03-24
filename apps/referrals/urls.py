@@ -1,13 +1,25 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-
-app_name = 'referrals'
-
-router = DefaultRouter()
-# ViewSets will be registered here on Day 2:
-# router.register(r'referrals', ReferralViewSet, basename='referral')
-# router.register(r'applications', ApplicationViewSet, basename='application')
+from django.urls import path
+from .views import (
+    ReferralListView,
+    ReferralDetailView,
+    ReferralApplyView,
+    SkillMatchCheckView,
+    ReferralApplicationListView,
+    ReferralApplicationUpdateView,
+    StudentApplicationListView,
+    FacultyRecommendView,
+    SuccessStoriesView,
+)
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path('', ReferralListView.as_view()),
+    path('my-applications/', StudentApplicationListView.as_view()),
+    path('my-applications/<int:application_id>/', StudentApplicationListView.as_view()),
+    path('success-stories/', SuccessStoriesView.as_view()),
+    path('<int:pk>/', ReferralDetailView.as_view()),
+    path('<int:pk>/apply/', ReferralApplyView.as_view()),
+    path('<int:pk>/match-check/', SkillMatchCheckView.as_view()),
+    path('<int:pk>/applications/', ReferralApplicationListView.as_view()),
+    path('<int:pk>/recommend/', FacultyRecommendView.as_view()),
+    path('applications/<int:pk>/update/', ReferralApplicationUpdateView.as_view()),
 ]

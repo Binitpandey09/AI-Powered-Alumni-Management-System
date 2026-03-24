@@ -15,8 +15,6 @@
     margin-left: auto; font-size: 0.65rem; color: #94a3b8;
     background: #f1f5f9; padding: 1px 6px; border-radius: 9999px;
   }
-  .sidebar-link[title="Coming soon"] { color: #94a3b8; cursor: default; }
-  .sidebar-link[title="Coming soon"]:hover { color: #94a3b8; background: transparent; }
 </style>
 {% endblock %}
 
@@ -42,43 +40,203 @@
       {% endblock %}
     </nav>
 
-    <!-- Logout -->
-    <button id="logout-btn"
-      class="mt-6 flex items-center gap-2 px-3 py-2 text-sm text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors w-full">
-      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-      </svg>
-      Sign out
-    </button>
+    <!-- User card + Logout -->
+    <div class="mt-auto pt-4 border-t border-slate-100">
+      <div class="flex items-center gap-2.5 px-2 mb-3">
+        {% if user.profile_pic %}
+          <img src="{{ user.profile_pic.url }}" alt="" class="w-9 h-9 rounded-full object-cover flex-shrink-0"/>
+        {% else %}
+          <div class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
+            {{ user.first_name|slice:":1"|upper }}{{ user.last_name|slice:":1"|upper }}
+          </div>
+        {% endif %}
+        <div class="min-w-0 flex-1">
+          <p class="text-xs font-semibold text-slate-800 truncate">{{ user.get_full_name }}</p>
+          <p class="text-xs text-slate-400 truncate">{{ user.email }}</p>
+        </div>
+      </div>
+      <div class="px-2 mb-2">
+        <span class="inline-block text-xs font-medium px-2 py-0.5 rounded-full
+          {% if user.role == 'alumni' %}bg-blue-100 text-blue-700
+          {% elif user.role == 'student' %}bg-amber-100 text-amber-700
+          {% elif user.role == 'faculty' %}bg-teal-100 text-teal-700
+          {% else %}bg-slate-100 text-slate-600{% endif %} capitalize">
+          {{ user.role }}
+        </span>
+      </div>
+      <button id="logout-btn"
+        class="flex items-center gap-2 px-3 py-2 text-sm text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors w-full">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+        Sign out
+      </button>
+    </div>
   </aside>
 
   <!-- ── Main ── -->
   <div class="flex-1 flex flex-col min-w-0">
 
     <!-- Top bar -->
-    <header class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+    <header class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between relative">
+      <!-- Left: page title / breadcrumb area (kept minimal) -->
       <div class="flex items-center gap-3">
-        {% if user.profile_pic %}
-          <img src="{{ user.profile_pic.url }}" alt="" class="w-8 h-8 rounded-full object-cover flex-shrink-0" />
-        {% else %}
-          <div class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
-            {{ user.full_name|slice:":2"|upper }}
-          </div>
-        {% endif %}
-        <div>
-          <p class="text-sm font-semibold text-slate-900">{{ user.full_name }}</p>
-          <p class="text-xs text-slate-500">{{ user.email }}</p>
-        </div>
+        <!-- Mobile logo -->
+        <a href="/" class="lg:hidden flex items-center gap-2">
+          <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M12 3L1 9l11 6 9-4.91V17M1 9v8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5 12.5v5a7 7 0 0014 0v-5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="text-sm font-bold text-blue-600">AlumniAI</span>
+        </a>
       </div>
-      {% block role_badge %}
-        <span class="px-3 py-1 text-xs font-semibold rounded-full
-          {% if user_role == 'alumni' %}bg-purple-100 text-purple-700
-          {% elif user_role == 'student' %}bg-amber-100 text-amber-700
-          {% elif user_role == 'faculty' %}bg-teal-100 text-teal-700
-          {% else %}bg-slate-100 text-slate-700{% endif %} capitalize">
-          {{ user_role }}
-        </span>
-      {% endblock %}
+
+      <!-- Right: Bell + Avatar button -->
+      <div class="flex items-center gap-1 ml-auto">
+
+        <!-- Notification Bell -->
+        <div style="position:relative;">
+          <button id="notif-bell-btn"
+            style="position:relative;background:none;border:none;cursor:pointer;padding:6px;border-radius:8px;color:#64748B;display:flex;align-items:center;justify-content:center;"
+            onmouseover="this.style.background='#F1F5F9'" onmouseout="this.style.background='none'"
+            aria-label="Notifications">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span id="notif-badge"
+              style="display:none;position:absolute;top:-2px;right:-2px;min-width:18px;height:18px;background:#EF4444;color:white;font-size:10px;font-weight:700;border-radius:9px;align-items:center;justify-content:center;padding:0 4px;border:2px solid white;line-height:1;">0</span>
+          </button>
+
+          <!-- Notification dropdown panel -->
+          <div id="notif-dropdown" class="hidden"
+            style="position:absolute;top:42px;right:0;width:360px;background:white;border:0.5px solid #E2E8F0;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.12);z-index:9999;overflow:hidden;">
+            <!-- Panel header -->
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #F1F5F9;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:15px;font-weight:600;color:#0F172A;">Notifications</span>
+                <span id="notif-panel-count" style="display:none;background:#EFF6FF;color:#1D4ED8;font-size:11px;font-weight:600;padding:2px 7px;border-radius:12px;">0</span>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <button id="mark-all-read-btn" style="font-size:12px;color:#2563EB;background:none;border:none;cursor:pointer;font-weight:500;">Mark all read</button>
+                <a href="/notifications/" style="font-size:12px;color:#64748B;text-decoration:none;">See all →</a>
+              </div>
+            </div>
+            <!-- Notification items list -->
+            <div id="notif-items-list" style="max-height:380px;overflow-y:auto;">
+              <div id="notif-loading" style="padding:24px;text-align:center;color:#94A3B8;font-size:13px;">Loading...</div>
+            </div>
+            <!-- Panel footer -->
+            <div style="padding:10px 16px;border-top:1px solid #F1F5F9;text-align:center;">
+              <a href="/notifications/" style="font-size:13px;color:#2563EB;text-decoration:none;font-weight:500;">View all notifications →</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Avatar button -->
+        <div class="relative">
+          <button id="navbar-avatar-btn"
+          style="width:38px;height:38px;border-radius:50%;background:#2563eb;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0;transition:opacity 0.15s;"
+          onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'"
+          aria-label="Open profile menu">
+          <span id="navbar-avatar-initials">?</span>
+        </button>
+
+        <!-- ── Dropdown panel ── -->
+        <div id="navbar-avatar-dropdown"
+          class="hidden absolute right-0 top-full mt-2 z-50"
+          style="width:300px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.12);overflow:hidden;">
+
+          <!-- Close button -->
+          <button id="avatar-dropdown-close"
+            style="position:absolute;top:10px;right:12px;background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;border-radius:6px;line-height:1;"
+            onmouseover="this.style.color='#475569'" onmouseout="this.style.color='#94a3b8'">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+
+          <!-- Profile summary -->
+          <div style="padding:20px 20px 16px;border-bottom:1px solid #f1f5f9;">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <!-- Avatar with completeness ring -->
+              <div style="position:relative;width:64px;height:64px;flex-shrink:0;">
+                <svg style="position:absolute;top:0;left:0;width:64px;height:64px;" viewBox="0 0 64 64">
+                  <circle cx="32" cy="32" r="28" fill="none" stroke="#e2e8f0" stroke-width="4"/>
+                  <circle id="dropdown-ring" cx="32" cy="32" r="28" fill="none"
+                    stroke="#2563eb" stroke-width="4"
+                    stroke-linecap="round"
+                    stroke-dasharray="175.929"
+                    stroke-dashoffset="175.929"
+                    transform="rotate(-90 32 32)"
+                    style="transition:stroke-dashoffset 0.6s ease;"/>
+                </svg>
+                <div id="dropdown-avatar-circle"
+                  style="position:absolute;top:6px;left:6px;width:52px;height:52px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:700;">
+                  <span id="dropdown-avatar-initials">?</span>
+                </div>
+              </div>
+              <!-- Name + degree -->
+              <div style="flex:1;min-width:0;">
+                <p id="dropdown-user-name" style="font-size:0.9375rem;font-weight:700;color:#0f172a;margin:0 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Loading...</p>
+                <p id="dropdown-user-degree" style="font-size:0.75rem;color:#64748b;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</p>
+                <a id="dropdown-profile-link" href="/profile/student/"
+                  style="display:inline-block;margin-top:6px;font-size:0.75rem;color:#2563eb;font-weight:500;text-decoration:none;"
+                  onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+                  View &amp; Update Profile →
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stats row -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #f1f5f9;">
+            <div style="padding:12px 16px;border-right:1px solid #f1f5f9;">
+              <p style="font-size:0.6875rem;color:#94a3b8;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;margin:0 0 2px;">Profile Views</p>
+              <p style="font-size:0.8125rem;color:#64748b;font-style:italic;margin:0;">Coming soon</p>
+            </div>
+            <div style="padding:12px 16px;">
+              <p style="font-size:0.6875rem;color:#94a3b8;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;margin:0 0 2px;">Connections</p>
+              <p style="font-size:0.8125rem;color:#64748b;font-style:italic;margin:0;">Coming soon</p>
+            </div>
+          </div>
+
+          <!-- Menu items -->
+          <div style="padding:8px 0;">
+            <a href="/profile/edit/"
+              style="display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:0.875rem;color:#374151;text-decoration:none;transition:background 0.1s;"
+              onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color:#94a3b8;flex-shrink:0;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              Settings
+            </a>
+            <a href="#"
+              style="display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:0.875rem;color:#374151;text-decoration:none;transition:background 0.1s;"
+              onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color:#94a3b8;flex-shrink:0;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Help &amp; FAQs
+            </a>
+          </div>
+
+          <!-- Logout -->
+          <div style="padding:8px 12px 12px;border-top:1px solid #f1f5f9;">
+            <button onclick="handleLogout()"
+              style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 16px;background:none;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;font-weight:500;color:#ef4444;cursor:pointer;transition:all 0.15s;"
+              onmouseover="this.style.background='#fef2f2';this.style.borderColor='#fca5a5'" onmouseout="this.style.background='none';this.style.borderColor='#e2e8f0'">
+              <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+              </svg>
+              Logout
+            </button>
+          </div>
+
+        </div><!-- /dropdown -->
+      </div><!-- /avatar relative wrapper -->
+      </div><!-- /right flex -->
     </header>
 
     <!-- Page content -->

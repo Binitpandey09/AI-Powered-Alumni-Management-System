@@ -1,0 +1,102 @@
+{% extends "admin_panel/base_admin.html" %}
+{% block title %}Referrals{% endblock %}
+{% block page_title %}Referrals{% endblock %}
+{% block nav_referrals %}active{% endblock %}
+
+{% block content %}
+<div style="background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+  <input type="search" id="search-input" placeholder="Search by job title, company, email…" style="flex:1;min-width:200px;" oninput="debounceSearch()" />
+  <select id="filter-status" onchange="loadReferrals()">
+    <option value="">All Status</option>
+    <option value="active">Active</option>
+    <option value="closed">Closed</option>
+    <option value="deactivated">Deactivated</option>
+  </select>
+  <button class="btn-primary" onclick="loadReferrals()">Search</button>
+</div>
+
+<div class="table-wrap">
+  <div id="referrals-body"><div style="padding:40px;text-align:center;color:#94A3B8;">Loading…</div></div>
+  <div style="padding:14px 20px;border-top:1px solid #E2E8F0;display:flex;align-items:center;justify-content:space-between;">
+    <button class="btn-ghost" id="btn-prev" onclick="changePage(-1)" disabled>← Prev</button>
+    <span style="font-size:13px;color:#64748B;" id="page-info">Page 1</span>
+    <button class="btn-ghost" id="btn-next" onclick="changePage(1)">Next →</button>
+  </div>
+</div>
+
+<div id="deact-modal" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3 style="font-size:16px;font-weight:700;color:#0F172A;margin-bottom:4px;">Deactivate Referral</h3>
+    <p style="font-size:13px;color:#64748B;margin-bottom:16px;">Provide a reason:</p>
+    <textarea id="deact-note" placeholder="Reason…" style="width:100%;height:80px;resize:none;margin-bottom:16px;"></textarea>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn-ghost" onclick="document.getElementById('deact-modal').style.display='none'">Cancel</button>
+      <button class="btn-danger" onclick="submitDeact()">Deactivate</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+let currentPage = 1;
+let deactId = null;
+
+const searchDebounce = (() => { let t; return () => { clearTimeout(t); t = setTimeout(loadReferrals, 400); }; })();
+function debounceSearch() { searchDebounce(); }
+
+async function loadReferrals(page = 1) {
+  currentPage = page;
+  const search = document.getElementById('search-input').value.trim();
+  const status = document.getElementById('filter-status').value;
+  let url = `/api/dashboard/admin/referrals/?page=${page}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  if (status) url += `&status=${status}`;
+
+  document.getElementById('referrals-body').innerHTML = '<div style="padding:40px;text-align:center;color:#94A3B8;">Loading…</div>';
+  const r = await apiGet(url);
+  if (!r.ok) { showToast('Failed to load', 'error'); return; }
+
+  const { count, next, previous, results } = r.data;
+  document.getElementById('btn-prev').disabled = !previous;
+  document.getElementById('btn-next').disabled = !next;
+  setEl('page-info', `Page ${currentPage} · ${count} total`);
+
+  if (!results.length) { document.getElementById('referrals-body').innerHTML = '<div style="padding:40px;text-align:center;color:#94A3B8;">No referrals found.</div>'; return; }
+
+  let html = `<table><thead><tr><th>Job Title</th><th>Company</th><th>Posted By</th><th>Work Type</th><th>Applications</th><th>Deadline</th><th>Status</th><th>Actions</th></tr></thead><tbody>`;
+  for (const ref of results) {
+    const statusColor = { active: '#22C55E', closed: '#64748B', deactivated: '#EF4444' }[ref.status] || '#64748B';
+    html += `<tr>
+      <td style="font-weight:600;">${ref.job_title}</td>
+      <td>${ref.company_name}</td>
+      <td><div style="font-size:13px;">${ref.posted_by_name}</div><div style="font-size:11px;color:#94A3B8;">${ref.posted_by_email}</div></td>
+      <td style="font-size:13px;">${ref.work_type}</td>
+      <td style="font-size:13px;">${ref.total_applications}/${ref.max_applicants}</td>
+      <td style="font-size:13px;">${fmtDate(ref.deadline)}</td>
+      <td><span style="background:${statusColor}22;color:${statusColor};font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;">${ref.status}</span></td>
+      <td>${ref.status === 'active' ? `<button class="btn-danger" style="font-size:12px;padding:4px 10px;" onclick="openDeact(${ref.id})">Deactivate</button>` : '—'}</td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  document.getElementById('referrals-body').innerHTML = html;
+}
+
+function changePage(dir) { loadReferrals(currentPage + dir); }
+
+function openDeact(id) {
+  deactId = id;
+  document.getElementById('deact-note').value = '';
+  document.getElementById('deact-modal').style.display = 'flex';
+}
+
+async function submitDeact() {
+  const note = document.getElementById('deact-note').value.trim();
+  const r = await apiPost('/api/dashboard/admin/moderation-api/', { content_type: 'referral', object_id: deactId, action: 'deactivate', note });
+  if (r.ok) { showToast('Referral deactivated', 'success'); document.getElementById('deact-modal').style.display = 'none'; loadReferrals(currentPage); }
+  else showToast(r.data?.error || 'Failed', 'error');
+}
+
+loadReferrals();
+</script>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Notifications — AlumniAI{% endblock %}
+
+{% block dashboard_content %}
+<!-- Breadcrumb -->
+<a href="/dashboard/{% if user.role %}{{ user.role }}{% else %}student{% endif %}/"
+   style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#64748B;text-decoration:none;margin-bottom:20px;"
+   onmouseover="this.style.color='#2563EB'" onmouseout="this.style.color='#64748B'">
+  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+  </svg>
+  Back to Dashboard
+</a>
+
+<!-- Page heading row -->
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <h1 style="font-size:22px;font-weight:700;color:#0F172A;margin:0;">Notifications</h1>
+    <span id="page-unread-count" style="font-size:13px;color:#64748B;font-weight:500;"></span>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <button id="page-mark-all-btn"
+      style="padding:7px 14px;font-size:13px;font-weight:500;color:#2563EB;background:white;border:1px solid #2563EB;border-radius:8px;cursor:pointer;transition:all .15s;"
+      onmouseover="this.style.background='#EFF6FF'" onmouseout="this.style.background='white'">
+      Mark all read
+    </button>
+    <button id="page-delete-read-btn"
+      style="padding:7px 14px;font-size:13px;font-weight:500;color:#64748B;background:white;border:1px solid #E2E8F0;border-radius:8px;cursor:pointer;transition:all .15s;"
+      onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='white'">
+      Delete read
+    </button>
+    <a href="/notifications/preferences/"
+      style="padding:7px 10px;background:white;border:1px solid #E2E8F0;border-radius:8px;color:#64748B;display:flex;align-items:center;transition:all .15s;"
+      onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='white'"
+      title="Notification preferences">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+    </a>
+  </div>
+</div>
+
+<!-- Filter tabs -->
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;">
+  {% for label, value in filter_tabs %}
+  <button class="notif-filter-tab {% if forloop.first %}active-tab{% endif %}"
+    data-filter="{{ value }}"
+    style="padding:6px 14px;font-size:13px;font-weight:500;border-radius:20px;border:1px solid #E2E8F0;cursor:pointer;background:{% if forloop.first %}#2563EB{% else %}white{% endif %};color:{% if forloop.first %}white{% else %}#64748B{% endif %};transition:all .15s;">
+    {{ label }}
+  </button>
+  {% endfor %}
+</div>
+
+<!-- Notifications container -->
+<div id="notifications-container"></div>
+
+<!-- Empty state -->
+<div id="notif-empty" style="display:none;text-align:center;padding:60px 20px;">
+  <div style="width:56px;height:56px;background:#F1F5F9;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+    <svg width="24" height="24" fill="none" stroke="#94A3B8" stroke-width="1.5" viewBox="0 0 24 24">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+      <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+    </svg>
+  </div>
+  <p id="notif-empty-title" style="font-size:15px;font-weight:600;color:#475569;margin:0 0 6px;">No notifications</p>
+  <p id="notif-empty-msg" style="font-size:13px;color:#94A3B8;margin:0;">They will appear here.</p>
+</div>
+
+<!-- Load more -->
+<div style="text-align:center;margin-top:16px;">
+  <button id="load-more-notifs" style="display:none;padding:9px 24px;font-size:13px;font-weight:500;color:#64748B;background:white;border:1px solid #E2E8F0;border-radius:8px;cursor:pointer;transition:all .15s;"
+    onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='white'">
+    Load more
+  </button>
+</div>
+
+<style>
+  .notif-filter-tab:hover { background: #F1F5F9 !important; color: #2563EB !important; }
+  .active-tab { background: #2563EB !important; color: white !important; border-color: #2563EB !important; }
+</style>
+{% endblock %}
+
+{% block dashboard_js %}
+<script>
+  // Pass filter tabs to JS
+  const NOTIF_FILTER_TABS = [
+    { label: 'All', value: 'all' },
+    { label: 'Unread', value: 'unread' },
+    { label: 'Session', value: 'session' },
+    { label: 'Payment', value: 'payment' },
+    { label: 'Referral', value: 'referral' },
+    { label: 'General', value: 'general' },
+  ];
+</script>
+{% endblock %}

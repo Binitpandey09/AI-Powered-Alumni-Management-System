@@ -1,0 +1,170 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Resume Builder — AlumniAI{% endblock %}
+
+{% block sidebar_links %}{% include 'partials/sidebar_student.html' %}{% endblock %}
+
+{% block dashboard_content %}
+<div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+<div class="max-w-4xl mx-auto space-y-6">
+
+  <!-- Breadcrumb -->
+  <a href="/dashboard/student/" class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors">
+    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+    </svg>
+    Back to Dashboard
+  </a>
+
+  <!-- Tool header -->
+  <div class="bg-white rounded-xl border border-slate-200 p-6">
+    <div class="flex items-start gap-4">
+      <div class="w-14 h-14 rounded-2xl bg-violet-50 flex items-center justify-center flex-shrink-0">
+        <svg class="w-7 h-7 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+      </div>
+      <div class="flex-1">
+        <div class="flex items-center gap-3 flex-wrap">
+          <h1 class="text-xl font-bold text-slate-800">Resume Builder</h1>
+          <span id="free-badge" class="hidden px-2.5 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">1 Free Build Available</span>
+          <span id="price-badge" class="hidden px-2.5 py-0.5 bg-violet-100 text-violet-700 text-xs font-semibold rounded-full">₹149 per build</span>
+        </div>
+        <p class="text-sm text-slate-500 mt-1">{{ tool_description }}</p>
+        <div id="usage-info" class="mt-2 text-xs text-slate-400"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment gate -->
+  <div id="tool-gate" class="hidden bg-white rounded-xl border border-slate-200 p-8 text-center">
+    <div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+      </svg>
+    </div>
+    <h3 class="text-base font-semibold text-slate-700 mb-1">Payment Required</h3>
+    <p class="text-sm text-slate-500 mb-5">Pay ₹149 to build your AI-optimized resume.</p>
+    <button onclick="initiateToolPayment('resume_builder')"
+      class="px-6 py-2.5 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 transition-colors">
+      Pay ₹149 &amp; Build Resume
+    </button>
+  </div>
+
+  <!-- Tool interface -->
+  <div id="tool-interface" class="hidden space-y-5">
+
+    <!-- Loading state -->
+    <div id="tool-loading" class="hidden bg-white rounded-xl border border-slate-200 p-12 text-center">
+      <div class="w-16 h-16 mx-auto mb-4">
+        <svg class="animate-spin w-16 h-16 text-violet-600" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+        </svg>
+      </div>
+      <p class="text-sm font-semibold text-slate-700">Building your resume with AI...</p>
+      <p class="text-xs text-slate-400 mt-1">This may take 20–40 seconds</p>
+    </div>
+
+    <!-- Input form -->
+    <div id="tool-form" class="bg-white rounded-xl border border-slate-200 p-6">
+      <h2 class="font-semibold text-slate-800 mb-4">Build Your Resume</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Target Role <span class="text-slate-400 font-normal">(optional)</span></label>
+          <input id="target-role-input" type="text" placeholder="e.g. Full Stack Developer"
+            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Template Style</label>
+          <div class="grid grid-cols-3 gap-3">
+            <label class="cursor-pointer">
+              <input type="radio" name="template-style" value="professional" checked class="sr-only peer">
+              <div class="border-2 border-slate-200 peer-checked:border-violet-500 peer-checked:bg-violet-50 rounded-xl p-3 text-center transition-all">
+                <div class="text-lg mb-1">💼</div>
+                <p class="text-xs font-semibold text-slate-700">Professional</p>
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="template-style" value="modern" class="sr-only peer">
+              <div class="border-2 border-slate-200 peer-checked:border-violet-500 peer-checked:bg-violet-50 rounded-xl p-3 text-center transition-all">
+                <div class="text-lg mb-1">✨</div>
+                <p class="text-xs font-semibold text-slate-700">Modern</p>
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="template-style" value="minimal" class="sr-only peer">
+              <div class="border-2 border-slate-200 peer-checked:border-violet-500 peer-checked:bg-violet-50 rounded-xl p-3 text-center transition-all">
+                <div class="text-lg mb-1">📄</div>
+                <p class="text-xs font-semibold text-slate-700">Minimal</p>
+              </div>
+            </label>
+          </div>
+        </div>
+        <button id="analyze-btn" onclick="runTool()"
+          class="w-full py-3 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 transition-colors">
+          Build My Resume
+        </button>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="results-section" class="hidden space-y-4">
+      <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold text-slate-800">Your AI-Built Resume</h2>
+          <button onclick="copyResumeText()"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+            Copy
+          </button>
+        </div>
+        <div id="resume-output" class="bg-slate-50 rounded-xl p-5 font-mono text-xs text-slate-700 whitespace-pre-wrap leading-relaxed max-h-[600px] overflow-y-auto border border-slate-100"></div>
+      </div>
+
+      <!-- Tailoring notes -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 class="font-semibold text-slate-800 mb-2">Tailoring Notes</h3>
+        <p id="tailoring-notes" class="text-sm text-slate-600 leading-relaxed"></p>
+      </div>
+
+      <!-- ATS keywords -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 class="font-semibold text-slate-800 mb-3">ATS Keywords Included</h3>
+        <div id="ats-keywords" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      <button onclick="resetTool()"
+        class="w-full py-2.5 border border-slate-200 text-slate-600 text-sm font-medium rounded-xl hover:bg-slate-50 transition-colors">
+        Build Another Resume
+      </button>
+    </div>
+  </div>
+
+  <!-- Previous builds -->
+  <div id="previous-uses" class="hidden bg-white rounded-xl border border-slate-200 p-6">
+    <h2 class="font-semibold text-slate-800 mb-3">Previous Builds</h2>
+    <div id="previous-uses-list" class="space-y-2"></div>
+  </div>
+
+</div>
+
+{% include 'partials/payment_modal.html' %}
+{% endblock %}
+
+{% block dashboard_js %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+  const TOOL_TYPE = '{{ tool_type }}';
+  const TOOL_NAME = '{{ tool_name }}';
+  const TOOL_PRICE = parseInt('{{ tool_price }}');
+  const RAZORPAY_KEY_ID = '{{ razorpay_key_id }}';
+</script>
+<script src="{% static 'js/api.js' %}"></script>
+<script src="{% static 'js/payments.js' %}"></script>
+<script src="{% static 'js/ai_tools.js' %}"></script>
+{% endblock %}

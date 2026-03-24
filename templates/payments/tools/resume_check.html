@@ -1,0 +1,106 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Resume Score Checker — AlumniAI{% endblock %}
+
+{% block dashboard_content %}
+<div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+<div class="p-6 max-w-4xl mx-auto space-y-6">
+
+  <!-- Breadcrumb -->
+  <a href="/dashboard/student/" class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors">
+    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+    </svg>
+    Back to Dashboard
+  </a>
+
+  <!-- Tool header -->
+  <div class="bg-white rounded-xl border border-slate-200 p-6">
+    <div class="flex items-start gap-4">
+      <div class="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+        <svg class="w-7 h-7 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+      <div class="flex-1">
+        <div class="flex items-center gap-3 flex-wrap">
+          <h1 class="text-xl font-bold text-slate-800">Resume Score Checker</h1>
+          <span id="free-badge" class="hidden px-2.5 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">1 Free Check Available</span>
+          <span id="price-badge" class="hidden px-2.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">₹49 per check</span>
+        </div>
+        <p class="text-sm text-slate-500 mt-1">{{ tool_description }}</p>
+        <div id="usage-info" class="mt-2 text-xs text-slate-400"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gate: locked state (shown before payment) -->
+  <div id="tool-gate" class="hidden bg-white rounded-xl border border-slate-200 p-8 text-center">
+    <div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+      </svg>
+    </div>
+    <h3 class="text-base font-semibold text-slate-700 mb-1">Payment Required</h3>
+    <p class="text-sm text-slate-500 mb-5">You've used your free check. Pay ₹49 to run another analysis.</p>
+    <button onclick="initiateToolPayment('resume_check')"
+      class="px-6 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors">
+      Pay ₹49 &amp; Check Resume
+    </button>
+  </div>
+
+  <!-- Tool interface (shown after gate is passed) -->
+  <div id="tool-interface" class="hidden space-y-5">
+    <div class="bg-white rounded-xl border border-slate-200 p-6">
+      <h2 class="font-semibold text-slate-800 mb-4">Upload Your Resume</h2>
+      <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-blue-300 transition-colors cursor-pointer" onclick="document.getElementById('resume-file-input').click()">
+        <svg class="w-10 h-10 text-slate-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+        </svg>
+        <p class="text-sm font-medium text-slate-600">Click to upload or drag &amp; drop</p>
+        <p class="text-xs text-slate-400 mt-1">PDF, DOC, DOCX — max 5MB</p>
+        <input type="file" id="resume-file-input" accept=".pdf,.doc,.docx" class="hidden" onchange="handleResumeUpload(this)">
+      </div>
+      <div id="file-selected" class="hidden mt-3 flex items-center gap-2 text-sm text-slate-700 bg-slate-50 rounded-lg px-3 py-2">
+        <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <span id="file-name"></span>
+      </div>
+      <button id="analyze-btn" onclick="analyzeResume()" disabled
+        class="mt-4 w-full py-3 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        Analyze Resume
+      </button>
+    </div>
+
+    <!-- Results (shown after analysis) -->
+    <div id="results-section" class="hidden bg-white rounded-xl border border-slate-200 p-6">
+      <h2 class="font-semibold text-slate-800 mb-4">Analysis Results</h2>
+      <div id="results-content"></div>
+    </div>
+  </div>
+
+  <!-- Previous uses -->
+  <div id="previous-uses" class="hidden bg-white rounded-xl border border-slate-200 p-6">
+    <h2 class="font-semibold text-slate-800 mb-3">Previous Checks</h2>
+    <div id="previous-uses-list" class="space-y-2"></div>
+  </div>
+
+</div>
+
+{% include 'partials/payment_modal.html' %}
+{% endblock %}
+
+{% block dashboard_js %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+  const PAGE_NAME = 'tool';
+  const TOOL_TYPE = '{{ tool_type }}';
+  const TOOL_NAME = '{{ tool_name }}';
+  const TOOL_PRICE = '{{ tool_price }}';
+  const RAZORPAY_KEY_ID = '{{ razorpay_key_id }}';
+</script>
+<script src="{% static 'js/payments.js' %}"></script>
+{% endblock %}

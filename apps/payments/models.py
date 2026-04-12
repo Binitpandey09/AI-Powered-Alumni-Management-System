@@ -72,6 +72,8 @@ class Transaction(models.Model):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['payer', 'status']),
+            models.Index(fields=['payer', '-created_at']),
+            models.Index(fields=['payee', '-created_at']),
             models.Index(fields=['status', '-created_at']),
             models.Index(fields=['transaction_type', 'status']),
         ]

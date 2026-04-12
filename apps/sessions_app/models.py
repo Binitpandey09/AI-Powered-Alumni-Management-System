@@ -61,6 +61,8 @@ class Session(models.Model):
         indexes = [
             models.Index(fields=['status', 'scheduled_at']),
             models.Index(fields=['host', 'status']),
+            models.Index(fields=['host', '-created_at']),
+            models.Index(fields=['session_type', 'status']),
         ]
 
     @property

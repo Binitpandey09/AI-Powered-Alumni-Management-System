@@ -76,23 +76,30 @@ def _handle_booking_confirmed(booking):
     # Update host wallet
     host = session.host
     if host_share > 0:
+        from apps.payments.models import Wallet
+        from decimal import Decimal
+        wallet, _ = Wallet.objects.get_or_create(user=host)
+        wallet.balance += Decimal(str(host_share))
+        wallet.total_earned += Decimal(str(host_share))
+        wallet.save(update_fields=['balance', 'total_earned', 'updated_at'])
+
         if host.role == 'alumni':
             try:
                 profile = host.alumni_profile
-                AlumniProfile.objects.filter(pk=profile.pk).update(
-                    wallet_balance=float(profile.wallet_balance) + host_share,
-                    total_earned=float(profile.total_earned) + host_share,
+                profile.__class__.objects.filter(pk=profile.pk).update(
+                    wallet_balance=wallet.balance,
+                    total_earned=wallet.total_earned,
                 )
-            except AlumniProfile.DoesNotExist:
+            except Exception:
                 pass
         elif host.role == 'faculty':
             try:
                 profile = host.faculty_profile
-                FacultyProfile.objects.filter(pk=profile.pk).update(
-                    wallet_balance=float(profile.wallet_balance) + host_share,
-                    total_earned=float(profile.total_earned) + host_share,
+                profile.__class__.objects.filter(pk=profile.pk).update(
+                    wallet_balance=wallet.balance,
+                    total_earned=wallet.total_earned,
                 )
-            except FacultyProfile.DoesNotExist:
+            except Exception:
                 pass
 
     # Notifications
@@ -169,28 +176,31 @@ def _handle_cancelled_by_host(booking):
     # Reverse host wallet deduction
     host_share = float(booking.host_share)
     if host_share > 0:
+        from apps.payments.models import Wallet
+        from decimal import Decimal
         host = session.host
+        wallet, _ = Wallet.objects.get_or_create(user=host)
+        wallet.balance = max(Decimal('0.00'), wallet.balance - Decimal(str(host_share)))
+        wallet.total_earned = max(Decimal('0.00'), wallet.total_earned - Decimal(str(host_share)))
+        wallet.save(update_fields=['balance', 'total_earned', 'updated_at'])
+
         if host.role == 'alumni':
             try:
                 profile = host.alumni_profile
-                new_balance = max(0, float(profile.wallet_balance) - host_share)
-                new_earned = max(0, float(profile.total_earned) - host_share)
-                AlumniProfile.objects.filter(pk=profile.pk).update(
-                    wallet_balance=new_balance,
-                    total_earned=new_earned,
+                profile.__class__.objects.filter(pk=profile.pk).update(
+                    wallet_balance=wallet.balance,
+                    total_earned=wallet.total_earned,
                 )
-            except AlumniProfile.DoesNotExist:
+            except Exception:
                 pass
         elif host.role == 'faculty':
             try:
                 profile = host.faculty_profile
-                new_balance = max(0, float(profile.wallet_balance) - host_share)
-                new_earned = max(0, float(profile.total_earned) - host_share)
-                FacultyProfile.objects.filter(pk=profile.pk).update(
-                    wallet_balance=new_balance,
-                    total_earned=new_earned,
+                profile.__class__.objects.filter(pk=profile.pk).update(
+                    wallet_balance=wallet.balance,
+                    total_earned=wallet.total_earned,
                 )
-            except FacultyProfile.DoesNotExist:
+            except Exception:
                 pass
 
     _create_notification(

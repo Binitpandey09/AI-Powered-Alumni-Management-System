@@ -5,6 +5,11 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
+# ── Debug Toolbar (dev only) ──────────────────────────────────
+INSTALLED_APPS += ['debug_toolbar']
+MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware']
+INTERNAL_IPS = ['127.0.0.1', 'localhost']
+
 # Serve static files directly without caching in dev
 # This overrides base.py's CompressedManifestStaticFilesStorage (which caches aggressively)
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
@@ -24,12 +29,6 @@ DATABASES = {
         'PORT': config('DB_PORT', default='5432'),
     }
 }
-
-# Debug Toolbar
-INTERNAL_IPS = [
-    '127.0.0.1',
-    'localhost',
-]
 
 # Email — use SMTP if credentials provided, otherwise console
 _email_user = config('EMAIL_HOST_USER', default='')
@@ -63,6 +62,11 @@ LOGGING = {
             'propagate': False,
         },
         'celery': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'admin_access': {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,

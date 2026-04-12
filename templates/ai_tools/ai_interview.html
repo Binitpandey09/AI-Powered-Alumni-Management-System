@@ -1,109 +1,237 @@
-{% extends "dashboard/base_dashboard.html" %}
+{% extends 'dashboard/base_dashboard.html' %}
 {% load static %}
 
 {% block title %}AI Mock Interview — AlumniAI{% endblock %}
 
-{% block sidebar_links %}{% include 'partials/sidebar_student.html' %}{% endblock %}
+{% block sidebar_links %}
+  {% if user.role == 'student' %}{% include 'partials/sidebar_student.html' %}
+  {% elif user.role == 'alumni' %}{% include 'partials/sidebar_alumni.html' %}
+  {% elif user.role == 'faculty' %}{% include 'partials/sidebar_faculty.html' %}
+  {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style>
+{% endblock %}
 
 {% block dashboard_content %}
-<div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+<div style="max-width:800px; margin:0 auto;">
 
-<div class="max-w-4xl mx-auto space-y-6">
-
-  <!-- Breadcrumb -->
-  <a href="/dashboard/student/" class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors">
-    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-    </svg>
-    Back to Dashboard
-  </a>
-
-  <!-- Tool header -->
-  <div class="bg-white rounded-xl border border-slate-200 p-6">
-    <div class="flex items-start gap-4">
-      <div class="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center flex-shrink-0">
-        <svg class="w-7 h-7 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+  <!-- SECTION A — PAGE HEADER -->
+  <div style="margin-bottom:28px">
+    <a href="/tools/" style="color:#64748B; text-decoration:none; font-size:13px; display:inline-flex; align-items:center; gap:4px; margin-bottom:14px; font-weight:500;">
+      &larr; AI Career Tools
+    </a>
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px">
+      <div style="width:44px; height:44px; border-radius:12px; background:#F5F3FF; display:flex; align-items:center; justify-content:center; flex-shrink:0">
+        <svg width="22" height="22" fill="none" stroke="#7C3AED" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
         </svg>
       </div>
-      <div class="flex-1">
-        <div class="flex items-center gap-3 flex-wrap">
-          <h1 class="text-xl font-bold text-slate-800">AI Mock Interview</h1>
-          <span id="free-badge" class="hidden px-2.5 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">1 Free Session Available</span>
-          <span id="price-badge" class="hidden px-2.5 py-0.5 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full">₹99 per session</span>
+      <div>
+        <h1 style="font-size:22px; font-weight:700; color:#0F172A; margin:0">AI Mock Interview</h1>
+        <p style="font-size:14px; color:#64748B; margin:4px 0 0">Practice with AI — get instant feedback on every answer</p>
+      </div>
+    </div>
+    <div style="margin-top:10px;">
+      <span style="background:#F5F3FF; color:#6D28D9; font-size:12px; font-weight:600; padding:4px 12px; border-radius:20px">₹99 per session</span>
+    </div>
+  </div>
+
+  <!-- SECTION B — PAYMENT GATE -->
+  <div id="payment-gate" style="background:white; border:1px solid #E2E8F0; border-radius:16px; padding:24px; max-width:520px; margin-bottom:28px;">
+    <h2 style="font-size:18px; font-weight:700; margin:0 0 12px;">Unlock AI Interview</h2>
+    <div style="font-size:32px; font-weight:800; color:#7C3AED; margin-bottom:16px;">₹99</div>
+    <ul style="list-style:none; padding:0; margin:0 0 20px; font-size:14px; color:#475569; line-height:2;">
+      <li style="display:flex; gap:8px; align-items:center"><span style="color:#7C3AED">✓</span> 5-8 personalized questions based on your profile</li>
+      <li style="display:flex; gap:8px; align-items:center"><span style="color:#7C3AED">✓</span> Instant feedback after every answer (score out of 10)</li>
+      <li style="display:flex; gap:8px; align-items:center"><span style="color:#7C3AED">✓</span> Final performance report with hiring recommendation</li>
+      <li style="display:flex; gap:8px; align-items:center"><span style="color:#7C3AED">✓</span> Session saved — review answers anytime</li>
+    </ul>
+    <button onclick="handleToolAccess('ai_interview', '{{ tool_price }}')" style="width:100%; background:#7C3AED; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; font-size:15px; cursor:pointer;" onmouseover="this.style.background='#6D28D9'" onmouseout="this.style.background='#7C3AED'">Pay ₹99 and Start &rarr;</button>
+  </div>
+
+  <!-- STATE 1: SETUP FORM -->
+  <div id="interview-setup" style="display:none; max-width:540px; background:white; border:1px solid #E2E8F0; border-radius:16px; padding:24px; margin-bottom:28px;">
+    <h2 style="font-size:17px; font-weight:700; margin:0 0 20px;">Interview Setup</h2>
+    <div style="margin-bottom:20px;">
+      <label style="display:block; font-size:14px; font-weight:600; margin-bottom:8px;">What role are you interviewing for? <span style="color:#DC2626">*</span></label>
+      <input type="text" id="interview-role" placeholder="e.g. Software Engineer at Google" style="width:100%; padding:10px 12px; border:1px solid #CBD5E1; border-radius:8px; font-size:14px; box-sizing:border-box;">
+    </div>
+    <div style="margin-bottom:24px;">
+      <label style="display:block; font-size:14px; font-weight:600; margin-bottom:8px;">How many questions?</label>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <label style="background:#F8FAFC; border:2px solid #E2E8F0; padding:8px 12px; border-radius:20px; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+          <input type="radio" name="num_questions" value="3" style="margin:0;"> 3 — Quick
+        </label>
+        <label style="background:#F5F3FF; border:2px solid #DDD6FE; padding:8px 12px; border-radius:20px; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:6px; color:#6D28D9;">
+          <input type="radio" name="num_questions" value="5" checked style="margin:0;"> 5 — Standard
+        </label>
+        <label style="background:#F8FAFC; border:2px solid #E2E8F0; padding:8px 12px; border-radius:20px; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+          <input type="radio" name="num_questions" value="8" style="margin:0;"> 8 — Full
+        </label>
+      </div>
+    </div>
+    <details style="margin-bottom:20px; border:1px solid #E2E8F0; border-radius:8px; overflow:hidden;">
+      <summary style="padding:12px 16px; font-size:14px; font-weight:600; cursor:pointer; background:#F8FAFC;">Tips for best performance ▾</summary>
+      <div style="padding:14px 16px; font-size:13px; color:#475569; line-height:1.7; border-top:1px solid #E2E8F0;">
+        <ul style="margin:0; padding-left:16px;">
+          <li>Answer in 2-4 complete sentences</li>
+          <li>Use specific examples from your experience</li>
+          <li>For technical questions: explain your reasoning</li>
+          <li>Take your time — there is no real time pressure</li>
+        </ul>
+      </div>
+    </details>
+    <button id="start-interview-btn" style="width:100%; background:#7C3AED; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; font-size:15px; cursor:pointer;" onmouseover="this.style.background='#6D28D9'" onmouseout="this.style.background='#7C3AED'">Start Interview</button>
+  </div>
+
+  <!-- STATE 2: INTERVIEW IN PROGRESS -->
+  <div id="interview-in-progress" style="display:none; max-width:700px; margin-bottom:28px;">
+    <div style="margin-bottom:16px;">
+      <div id="progress-text" style="font-size:14px; font-weight:600; color:#334155; margin-bottom:8px;">Question 1 of 5</div>
+      <div id="progress-bar-container" style="display:flex; gap:4px; height:6px;"></div>
+    </div>
+    <div style="background:white; border:1px solid #E2E8F0; border-radius:16px; padding:24px; margin-bottom:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span id="question-number-badge" style="background:#F5F3FF; color:#6D28D9; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px;">1</span>
+          <span id="question-type-badge" style="background:#F8FAFC; color:#475569; font-size:12px; font-weight:600; padding:4px 10px; border-radius:12px;">Technical</span>
         </div>
-        <p class="text-sm text-slate-500 mt-1">{{ tool_description }}</p>
-        <div id="usage-info" class="mt-2 text-xs text-slate-400"></div>
+        <span id="question-diff-badge" style="font-size:12px; font-weight:700; padding:3px 10px; border-radius:12px; background:#FEF3C7; color:#92400E;">Medium</span>
+      </div>
+      <h3 id="question-text" style="font-size:16px; font-weight:500; line-height:1.7; color:#0F172A; margin:0 0 12px;">Loading question...</h3>
+      <p id="question-hint" style="font-size:13px; color:#64748B; font-style:italic; margin:0;"></p>
+    </div>
+    <div id="answer-area" style="margin-bottom:20px;">
+      <textarea id="answer-input" placeholder="Type your answer here..." style="width:100%; min-height:140px; padding:14px; border:1px solid #CBD5E1; border-radius:12px; font-size:15px; font-family:inherit; line-height:1.6; resize:vertical; box-sizing:border-box;"></textarea>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+        <a href="#" onclick="skipQuestion && skipQuestion(); return false;" style="color:#64748B; font-size:13px; text-decoration:none;">Skip question</a>
+        <button id="submit-answer-btn" style="background:#7C3AED; color:white; border:none; padding:10px 24px; border-radius:8px; font-weight:600; cursor:pointer;" onmouseover="this.style.background='#6D28D9'" onmouseout="this.style.background='#7C3AED'">Submit Answer</button>
+      </div>
+    </div>
+    <div id="answer-feedback" style="display:none; background:white; border:1px solid #DDD6FE; border-radius:16px; padding:24px; margin-bottom:20px;">
+      <h4 style="font-size:15px; font-weight:700; color:#4C1D95; margin:0 0 16px;">Feedback</h4>
+      <div style="display:flex; gap:20px; margin-bottom:20px;">
+        <div style="text-align:center; flex-shrink:0;">
+          <div id="feedback-score" style="font-size:36px; font-weight:800; color:#7C3AED; line-height:1;">8<span style="font-size:16px; color:#94A3B8;">/10</span></div>
+          <div style="font-size:11px; color:#64748B; margin-top:4px;">Score</div>
+        </div>
+        <p id="feedback-overall" style="font-size:14px; color:#334155; line-height:1.6; margin:0; flex:1;"></p>
+      </div>
+      <div style="display:flex; gap:14px; margin-bottom:16px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:150px; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:8px; padding:14px;">
+          <div style="font-size:13px; font-weight:700; color:#166534; margin-bottom:8px;">Strengths</div>
+          <ul id="feedback-strengths" style="margin:0; padding-left:16px; font-size:13px; color:#15803D; line-height:1.6;"></ul>
+        </div>
+        <div style="flex:1; min-width:150px; background:#FFFBEB; border:1px solid #FDE68A; border-radius:8px; padding:14px;">
+          <div style="font-size:13px; font-weight:700; color:#92400E; margin-bottom:8px;">Improve</div>
+          <ul id="feedback-improve" style="margin:0; padding-left:16px; font-size:13px; color:#B45309; line-height:1.6;"></ul>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <button id="next-question-btn" style="background:#7C3AED; color:white; border:none; padding:10px 24px; border-radius:8px; font-weight:600; cursor:pointer;">Next Question &rarr;</button>
       </div>
     </div>
   </div>
 
-  <!-- Payment gate -->
-  <div id="tool-gate" class="hidden bg-white rounded-xl border border-slate-200 p-8 text-center">
-    <div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-      <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-      </svg>
+  <!-- STATE 3: FINAL REPORT -->
+  <div id="interview-report" style="display:none; max-width:800px; margin-bottom:28px;">
+    <div style="background:white; border:1px solid #E2E8F0; border-radius:16px; padding:32px; text-align:center; margin-bottom:20px;">
+      <h2 style="font-size:22px; font-weight:800; color:#0F172A; margin:0 0 20px;">Interview Complete!</h2>
+      <div style="position:relative; width:130px; height:130px; margin:0 auto 16px;">
+        <svg viewBox="0 0 36 36" style="width:100%; height:100%; transform:rotate(-90deg);">
+          <path stroke="#E2E8F0" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+          <path id="report-score-ring" stroke="#7C3AED" stroke-width="3" stroke-dasharray="0, 100" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+        </svg>
+        <div id="report-score-text" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:34px; font-weight:800; color:#0F172A;">0</div>
+      </div>
+      <div style="font-size:13px; color:#64748B; margin-bottom:14px;">Overall Score</div>
+      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <span id="report-grade" style="background:#F5F3FF; color:#6D28D9; font-weight:700; padding:6px 16px; border-radius:20px; font-size:15px;">Grade: B</span>
+        <span id="report-hire" style="background:#DCFCE7; color:#166534; font-weight:700; padding:6px 16px; border-radius:20px; font-size:15px;">Hire</span>
+      </div>
     </div>
-    <h3 class="text-base font-semibold text-slate-700 mb-1">Payment Required</h3>
-    <p class="text-sm text-slate-500 mb-5">Pay ₹99 to start an AI mock interview session.</p>
-    <button onclick="initiateToolPayment('ai_interview')"
-      class="px-6 py-2.5 bg-amber-600 text-white text-sm font-semibold rounded-xl hover:bg-amber-700 transition-colors">
-      Pay ₹99 &amp; Start Interview
-    </button>
+    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; margin-bottom:20px;">
+      <div style="background:white; border:1px solid #E2E8F0; border-radius:12px; padding:16px; text-align:center;">
+        <div style="font-size:11px; color:#64748B; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Technical</div>
+        <div id="report-tech-score" style="font-size:22px; font-weight:700; color:#0F172A;">0/10</div>
+      </div>
+      <div style="background:white; border:1px solid #E2E8F0; border-radius:12px; padding:16px; text-align:center;">
+        <div style="font-size:11px; color:#64748B; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Behavioral</div>
+        <div id="report-beh-score" style="font-size:22px; font-weight:700; color:#0F172A;">0/10</div>
+      </div>
+      <div style="background:white; border:1px solid #E2E8F0; border-radius:12px; padding:16px; text-align:center;">
+        <div style="font-size:11px; color:#64748B; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">HR</div>
+        <div id="report-hr-score" style="font-size:22px; font-weight:700; color:#0F172A;">0/10</div>
+      </div>
+    </div>
+    <div style="display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:180px; background:white; border:1px solid #E2E8F0; border-radius:16px; padding:20px; border-left:4px solid #10B981;">
+        <h3 style="font-size:14px; font-weight:700; margin:0 0 12px;">Top Strengths</h3>
+        <ol id="report-strengths" style="margin:0; padding-left:16px; font-size:13px; color:#334155; line-height:1.6;"></ol>
+      </div>
+      <div style="flex:1; min-width:180px; background:white; border:1px solid #E2E8F0; border-radius:16px; padding:20px; border-left:4px solid #F59E0B;">
+        <h3 style="font-size:14px; font-weight:700; margin:0 0 12px;">Areas to Improve</h3>
+        <ol id="report-improve" style="margin:0; padding-left:16px; font-size:13px; color:#334155; line-height:1.6;"></ol>
+      </div>
+    </div>
+    <details style="background:white; border:1px solid #E2E8F0; border-radius:12px; margin-bottom:20px; overflow:hidden;">
+      <summary style="padding:16px 20px; font-size:14px; font-weight:700; cursor:pointer; background:#F8FAFC;">Review all questions and answers ▾</summary>
+      <div id="report-qa-list" style="padding:0 20px 20px; border-top:1px solid #E2E8F0;"></div>
+    </details>
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+      <button onclick="window.location.reload()" style="background:white; border:1px solid #CBD5E1; color:#334155; padding:10px 16px; border-radius:8px; font-weight:600; cursor:pointer; font-size:14px;">Practice Again (New)</button>
+      <a href="/tools/" style="background:white; border:1px solid #CBD5E1; color:#334155; padding:10px 16px; border-radius:8px; font-weight:600; cursor:pointer; text-decoration:none; font-size:14px;">&larr; Back to AI Tools</a>
+    </div>
   </div>
 
-  <!-- Tool interface -->
-  <div id="tool-interface" class="hidden space-y-5">
-
-    <!-- Loading state -->
-    <div id="tool-loading" class="hidden bg-white rounded-xl border border-slate-200 p-12 text-center">
-      <div class="w-16 h-16 mx-auto mb-4">
-        <svg class="animate-spin w-16 h-16 text-amber-600" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-        </svg>
-      </div>
-      <p id="loading-text" class="text-sm font-semibold text-slate-700">Generating interview questions...</p>
-      <p class="text-xs text-slate-400 mt-1">This may take 15–30 seconds</p>
+  <!-- PAST RESULTS -->
+  {% if past_results %}
+  <div style="margin-top:40px;">
+    <h3 style="font-size:16px; font-weight:700; margin:0 0 14px; display:flex; align-items:center; gap:8px;">
+      Session History <span style="background:#E2E8F0; color:#475569; font-size:12px; padding:2px 8px; border-radius:12px;">{{ past_results|length }}</span>
+    </h3>
+    <div style="background:white; border:1px solid #E2E8F0; border-radius:12px; overflow:hidden;">
+      <table style="width:100%; border-collapse:collapse; font-size:14px; text-align:left;">
+        <thead>
+          <tr style="background:#F8FAFC; border-bottom:1px solid #E2E8F0; color:#64748B;">
+            <th style="padding:12px 16px; font-weight:600;">Date</th>
+            <th style="padding:12px 16px; font-weight:600;">Role</th>
+            <th style="padding:12px 16px; font-weight:600;">Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for res in past_results %}
+          <tr style="border-bottom:1px solid #F1F5F9;">
+            <td style="padding:12px 16px; color:#334155;">{{ res.created_at|date:"M d, Y" }}</td>
+            <td style="padding:12px 16px; color:#0F172A;">{{ res.result_data.job_role|default:"-" }}</td>
+            <td style="padding:12px 16px; font-weight:600; color:#7C3AED;">{{ res.result_data.final_report.overall_score|default:"-" }}/10</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
+  </div>
+  {% endif %}
 
-    <!-- Setup form (step 1) -->
-    <div id="tool-form" class="bg-white rounded-xl border border-slate-200 p-6">
-      <h2 class="font-semibold text-slate-800 mb-4">Set Up Your Interview</h2>
-      <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Target Job Role</label>
-          <input id="job-role-input" type="text" placeholder="e.g. Software Engineer at Google"
-            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Number of Questions</label>
-          <select id="num-questions-input"
-            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-            <option value="3">3 questions (~12 min)</option>
-            <option value="5" selected>5 questions (~20 min)</option>
-            <option value="8">8 questions (~32 min)</option>
-          </select>
-        </div>
-        <button id="analyze-btn" onclick="runTool()"
-          class="w-full py-3 bg-amber-600 text-white text-sm font-semibold rounded-xl hover:bg-amber-700 transition-colors">
-          Start Interview
-        </button>
-      </div>
-    </div>
+</div>
+{% endblock %}
 
-    <!-- Interview in progress (step 2) -->
-    <div id="interview-section" class="hidden space-y-4">
-      <!-- Progress bar -->
-      <div class="bg-white rounded-xl border border-slate-200 p-4">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-sm font-medium text-slate-700">Question <span id="current-q-num">1</span> of <span id="total-q-num">5</span></span>
-          <span id="interview-job-role" class="text-xs text-slate-400"></span>
-        </div>
-        <div class="w-full bg-slate-100 rounded-full h-2">
-          <div id="interview-progress-bar" class="bg-amber-500 h-2 rounded-full transition-all duration-500" style="width:0%"></div>
-        </div>
-      </div>
-
-    
+{% block extra_js %}
+{{ block.super }}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="{% static 'js/ai_tools.js' %}"></script>
+<script>
+window.currentToolType = 'ai_interview';
+window.currentToolPrice = '99';
+document.addEventListener('DOMContentLoaded', function() {
+  initToolPage('ai_interview');
+  document.getElementById('start-interview-btn')?.addEventListener('click', startInterview);
+  document.getElementById('submit-answer-btn')?.addEventListener('click', submitAnswer);
+});
+</script>
+{% endblock %}

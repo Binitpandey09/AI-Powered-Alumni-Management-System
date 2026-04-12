@@ -13,6 +13,9 @@ from .views import (
     AdminBroadcastView,
     AdminReferralsView,
     AdminActionLogView,
+    StudentDashboardDataView,
+    AlumniDashboardDataView,
+    FacultyDashboardDataView,
 )
 
 urlpatterns = [
@@ -33,4 +36,9 @@ urlpatterns = [
     path('admin/referrals/', AdminReferralsView.as_view()),
     path('admin/broadcast/', AdminBroadcastView.as_view()),
     path('admin/action-log/', AdminActionLogView.as_view()),
+
+    # Dashboard API views
+    path('student-data/', StudentDashboardDataView.as_view()),
+    path('alumni-data/', AlumniDashboardDataView.as_view()),
+    path('faculty-data/', FacultyDashboardDataView.as_view()),
 ]

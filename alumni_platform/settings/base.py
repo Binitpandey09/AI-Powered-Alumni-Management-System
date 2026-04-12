@@ -24,7 +24,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'channels',
     'django_celery_beat',
-    'debug_toolbar',
+
     'imagekit',
     'taggit',
     
@@ -49,7 +49,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
+
     'utils.middleware.JWTAuthMiddleware',
 ]
 
@@ -216,5 +216,59 @@ SESSION_CANCELLATION_HOURS = 12
 MAX_UPLOAD_SIZE = 5242880  # 5MB in bytes
 ALLOWED_RESUME_EXTENSIONS = ['pdf', 'doc', 'docx']
 ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif']
-FILE_UPLOAD_MAX_MEMORY_SIZE = 10485760   # 10MB
-DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760   # 10MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880   # 5MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880   # 5MB
+
+# Security — cookie settings
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)
+CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
+
+# Logging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'WARNING',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'django.log',
+            'formatter': 'verbose',
+        },
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+        'admin_access_file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'admin_access.log',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'WARNING',
+            'propagate': True,
+        },
+        'admin_access': {
+            'handlers': ['admin_access_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}

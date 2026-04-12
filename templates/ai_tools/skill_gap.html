@@ -1,0 +1,181 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Skill Gap Analyzer — AlumniAI{% endblock %}
+
+{% block sidebar_links %}
+  {% if user.role == 'student' %}{% include 'partials/sidebar_student.html' %}
+  {% elif user.role == 'alumni' %}{% include 'partials/sidebar_alumni.html' %}
+  {% elif user.role == 'faculty' %}{% include 'partials/sidebar_faculty.html' %}
+  {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div style="max-width:800px; margin:0 auto;">
+
+  <!-- SECTION A — PAGE HEADER -->
+  <div style="margin-bottom:28px">
+    <a href="/tools/" style="color:#64748B; text-decoration:none; font-size:13px; display:inline-flex; align-items:center; gap:4px; margin-bottom:14px; font-weight:500;">
+      &larr; AI Career Tools
+    </a>
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px">
+      <div style="width:44px; height:44px; border-radius:12px; background:#F0FDFA; display:flex; align-items:center; justify-content:center; flex-shrink:0">
+        <svg width="22" height="22" fill="none" stroke="#0D9488" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
+        </svg>
+      </div>
+      <div>
+        <h1 style="font-size:22px; font-weight:700; color:#0F172A; margin:0">Skill Gap Analyzer</h1>
+        <p style="font-size:14px; color:#64748B; margin:4px 0 0">Find exactly what skills you need for your dream role</p>
+      </div>
+    </div>
+    <div style="margin-top:10px;">
+      <span style="background:#F0FDFA; color:#0F766E; font-size:12px; font-weight:600; padding:4px 12px; border-radius:20px">₹79 per analysis</span>
+    </div>
+  </div>
+
+  <!-- SECTION B — PAYMENT GATE -->
+  <div id="payment-gate" style="background:white; border:1px solid #E2E8F0; border-radius:16px; padding:24px; max-width:520px; margin-bottom:28px;">
+    <h2 style="font-size:18px; font-weight:700; margin:0 0 12px;">Unlock Skill Analysis</h2>
+    <div style="font-size:32px; font-weight:800; color:#0D9488; margin-bottom:16px;">₹79</div>
+    <ul style="list-style:none; padding:0; margin:0 0 20px; font-size:14px; color:#475569; line-height:2;">
+      <li style="display:flex; gap:8px; align-items:center"><span style="color:#0D9488">✓</span> Readiness score 0-100 for your target role</li>
+      <li style="display:flex; gap:8px; align-items:center"><span style="color:#0D9488">✓</span> Exact skills you need to learn (prioritized)</li>
+      <li style="display:flex; gap:8px; align-items:center"><span style="color:#0D9488">✓</span> Week-by-week learning roadmap</li>
+      <li style="display:flex; gap:8px; align-items:center"><span style="color:#0D9488">✓</span> Free resource recommendations for each skill</li>
+    </ul>
+    <button onclick="handleToolAccess('skill_gap', '{{ tool_price }}')" style="width:100%; background:#0D9488; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; font-size:15px; cursor:pointer;" onmouseover="this.style.background='#0F766E'" onmouseout="this.style.background='#0D9488'">Pay ₹79 and Analyze &rarr;</button>
+  </div>
+
+  <!-- SECTION C — INPUT -->
+  <div id="skill-gap-input" style="display:none; max-width:620px; background:white; border:1px solid #E2E8F0; border-radius:16px; padding:24px; margin-bottom:28px;">
+    <div style="margin-bottom:20px;">
+      <label style="display:block; font-size:14px; font-weight:600; margin-bottom:8px;">Target Role <span style="color:#DC2626">*</span></label>
+      <input type="text" id="target-role-input" placeholder="e.g. Full Stack Developer at a startup" style="width:100%; padding:12px 14px; border:2px solid #E2E8F0; border-radius:8px; font-size:15px; box-sizing:border-box; outline:none;" onfocus="this.style.borderColor='#0D9488'" onblur="this.style.borderColor='#E2E8F0'">
+    </div>
+    <div style="margin-bottom:20px;">
+      <div style="font-size:12px; font-weight:600; color:#64748B; margin-bottom:8px; text-transform:uppercase;">Quick Select:</div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px;">
+        {% for role in 'Full Stack Dev,Backend Dev,Data Scientist,ML Engineer,DevOps Engineer,Frontend Dev,Android Dev,Cloud Engineer'|split:"," %}
+        <span style="background:#F1F5F9; color:#475569; font-size:13px; font-weight:500; padding:6px 12px; border-radius:20px; cursor:pointer;" onmouseover="this.style.background='#E2E8F0'" onmouseout="this.style.background='#F1F5F9'" onclick="document.getElementById('target-role-input').value=this.innerText">{{ role }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    <button id="run-skill-gap-btn" style="width:100%; background:#0D9488; color:white; border:none; padding:14px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;" onmouseover="this.style.background='#0F766E'" onmouseout="this.style.background='#0D9488'">Analyze Skill Gap</button>
+  </div>
+
+  <!-- LOADING STATE -->
+  <div id="loading-state" style="display:none; padding:40px; text-align:center;">
+    <div style="display:inline-block; width:40px; height:40px; border:4px solid #CCFBF1; border-top:4px solid #0D9488; border-radius:50%; animation:spin 1s linear infinite;"></div>
+    <div id="loading-text" style="margin-top:20px; font-weight:600; color:#334155;">Checking your profile...</div>
+    <div style="font-size:13px; color:#64748B; margin-top:8px;">This advanced analysis takes around 30 seconds</div>
+  </div>
+
+  <!-- RESULT SECTION -->
+  <div id="skill-gap-result" style="display:none; margin-bottom:28px;">
+
+    <!-- Readiness Card -->
+    <div style="background:white; border:1px solid #E2E8F0; border-radius:16px; padding:28px; margin-bottom:20px; display:flex; gap:28px; align-items:center; flex-wrap:wrap;">
+      <div style="position:relative; width:130px; height:130px; flex-shrink:0;">
+        <svg viewBox="0 0 36 36" style="width:100%; height:100%; transform:rotate(-90deg);">
+          <path stroke="#F1F5F9" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+          <path id="readiness-score-ring" stroke="#0D9488" stroke-width="3" stroke-dasharray="0, 100" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+        </svg>
+        <div id="readiness-score-text" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:34px; font-weight:800; color:#0F172A;">0</div>
+      </div>
+      <div>
+        <h2 id="readiness-level-text" style="font-size:26px; font-weight:800; color:#0F172A; margin:0 0 6px;">Analyzing...</h2>
+        <div id="readiness-role" style="font-size:14px; color:#0D9488; margin-bottom:10px; font-weight:600;"></div>
+        <div id="readiness-weeks" style="font-size:13px; color:#64748B; background:#F8FAFC; padding:6px 12px; border-radius:8px; display:inline-block;"></div>
+      </div>
+    </div>
+
+    <!-- Matching Skills -->
+    <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:16px; padding:20px; margin-bottom:20px;">
+      <h3 style="font-size:15px; font-weight:700; color:#166534; margin:0 0 12px;">✓ Skills matching this role</h3>
+      <div id="matching-skills-container" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+    </div>
+
+    <!-- Missing Skills -->
+    <div style="background:white; border:1px solid #E2E8F0; border-radius:16px; padding:0; margin-bottom:20px; overflow:hidden;">
+      <div style="padding:20px 20px 14px; border-bottom:1px solid #E2E8F0; display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="font-size:15px; font-weight:700; color:#0F172A; margin:0;">Skills You Need to Learn</h3>
+        <span id="missing-skills-count" style="background:#FEE2E2; color:#B91C1C; font-weight:700; padding:4px 12px; border-radius:20px; font-size:13px;">0 skills</span>
+      </div>
+      <div id="missing-skills-list" style="display:flex; flex-direction:column;"></div>
+    </div>
+
+    <!-- Roadmap -->
+    <div style="background:white; border:1px solid #E2E8F0; border-radius:16px; padding:28px; margin-bottom:20px;">
+      <h3 style="font-size:16px; font-weight:800; color:#0F172A; margin:0 0 28px;">Your Week-by-Week Roadmap</h3>
+      <div id="roadmap-timeline" style="position:relative; padding-left:24px;">
+        <div style="position:absolute; top:8px; bottom:0; left:7px; width:2px; background:#E2E8F0;"></div>
+      </div>
+      <div id="roadmap-total" style="margin-top:20px; padding-top:20px; border-top:1px solid #E2E8F0; font-size:15px; font-weight:700; color:#0D9488; text-align:center;"></div>
+    </div>
+
+    <!-- Market Insight -->
+    <div style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:16px; padding:20px; margin-bottom:20px;">
+      <h3 style="font-size:15px; font-weight:700; color:#1D4ED8; margin:0 0 10px;">📈 Job Market Insight</h3>
+      <p id="market-insight-text" style="font-size:14px; color:#1E3A8A; line-height:1.6; margin:0;"></p>
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+      <button onclick="window.location.reload()" style="background:white; border:1px solid #CBD5E1; color:#334155; padding:10px 16px; border-radius:8px; font-weight:600; cursor:pointer; font-size:14px;">Analyze Another Role</button>
+      <a href="/tools/" style="background:white; border:1px solid #CBD5E1; color:#334155; padding:10px 16px; border-radius:8px; font-weight:600; cursor:pointer; text-decoration:none; font-size:14px;">&larr; Back to AI Tools</a>
+    </div>
+  </div>
+
+  <!-- PAST RESULTS -->
+  {% if past_results %}
+  <div style="margin-top:40px;">
+    <h3 style="font-size:16px; font-weight:700; margin:0 0 14px; display:flex; align-items:center; gap:8px;">
+      Previous Analyses <span style="background:#E2E8F0; color:#475569; font-size:12px; padding:2px 8px; border-radius:12px;">{{ past_results|length }}</span>
+    </h3>
+    <div style="background:white; border:1px solid #E2E8F0; border-radius:12px; overflow:hidden;">
+      <table style="width:100%; border-collapse:collapse; font-size:14px; text-align:left;">
+        <thead>
+          <tr style="background:#F8FAFC; border-bottom:1px solid #E2E8F0; color:#64748B;">
+            <th style="padding:12px 16px; font-weight:600;">Date</th>
+            <th style="padding:12px 16px; font-weight:600;">Role</th>
+            <th style="padding:12px 16px; font-weight:600;">Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for res in past_results %}
+          <tr style="border-bottom:1px solid #F1F5F9;">
+            <td style="padding:12px 16px; color:#334155;">{{ res.created_at|date:"M d, Y" }}</td>
+            <td style="padding:12px 16px; color:#0F172A;">{{ res.result_data.target_role|default:"-" }}</td>
+            <td style="padding:12px 16px; font-weight:600; color:#0D9488;">{{ res.result_data.readiness_score|default:"0" }}/100</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="{% static 'js/ai_tools.js' %}"></script>
+<script>
+window.currentToolType = 'skill_gap';
+window.currentToolPrice = '79';
+document.addEventListener('DOMContentLoaded', function() {
+  initToolPage('skill_gap');
+  document.getElementById('run-skill-gap-btn')?.addEventListener('click', runSkillGapAnalysis);
+});
+</script>
+{% endblock %}

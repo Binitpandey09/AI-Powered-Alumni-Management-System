@@ -1,33 +1,32 @@
-FROM python:3.8-slim
-
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV DJANGO_SETTINGS_MODULE=alumni_platform.settings.prod
-ENV DEBIAN_FRONTEND=noninteractive
+FROM python:3.11-slim
 
 WORKDIR /app
 
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     postgresql-client \
-    gcc \
-    python3-dev \
     libpq-dev \
+    gcc \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt /app/
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . /app/
+# Copy project
+COPY . .
 
-RUN mkdir -p /app/staticfiles /app/media /app/logs
+# Create necessary directories
+RUN mkdir -p logs media staticfiles
 
-RUN python manage.py collectstatic --noinput || true
+# Collect static files
+RUN python manage.py collectstatic --noinput --settings=alumni_platform.settings.prod
 
-RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
-USER appuser
+# Create non-root user for security
+RUN useradd --create-home --shell /bin/bash alumniai
+RUN chown -R alumniai:alumniai /app
+USER alumniai
 
 EXPOSE 8000
 
-CMD ["gunicorn", "--config", "gunicorn.conf.py", "alumni_platform.wsgi:application"]
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "alumni_platform.asgi:application"]

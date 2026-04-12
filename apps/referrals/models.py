@@ -64,6 +64,7 @@ class Referral(models.Model):
             models.Index(fields=['status', '-created_at']),
             models.Index(fields=['posted_by', 'status']),
             models.Index(fields=['deadline', 'status']),
+            models.Index(fields=['work_type', 'status']),
         ]
 
     @property

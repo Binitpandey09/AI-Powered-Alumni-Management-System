@@ -1,100 +1,132 @@
 {% extends 'base.html' %}
 {% load static %}
 
+
 {% block extra_css %}
 <style>
-  .sidebar-link {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 12px; font-size: 0.875rem; border-radius: 8px;
-    color: #475569; transition: all 0.15s;
-    position: relative;
+/* ── Main header ── */
+#main-header {
+  position: sticky; top: 0; z-index: 50; height: 60px; background: white;
+  border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); box-sizing: border-box;
+}
+
+/* ── Below-header layout container ── */
+.page-body {
+  display: flex; height: calc(100vh - 60px); overflow: hidden;
+}
+
+/* ── Mobile Sidebar Overlay ── */
+@media (max-width: 1023px) {
+  .dashboard-sidebar {
+    position: fixed !important; top: 60px !important; left: 0 !important; 
+    height: calc(100vh - 60px) !important; z-index: 100 !important;
+    transform: translateX(-100%); transition: transform 0.3s ease;
+    box-shadow: 4px 0 15px rgba(0,0,0,0.1); width: 260px !important;
   }
-  .sidebar-link:hover { color: #2563eb; background: #eff6ff; }
-  .sidebar-active { color: #2563eb !important; background: #eff6ff !important; font-weight: 600; }
-  .soon-badge {
-    margin-left: auto; font-size: 0.65rem; color: #94a3b8;
-    background: #f1f5f9; padding: 1px 6px; border-radius: 9999px;
+  .dashboard-sidebar.mobile-open {
+    transform: translateX(0);
   }
+}
+/* ── Sidebar ── */
+.dashboard-sidebar {
+  width: 240px; min-width: 240px; background: white; border-right: 1px solid #E2E8F0;
+  height: 100%; display: flex; flex-direction: column; overflow-y: auto; overflow-x: visible;
+  position: relative; z-index: 40; flex-shrink: 0; transition: width 220ms ease, min-width 220ms ease;
+}
+.dashboard-sidebar.sidebar-collapsed {
+  width: 64px; min-width: 64px;
+}
+
+/* ── Main content ── */
+.page-main {
+  flex: 1; min-width: 0; overflow-y: auto; background: #F8FAFC; position: relative; z-index: 10;
+}
+
+
+
+/* ── Sidebar nav links ── */
+.sidebar-link {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+  border-radius: 8px; text-decoration: none; color: #64748B; font-size: 14px;
+  font-weight: 500; transition: all 0.15s; margin-bottom: 2px;
+  border-left: 3px solid transparent; box-sizing: border-box; width: 100%;
+  position: relative;
+}
+.sidebar-link:hover {
+  background: #F1F5F9; color: #0F172A;
+}
+.sidebar-active {
+  background: #EFF6FF !important; color: #2563EB !important;
+  font-weight: 600; border-left-color: #2563EB;
+}
+
+.soon-badge {
+  margin-left: auto; font-size: 0.65rem; color: #94a3b8;
+  background: #f1f5f9; padding: 1px 6px; border-radius: 9999px;
+}
+
+/* ── Hide labels when collapsed ── */
+.dashboard-sidebar.sidebar-collapsed .logo-text,
+.dashboard-sidebar.sidebar-collapsed .soon-badge,
+.dashboard-sidebar.sidebar-collapsed .user-info-text,
+.dashboard-sidebar.sidebar-collapsed .role-badge-container {
+  display: none !important;
+}
+.dashboard-sidebar.sidebar-collapsed .sidebar-link {
+  justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; font-size: 0;
+}
+.dashboard-sidebar.sidebar-collapsed #logout-btn {
+  font-size: 0; justify-content: center; padding-left: 0; padding-right: 0;
+}
+.dashboard-sidebar.sidebar-collapsed .user-profile-container {
+  justify-content: center; padding: 0; margin-bottom: 0.5rem;
+}
+
+/* Sidebar label — hidden when collapsed */
+.dashboard-sidebar.sidebar-collapsed .sidebar-label {
+  display: none !important;
+}
+
+/* JS tooltip styles (appended to body — not clipped by overflow) */
+#sidebar-js-tooltip {
+  position: fixed; z-index: 99999;
+  background: #1e293b; color: #fff;
+  padding: 5px 12px; border-radius: 6px;
+  font-size: 0.75rem; font-weight: 500;
+  white-space: nowrap; pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+  opacity: 0; transition: opacity 0.15s;
+}
+#sidebar-js-tooltip.visible { opacity: 1; }
 </style>
 {% endblock %}
 
+
+
 {% block body %}
-<div class="flex min-h-screen bg-slate-50">
-
-  <!-- ── Sidebar ── -->
-  <aside class="hidden lg:flex flex-col w-60 bg-white border-r border-slate-200 py-6 px-4 flex-shrink-0">
-
-    <!-- Logo -->
-    <a href="/" class="flex items-center gap-2 mb-8 px-2">
-      <svg class="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path d="M12 3L1 9l11 6 9-4.91V17M1 9v8" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M5 12.5v5a7 7 0 0014 0v-5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span class="text-base font-bold text-blue-600 tracking-tight">AlumniAI</span>
-    </a>
-
-    <!-- Nav links — role-aware -->
-    <nav class="flex flex-col gap-1 flex-1">
-      {% block sidebar_links %}
-        {% include 'partials/sidebar.html' %}
-      {% endblock %}
-    </nav>
-
-    <!-- User card + Logout -->
-    <div class="mt-auto pt-4 border-t border-slate-100">
-      <div class="flex items-center gap-2.5 px-2 mb-3">
-        {% if user.profile_pic %}
-          <img src="{{ user.profile_pic.url }}" alt="" class="w-9 h-9 rounded-full object-cover flex-shrink-0"/>
-        {% else %}
-          <div class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
-            {{ user.first_name|slice:":1"|upper }}{{ user.last_name|slice:":1"|upper }}
-          </div>
-        {% endif %}
-        <div class="min-w-0 flex-1">
-          <p class="text-xs font-semibold text-slate-800 truncate">{{ user.get_full_name }}</p>
-          <p class="text-xs text-slate-400 truncate">{{ user.email }}</p>
-        </div>
-      </div>
-      <div class="px-2 mb-2">
-        <span class="inline-block text-xs font-medium px-2 py-0.5 rounded-full
-          {% if user.role == 'alumni' %}bg-blue-100 text-blue-700
-          {% elif user.role == 'student' %}bg-amber-100 text-amber-700
-          {% elif user.role == 'faculty' %}bg-teal-100 text-teal-700
-          {% else %}bg-slate-100 text-slate-600{% endif %} capitalize">
-          {{ user.role }}
-        </span>
-      </div>
-      <button id="logout-btn"
-        class="flex items-center gap-2 px-3 py-2 text-sm text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors w-full">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+  <!-- ══ TOP HEADER BAR ══ -->
+  <header id="main-header">
+    <div style="display:flex; align-items:center; gap:16px">
+      <!-- Hamburger Toggle Button -->
+      <button id="sidebar-toggle-btn" class="text-slate-500 hover:text-blue-600 transition-colors p-2 rounded-lg hover:bg-slate-100" title="Toggle Sidebar" style="background:none; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path id="sidebar-icon-open" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          <path id="sidebar-icon-close" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
-        Sign out
       </button>
+      <a href="/" style="display:flex; align-items:center; gap:8px; text-decoration:none; cursor:pointer" class="hover:opacity-80 transition-opacity">
+        <svg class="w-[30px] h-[30px] text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path d="M12 3L1 9l11 6 9-4.91V17M1 9v8" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M5 12.5v5a7 7 0 0014 0v-5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span style="font-size:18px; font-weight:700; color:#2563EB; letter-spacing:-0.3px">AlumniAI</span>
+      </a>
     </div>
-  </aside>
 
-  <!-- ── Main ── -->
-  <div class="flex-1 flex flex-col min-w-0">
-
-    <!-- Top bar -->
-    <header class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between relative">
-      <!-- Left: page title / breadcrumb area (kept minimal) -->
-      <div class="flex items-center gap-3">
-        <!-- Mobile logo -->
-        <a href="/" class="lg:hidden flex items-center gap-2">
-          <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path d="M12 3L1 9l11 6 9-4.91V17M1 9v8" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M5 12.5v5a7 7 0 0014 0v-5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <span class="text-sm font-bold text-blue-600">AlumniAI</span>
-        </a>
-      </div>
-
-      <!-- Right: Bell + Avatar button -->
-      <div class="flex items-center gap-1 ml-auto">
-
-        <!-- Notification Bell -->
+    <!-- RIGHT: Notification bell + User avatar dropdown -->
+    <div style="display:flex; align-items:center; gap:12px">
+      <!-- Notification Bell -->
         <div style="position:relative;">
           <button id="notif-bell-btn"
             style="position:relative;background:none;border:none;cursor:pointer;padding:6px;border-radius:8px;color:#64748B;display:flex;align-items:center;justify-content:center;"
@@ -132,8 +164,7 @@
             </div>
           </div>
         </div>
-
-        <!-- Avatar button -->
+      <!-- Avatar button -->
         <div class="relative">
           <button id="navbar-avatar-btn"
           style="width:38px;height:38px;border-radius:50%;background:#2563eb;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0;transition:opacity 0.15s;"
@@ -235,27 +266,193 @@
           </div>
 
         </div><!-- /dropdown -->
-      </div><!-- /avatar relative wrapper -->
-      </div><!-- /right flex -->
-    </header>
+      </div>
+    </div>
+  </header>
 
-    <!-- Page content -->
-    <main class="flex-1 p-6 lg:p-8">
+  <!-- ══ BELOW HEADER: SIDEBAR + MAIN CONTENT ══ -->
+  <div class="page-body">
+
+    <!-- LEFT: Sidebar -->
+    <aside class="dashboard-sidebar" id="main-sidebar">
+      <script>
+        // Synchronous collapse to prevent flicker
+        (function() {
+          const sidebar = document.currentScript.parentElement;
+          if (localStorage.getItem('alumniAI_sidebar_collapsed') === '1') {
+            sidebar.classList.add('sidebar-collapsed');
+            // We'll handle icons in the main JS block as they need the DOM to be ready for the toggle btn
+          }
+        })();
+      </script>
+
+
+
+      <nav style="padding:12px 8px; flex:1">
+        {% block sidebar_links %}
+          {% include 'partials/sidebar.html' %}
+        {% endblock %}
+      </nav>
+
+      <div class="sidebar-user-card" style="padding:12px 14px; border-top:1px solid #E2E8F0; display:flex; flex-direction:column; gap:0.5rem">
+        
+      <div class="flex items-center gap-2.5 px-2 mb-3 user-profile-container">
+        {% if user.profile_pic %}
+          <img src="{{ user.profile_pic.url }}" alt="" class="w-9 h-9 rounded-full object-cover flex-shrink-0"/>
+        {% else %}
+          <div class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
+            {{ user.first_name|slice:":1"|upper }}{{ user.last_name|slice:":1"|upper }}
+          </div>
+        {% endif %}
+        <div class="min-w-0 flex-1 user-info-text">
+          <p class="text-xs font-semibold text-slate-800 truncate">{{ user.get_full_name }}</p>
+          <p class="text-xs text-slate-400 truncate">{{ user.email }}</p>
+        </div>
+      </div>
+      <div class="px-2 mb-2 role-badge-container">
+        <span class="inline-block text-xs font-medium px-2 py-0.5 rounded-full
+          {% if user.role == 'alumni' %}bg-blue-100 text-blue-700
+          {% elif user.role == 'student' %}bg-amber-100 text-amber-700
+          {% elif user.role == 'faculty' %}bg-teal-100 text-teal-700
+          {% else %}bg-slate-100 text-slate-600{% endif %} capitalize">
+          {{ user.role }}
+        </span>
+      </div>
+      <button id="logout-btn"
+        class="flex items-center gap-2 px-3 py-2 text-sm text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors w-full">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+        Sign out
+      </button>
+    </div>
+  </aside>
+
+  <!-- RIGHT: Main content area -->
+    <main class="page-main p-5 lg:p-6" style="padding:20px 24px">
       {% block dashboard_content %}{% endblock %}
     </main>
 
   </div>
-</div>
 {% endblock %}
+
 
 {% block extra_js %}
 <script>
-  document.getElementById('logout-btn').addEventListener('click', async () => {
+  // Logout
+  const handleLogout = async () => {
     const refresh = localStorage.getItem('refresh_token');
     await apiPost('/api/accounts/logout/', { refresh });
     clearTokens();
     window.location.href = '/auth/login/';
+  };
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+
+  // All sidebar + dropdown logic
+  document.addEventListener('DOMContentLoaded', () => {
+    const sidebar   = document.getElementById('main-sidebar');
+    const toggleBtn = document.getElementById('sidebar-toggle-btn');
+    const iconOpen  = document.getElementById('sidebar-icon-open');
+    const iconClose = document.getElementById('sidebar-icon-close');
+
+    // Sync hamburger icons with current sidebar state (set by the inline script above)
+    if (sidebar && sidebar.classList.contains('sidebar-collapsed')) {
+      if (iconOpen)  iconOpen.classList.add('hidden');
+      if (iconClose) iconClose.classList.remove('hidden');
+    }
+
+    // Hamburger toggle button
+    if (toggleBtn && sidebar) {
+      toggleBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (window.innerWidth < 1024) {
+          sidebar.classList.toggle('mobile-open');
+          const isMobileOpen = sidebar.classList.contains('mobile-open');
+          if (iconOpen)  iconOpen.classList.toggle('hidden', isMobileOpen);
+          if (iconClose) iconClose.classList.toggle('hidden', !isMobileOpen);
+        } else {
+          sidebar.classList.toggle('sidebar-collapsed');
+          const isCollapsed = sidebar.classList.contains('sidebar-collapsed');
+          if (iconOpen)  iconOpen.classList.toggle('hidden', isCollapsed);
+          if (iconClose) iconClose.classList.toggle('hidden', !isCollapsed);
+          localStorage.setItem('alumniAI_sidebar_collapsed', isCollapsed ? '1' : '0');
+        }
+      });
+    }
+
+    // Sidebar link behaviour: collapse on click + JS hover tooltip
+    if (sidebar) {
+      // Create a single shared tooltip element on body
+      let tip = document.getElementById('sidebar-js-tooltip');
+      if (!tip) {
+        tip = document.createElement('div');
+        tip.id = 'sidebar-js-tooltip';
+        document.body.appendChild(tip);
+      }
+
+      sidebar.querySelectorAll('.sidebar-link').forEach(link => {
+        // Show tooltip only when sidebar is collapsed
+        link.addEventListener('mouseenter', (e) => {
+          if (!sidebar.classList.contains('sidebar-collapsed')) return;
+          const label = link.getAttribute('data-tooltip');
+          if (!label) return;
+          tip.textContent = label;
+          const rect = link.getBoundingClientRect();
+          tip.style.top  = (rect.top + rect.height / 2) + 'px';
+          tip.style.left = (rect.right + 12) + 'px';
+          tip.style.transform = 'translateY(-50%)';
+          tip.classList.add('visible');
+        });
+        link.addEventListener('mouseleave', () => {
+          tip.classList.remove('visible');
+        });
+
+        // Collapse sidebar on click (desktop only)
+        link.addEventListener('click', () => {
+          if (window.innerWidth >= 1024) {
+            sidebar.classList.add('sidebar-collapsed');
+            localStorage.setItem('alumniAI_sidebar_collapsed', '1');
+            if (iconOpen)  iconOpen.classList.add('hidden');
+            if (iconClose) iconClose.classList.remove('hidden');
+          }
+        });
+      });
+    }
+
+    // Profile dropdown
+    const avatarBtn        = document.getElementById('navbar-avatar-btn');
+    const avatarDropdown   = document.getElementById('navbar-avatar-dropdown');
+    const closeDropdownBtn = document.getElementById('avatar-dropdown-close');
+
+    if (avatarBtn && avatarDropdown) {
+      avatarBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        avatarDropdown.classList.toggle('hidden');
+        if (!avatarDropdown.classList.contains('hidden')) updateDropdownDetails();
+      });
+      document.addEventListener('click', (e) => {
+        if (!avatarDropdown.contains(e.target) && e.target !== avatarBtn) {
+          avatarDropdown.classList.add('hidden');
+        }
+      });
+      if (closeDropdownBtn) closeDropdownBtn.addEventListener('click', () => avatarDropdown.classList.add('hidden'));
+    }
   });
+
+  async function updateDropdownDetails() {
+    const res = await apiGet('/api/accounts/profile/basic/');
+    if (res.ok) {
+      const u = res.data;
+      const nameEl   = document.getElementById('dropdown-user-name');
+      const degreeEl = document.getElementById('dropdown-user-degree');
+      const initEls  = [document.getElementById('navbar-avatar-initials'), document.getElementById('dropdown-avatar-initials')];
+      if (nameEl)   nameEl.textContent   = (u.first_name + ' ' + u.last_name).trim() || u.email;
+      if (degreeEl) degreeEl.textContent = u.college || 'Verified User';
+      const initials = ((u.first_name||'')[0]||'').toUpperCase() + ((u.last_name||'')[0]||'').toUpperCase() || '?';
+      initEls.forEach(el => { if (el) el.textContent = initials; });
+    }
+  }
 </script>
 {% block dashboard_js %}{% endblock %}
 {% endblock %}

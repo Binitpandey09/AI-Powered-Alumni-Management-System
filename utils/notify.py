@@ -96,6 +96,7 @@ def _check_inapp_preference(user, notif_type):
         granular_map = {
             'general': 'in_app_general',
             'session': 'inapp_session',
+            'session_booked': 'in_app_session_booked',
             'booking_confirmed': 'in_app_session_booked',
             'booking_cancelled': 'in_app_session_cancelled',
             'new_booking': 'in_app_session_booked',

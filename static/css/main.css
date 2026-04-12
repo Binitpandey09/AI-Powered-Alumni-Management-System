@@ -1,155 +1,277 @@
-/* AlumniConnect Custom Styles */
+/* AlumniAI — Custom Styles
+   Using plain CSS (no @apply — Tailwind is loaded via CDN which doesn't
+   process PostCSS directives).  Tailwind utility classes are applied
+   directly in templates; this file adds project-specific overrides and
+   components that Tailwind CDN cannot generate.
+*/
 
-/* Tailwind overrides and custom styles will go here */
-
-/* Custom color palette */
+/* ── CSS Variables ───────────────────────────────────────────── */
 :root {
-    --primary-color: #3B82F6;
-    --secondary-color: #10B981;
-    --accent-color: #F59E0B;
-    --danger-color: #EF4444;
-    --dark-color: #1F2937;
-    --light-color: #F9FAFB;
+    --primary:        #3B82F6;
+    --primary-dark:   #2563EB;
+    --secondary:      #10B981;
+    --secondary-dark: #059669;
+    --accent:         #F59E0B;
+    --danger:         #EF4444;
+    --danger-dark:    #DC2626;
+    --dark:           #1F2937;
+    --light:          #F9FAFB;
+    --border:         #E2E8F0;
+    --radius-sm:      8px;
+    --radius-md:      12px;
+    --radius-lg:      16px;
+    --shadow-sm:      0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md:      0 4px 12px rgba(0,0,0,0.10);
+    --transition:     0.2s ease;
 }
 
-/* Custom utility classes */
+/* ── Buttons ─────────────────────────────────────────────────── */
 .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--primary);
+    color: #fff;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    transition: background-color var(--transition), transform var(--transition);
+    text-decoration: none;
+}
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-1px);
+}
+.btn-primary:disabled,
+.btn-primary.disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .btn-secondary {
-    @apply bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    color: var(--primary);
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--primary);
+    cursor: pointer;
+    transition: background-color var(--transition), color var(--transition);
+    text-decoration: none;
+}
+.btn-secondary:hover {
+    background-color: var(--primary);
+    color: #fff;
 }
 
 .btn-success {
-    @apply bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--secondary);
+    color: #fff;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    transition: background-color var(--transition);
+    text-decoration: none;
 }
+.btn-success:hover { background-color: var(--secondary-dark); }
 
 .btn-danger {
-    @apply bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--danger);
+    color: #fff;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    transition: background-color var(--transition);
+    text-decoration: none;
 }
+.btn-danger:hover { background-color: var(--danger-dark); }
 
+/* ── Cards ───────────────────────────────────────────────────── */
 .card {
-    @apply bg-white rounded-lg shadow-md p-6;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
 }
 
+/* ── Form inputs ─────────────────────────────────────────────── */
 .input-field {
-    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500;
+    width: 100%;
+    padding: 0.5rem 1rem;
+    border: 1.5px solid #CBD5E1;
+    border-radius: var(--radius-sm);
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    font-size: 0.95rem;
+    background: #fff;
+}
+.input-field:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
 }
 
-/* Animation classes */
+/* ── Fade-in animation ────────────────────────────────────────── */
 .fade-in {
     animation: fadeIn 0.3s ease-in;
 }
 
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Loading spinner */
+/* ── Loading spinner ─────────────────────────────────────────── */
 .spinner {
     border: 3px solid #f3f3f3;
-    border-top: 3px solid var(--primary-color);
+    border-top: 3px solid var(--primary);
     border-radius: 50%;
     width: 40px;
     height: 40px;
-    animation: spin 1s linear infinite;
+    animation: spin 0.9s linear infinite;
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
+    0%   { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-    width: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: #555;
-}
-
-/* ── Mobile responsive utilities ─────────────────────────────── */
-@media (max-width: 640px) {
-    .hide-mobile {
-        display: none !important;
-    }
-
-    .card {
-        @apply p-4;
-    }
-
-    .btn-primary,
-    .btn-secondary,
-    .btn-success,
-    .btn-danger {
-        @apply w-full text-center;
-    }
-}
-
-@media (max-width: 768px) {
-    .sidebar {
-        display: none;
-    }
-
-    .main-content {
-        width: 100%;
-    }
-}
+/* ── Custom scrollbar ────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 7px; }
+::-webkit-scrollbar-track  { background: #f1f5f9; }
+::-webkit-scrollbar-thumb  { background: #94A3B8; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #64748B; }
 
 /* ── Skeleton loading pulse ──────────────────────────────────── */
 .skeleton-pulse {
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background: linear-gradient(90deg, #f0f4f8 25%, #e2e8f0 50%, #f0f4f8 75%);
     background-size: 200% 100%;
     animation: skeleton-loading 1.5s infinite;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
 }
 
 @keyframes skeleton-loading {
-    0% { background-position: 200% 0; }
+    0%   { background-position: 200% 0; }
     100% { background-position: -200% 0; }
 }
+
+/* Skeleton card helper */
+.skeleton-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+.skeleton-line {
+    height: 14px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+.skeleton-line.w-full  { width: 100%; }
+.skeleton-line.w-3\/4  { width: 75%; }
+.skeleton-line.w-1\/2  { width: 50%; }
+.skeleton-line.w-1\/4  { width: 25%; }
 
 /* ── Toast notification ──────────────────────────────────────── */
 .toast {
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
-
 .toast.fade-out {
     opacity: 0;
-    transform: translateX(20px);
+    transform: translateX(24px);
 }
 
 /* ── Empty state ─────────────────────────────────────────────── */
 .empty-state {
-    @apply flex flex-col items-center justify-center py-16 text-center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 1rem;
+    text-align: center;
 }
-
 .empty-state-icon {
-    @apply text-5xl mb-4;
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
 }
-
 .empty-state-title {
-    @apply text-lg font-semibold text-slate-700 mb-2;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 0.5rem;
+}
+.empty-state-subtitle {
+    font-size: 0.9rem;
+    color: #94A3B8;
+    max-width: 28rem;
 }
 
-.empty-state-subtitle {
-    @apply text-sm text-slate-400;
+/* ── Mobile responsive ───────────────────────────────────────── */
+@media (max-width: 640px) {
+    .hide-mobile { display: none !important; }
+
+    .card { padding: 1rem; }
+
+    .btn-primary,
+    .btn-secondary,
+    .btn-success,
+    .btn-danger {
+        width: 100%;
+        justify-content: center;
+    }
 }
+
+@media (max-width: 768px) {
+    /* Sidebar: hide on mobile */
+    .sidebar,
+    .dashboard-sidebar { display: none !important; }
+    .main-content,
+    .dashboard-main { width: 100% !important; margin-left: 0 !important; }
+
+    /* Feed: single column, less padding */
+    #feed-container { padding: 8px !important; }
+
+    /* Sessions grid: single column */
+    #sessions-grid { grid-template-columns: 1fr !important; }
+
+    /* Referrals grid: single column */
+    #referrals-grid { grid-template-columns: 1fr !important; }
+
+    /* Profile: stack columns */
+    .profile-layout { flex-direction: column !important; }
+
+    /* Admin panel: collapse sidebar */
+    .admin-sidebar { display: none !important; }
+    .admin-main { margin-left: 0 !important; }
+
+    /* Navbar: smaller padding */
+    .navbar { padding: 10px 12px !important; }
+}
+
+@media (max-width: 480px) {
+    /* Metric cards: 2 per row on very small screens */
+    .metrics-grid { grid-template-columns: 1fr 1fr !important; }
+
+    /* Table: horizontal scroll wrapper */
+    .table-wrapper { overflow-x: auto; }
+    table { min-width: 500px; }
+}
+

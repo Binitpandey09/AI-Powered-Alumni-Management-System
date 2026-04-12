@@ -41,22 +41,25 @@ class JWTAuthMiddleware:
     def __call__(self, request):
         path = request.path_info
 
+        token = request.COOKIES.get('access_token', '')
+        if not token and 'HTTP_AUTHORIZATION' in request.META:
+            auth_header = request.META['HTTP_AUTHORIZATION']
+            if auth_header.startswith('Bearer '):
+                token = auth_header.split(' ')[1]
+
+        user = get_user_from_token(token) if token else None
+
+        if user and getattr(user, 'is_suspended', False) and user.role != 'admin':
+            if path.startswith('/api/'):
+                return JsonResponse(
+                    {'error': 'Your account has been suspended. Contact support.'},
+                    status=403,
+                )
+            return redirect('/auth/login/?suspended=1')
+
         if self._is_protected(path):
-            token = request.COOKIES.get('access_token', '')
-            user = get_user_from_token(token)
             if user is None:
                 return redirect(f'/auth/login/?next={path}')
-
-            # Block suspended users (never block admin users)
-            if getattr(user, 'is_suspended', False) and user.role != 'admin':
-                if path.startswith('/api/'):
-                    return JsonResponse(
-                        {'error': 'Your account has been suspended. Contact support.'},
-                        status=403,
-                    )
-                return redirect('/auth/login/?suspended=1')
-
-            # Attach user so templates can access request.user
             request.user = user
 
         return self.get_response(request)

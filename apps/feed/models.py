@@ -58,6 +58,8 @@ class Post(models.Model):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['status', '-created_at']),
+            models.Index(fields=['author', '-created_at']),
+            models.Index(fields=['post_type', '-created_at']),
             models.Index(fields=['author', 'status']),
             models.Index(fields=['post_type', 'status']),
         ]

@@ -1,0 +1,19 @@
+
+accounts
+admin
+ai_tools
+ (no migrations)
+auth
+contenttypes
+dashboard
+ (no migrations)
+django_celery_beat
+feed
+notifications
+payments
+referrals
+sessions
+sessions_app
+taggit
+token_blacklist
+

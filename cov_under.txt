@@ -1,0 +1,169 @@
+============================= test session starts =============================
+platform win32 -- Python 3.8.10, pytest-8.3.5, pluggy-1.5.0
+django: version: 4.2.26, settings: alumni_platform.settings.dev (from option)
+rootdir: D:\AI powered Alumni system
+configfile: pytest.ini
+plugins: anyio-4.5.2, Faker-35.2.2, cov-5.0.0, django-4.11.1
+collected 273 items
+
+tests\test_admin.py ................................                     [ 11%]
+tests\test_ai_tools.py ...............................                   [ 23%]
+tests\test_auth_flow.py ........                                         [ 26%]
+tests\test_feed.py .........................                             [ 35%]
+tests\test_integration.py ......                                         [ 37%]
+tests\test_notifications.py .................................            [ 49%]
+tests\test_payments.py ...............................                   [ 60%]
+tests\test_profiles.py ......................                            [ 68%]
+tests\test_referrals.py .................................                [ 80%]
+tests\test_sessions.py ................................................. [ 98%]
+...                                                                      [100%]
+
+============================== warnings summary ===============================
+C:\Users\91950\AppData\Local\Programs\Python\Python38\lib\site-packages\django\conf\__init__.py:289
+  C:\Users\91950\AppData\Local\Programs\Python\Python38\lib\site-packages\django\conf\__init__.py:289: RemovedInDjango51Warning: The STATICFILES_STORAGE setting is deprecated. Use STORAGES instead.
+    warnings.warn(STATICFILES_STORAGE_DEPRECATED_MSG, RemovedInDjango51Warning)
+
+tests/test_integration.py: 8 warnings
+tests/test_notifications.py: 6 warnings
+tests/test_payments.py: 1 warning
+tests/test_referrals.py: 12 warnings
+tests/test_sessions.py: 31 warnings
+  C:\Users\91950\AppData\Local\Programs\Python\Python38\lib\site-packages\channels_redis\core.py:89: DeprecationWarning: Call to deprecated close. (Use aclose() instead) -- Deprecated since version 5.0.0.
+    await connection.close(close_connection_pool=True)
+
+tests/test_profiles.py::test_cv_upload_accepts_pdf
+  C:\Users\91950\AppData\Local\Programs\Python\Python38\lib\site-packages\PyPDF2\__init__.py:21: DeprecationWarning: PyPDF2 is deprecated. Please move to the pypdf library instead.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+
+---------- coverage: platform win32, python 3.8.10-final-0 -----------
+Name                                                                                          Stmts   Miss  Cover
+-----------------------------------------------------------------------------------------------------------------
+apps\__init__.py                                                                                  0      0   100%
+apps\accounts\__init__.py                                                                         0      0   100%
+apps\accounts\admin.py                                                                          109      9    92%
+apps\accounts\apps.py                                                                             6      0   100%
+apps\accounts\management\__init__.py                                                              0      0   100%
+apps\accounts\management\commands\__init__.py                                                     0      0   100%
+apps\accounts\management\commands\create_dev_users.py                                            14     14     0%
+apps\accounts\management\commands\create_roles.py                                                21     21     0%
+apps\accounts\migrations\0001_initial.py                                                         10      0   100%
+apps\accounts\migrations\0002_studentprofile_availability_and_more.py                             6      0   100%
+apps\accounts\migrations\0003_alumniprofile_bank_details_and_more.py                              4      0   100%
+apps\accounts\migrations\0004_alumniprofile_is_verified_and_more.py                               6      0   100%
+apps\accounts\migrations\__init__.py                                                              0      0   100%
+apps\accounts\models.py                                                                         256     15    94%
+apps\accounts\page_urls.py                                                                        3      0   100%
+apps\accounts\profile_views.py                                                                  234     76    68%
+apps\accounts\serializers.py                                                                    356     70    80%
+apps\accounts\signals.py                                                                         15      0   100%
+apps\accounts\tasks.py                                                                           27      6    78%
+apps\accounts\tests.py                                                                            1      1     0%
+apps\accounts\urls.py                                                                             5      0   100%
+apps\accounts\validators.py                                                                      42     12    71%
+apps\accounts\views.py                                                                          403    231    43%
+apps\ai_tools\__init__.py                                                                         0      0   100%
+apps\ai_tools\admin.py                                                                            1      0   100%
+apps\ai_tools\apps.py                                                                             4      0   100%
+apps\ai_tools\migrations\__init__.py                                                              0      0   100%
+apps\ai_tools\models.py                                                                           1      0   100%
+apps\ai_tools\page_urls.py                                                                        3      0   100%
+apps\ai_tools\serializers.py                                                                      1      1     0%
+apps\ai_tools\tasks.py                                                                           44     44     0%
+apps\ai_tools\tests.py                                                                            1      1     0%
+apps\ai_tools\urls.py                                                                             4      0   100%
+apps\ai_tools\views.py                                                                          311     91    71%
+apps\dashboard\__init__.py                                                                        0      0   100%
+apps\dashboard\admin.py                                                                           1      0   100%
+apps\dashboard\admin_urls.py                                                                      3      0   100%
+apps\dashboard\apps.py                                                                            4      0   100%
+apps\dashboard\migrations\__init__.py                                                             0      0   100%
+apps\dashboard\models.py                                                                          1      0   100%
+apps\dashboard\serializers.py                                                                     1      1     0%
+apps\dashboard\tests.py                                                                           1      1     0%
+apps\dashboard\urls.py                                                                            3      0   100%
+apps\dashboard\views.py                                                                         432     99    77%
+apps\feed\__init__.py                                                                             0      0   100%
+apps\feed\admin.py                                                                               37      3    92%
+apps\feed\apps.py                                                                                 6      0   100%
+apps\feed\migrations\0001_initial.py                                                              8      0   100%
+apps\feed\migrations\0002_add_db_indexes.py                                                       4      0   100%
+apps\feed\migrations\0003_post_feed_post_author__c854fa_idx_and_more.py                           4      0   100%
+apps\feed\migrations\__init__.py                                                                  0      0   100%
+apps\feed\models.py                                                                              66      1    98%
+apps\feed\page_urls.py                                                                            3      0   100%
+apps\feed\serializers.py                                                                        140     27    81%
+apps\feed\signals.py                                                                             22      1    95%
+apps\feed\tests.py                                                                                1      1     0%
+apps\feed\urls.py                                                                                 3      0   100%
+apps\feed\views.py                                                                              222     57    74%
+apps\notifications\__init__.py                                                                    0      0   100%
+apps\notifications\admin.py                                                                      23      3    87%
+apps\notifications\apps.py                                                                        7      0   100%
+apps\notifications\consumers.py                                                                  59     59     0%
+apps\notifications\middleware.py                                                                 35     35     0%
+apps\notifications\migrations\0001_initial.py                                                     7      0   100%
+apps\notifications\migrations\0002_notificationpreference_notification_read_at_and_more.py        6      0   100%
+apps\notifications\migrations\0003_notificationpreference_email_admin_broadcast_and_more.py       4      0   100%
+apps\notifications\migrations\__init__.py                                                         0      0   100%
+apps\notifications\models.py                                                                     53      1    98%
+apps\notifications\page_urls.py                                                                   3      0   100%
+apps\notifications\routing.py                                                                     3      3     0%
+apps\notifications\serializers.py                                                                36      1    97%
+apps\notifications\tasks.py                                                                      43     27    37%
+apps\notifications\tests.py                                                                       1      1     0%
+apps\notifications\urls.py                                                                        3      0   100%
+apps\notifications\views.py                                                                     129     36    72%
+apps\payments\__init__.py                                                                         0      0   100%
+apps\payments\admin.py                                                                           42      6    86%
+apps\payments\apps.py                                                                             7      0   100%
+apps\payments\migrations\0001_initial.py                                                          8      0   100%
+apps\payments\migrations\0002_add_db_indexes.py                                                   4      0   100%
+apps\payments\migrations\0003_transaction_payments_tr_payer_i_011ac7_idx_and_more.py              4      0   100%
+apps\payments\migrations\__init__.py                                                              0      0   100%
+apps\payments\models.py                                                                         105      6    94%
+apps\payments\page_urls.py                                                                        3      0   100%
+apps\payments\page_views.py                                                                      51     34    33%
+apps\payments\serializers.py                                                                     44      5    89%
+apps\payments\signals.py                                                                         76     29    62%
+apps\payments\tasks.py                                                                           22     22     0%
+apps\payments\tests.py                                                                            1      1     0%
+apps\payments\urls.py                                                                             3      0   100%
+apps\payments\views.py                                                                          231     66    71%
+apps\referrals\__init__.py                                                                        0      0   100%
+apps\referrals\admin.py                                                                          35      6    83%
+apps\referrals\apps.py                                                                            7      0   100%
+apps\referrals\migrations\0001_initial.py                                                         7      0   100%
+apps\referrals\migrations\0002_add_db_indexes.py                                                  4      0   100%
+apps\referrals\migrations\0003_referral_referrals_r_work_ty_c46a22_idx.py                         4      0   100%
+apps\referrals\migrations\__init__.py                                                             0      0   100%
+apps\referrals\models.py                                                                         93      4    96%
+apps\referrals\page_urls.py                                                                       3      0   100%
+apps\referrals\page_views.py                                                                     62     41    34%
+apps\referrals\serializers.py                                                                   143     33    77%
+apps\referrals\signals.py                                                                        62     12    81%
+apps\referrals\tests.py                                                                           1      1     0%
+apps\referrals\urls.py                                                                            3      0   100%
+apps\referrals\views.py                                                                         211     64    70%
+apps\sessions_app\__init__.py                                                                     0      0   100%
+apps\sessions_app\admin.py                                                                       32      3    91%
+apps\sessions_app\apps.py                                                                         7      0   100%
+apps\sessions_app\migrations\0001_initial.py                                                      7      0   100%
+apps\sessions_app\migrations\0002_add_db_indexes.py                                               4      0   100%
+apps\sessions_app\migrations\0003_session_sessions_ap_host_id_3f6eb1_idx_and_more.py              4      0   100%
+apps\sessions_app\migrations\__init__.py                                                          0      0   100%
+apps\sessions_app\models.py                                                                      93     11    88%
+apps\sessions_app\page_urls.py                                                                    3      0   100%
+apps\sessions_app\page_views.py                                                                  66     44    33%
+apps\sessions_app\serializers.py                                                                174     32    82%
+apps\sessions_app\signals.py                                                                    132     49    63%
+apps\sessions_app\tasks.py                                                                       58     13    78%
+apps\sessions_app\tests.py                                                                        1      1     0%
+apps\sessions_app\urls.py                                                                         3      0   100%
+apps\sessions_app\views.py                                                                      363     87    76%
+-----------------------------------------------------------------------------------------------------------------
+TOTAL                                                                                          5445   1519    72%
+
+Required test coverage of 70% reached. Total coverage: 72.10%
+================ 273 passed, 60 warnings in 346.67s (0:05:46) =================

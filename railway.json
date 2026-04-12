@@ -1,11 +1,10 @@
 {
+  "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "python manage.py migrate --noinput && gunicorn --config gunicorn.conf.py alumni_platform.wsgi:application",
-    "healthcheckPath": "/api/health/",
-    "healthcheckTimeout": 30,
+    "startCommand": "daphne -b 0.0.0.0 -p $PORT alumni_platform.asgi:application",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
   }

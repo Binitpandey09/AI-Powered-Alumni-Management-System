@@ -1,11 +1,19 @@
 from django.utils import timezone
 from datetime import timedelta
+from django.utils.decorators import method_decorator
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
+
+try:
+    from django_ratelimit.decorators import ratelimit
+    from django_ratelimit.exceptions import Ratelimited
+    HAS_RATELIMIT = True
+except ImportError:
+    HAS_RATELIMIT = False
 
 from .models import EmailOTP
 from .serializers import (
@@ -36,6 +44,9 @@ class RegisterView(APIView):
             {'message': 'OTP sent to your email. Please verify to complete registration.'},
             status=status.HTTP_201_CREATED,
         )
+
+    if HAS_RATELIMIT:
+        post = method_decorator(ratelimit(key='ip', rate='5/m', method='POST', block=False))(post)
 
 
 class VerifyRegistrationOTPView(APIView):
@@ -76,6 +87,9 @@ class LoginRequestView(APIView):
             {'message': 'OTP sent to your registered email.'},
             status=status.HTTP_200_OK,
         )
+
+    if HAS_RATELIMIT:
+        post = method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=False))(post)
 
 
 class LoginVerifyOTPView(APIView):

@@ -1,0 +1,20 @@
+ANON URLS:
+[x] / -> 200
+[x] /auth/login/ -> 200
+[x] /auth/choose-role/ -> 200
+
+STUDENT URLS:
+[x] /dashboard/student/ -> 302
+[x] /feed/ -> 302
+[x] /sessions/ -> 302
+[x] /referrals/ -> 302
+[x] /notifications/ -> 302
+[x] /tools/resume-check/ -> 302
+
+ALUMNI URLS:
+[x] /dashboard/alumni/ -> 302
+[x] /sessions/hosting/ -> 302
+[x] /payments/wallet/ -> 302
+
+ADMIN URLS:
+[x] /admin-panel/ -> 302

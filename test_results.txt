@@ -1,0 +1,431 @@
+============================= test session starts =============================
+platform win32 -- Python 3.8.10, pytest-8.3.5, pluggy-1.5.0 -- C:\Users\91950\AppData\Local\Programs\Python\Python38\python.exe
+cachedir: .pytest_cache
+django: version: 4.2.26, settings: alumni_platform.settings.dev (from option)
+rootdir: D:\AI powered Alumni system
+configfile: pytest.ini
+plugins: anyio-4.5.2, Faker-35.2.2, cov-5.0.0, django-4.11.1
+collecting ... collected 273 items
+
+tests/test_admin.py::test_only_admin_can_access_overview PASSED          [  0%]
+tests/test_admin.py::test_unauthenticated_cannot_access_admin_endpoints PASSED [  0%]
+tests/test_admin.py::test_non_admin_cannot_perform_user_actions PASSED   [  1%]
+tests/test_admin.py::test_admin_overview_has_all_required_fields PASSED  [  1%]
+tests/test_admin.py::test_admin_overview_user_count_is_accurate PASSED   [  1%]
+tests/test_admin.py::test_admin_can_list_all_users PASSED                [  2%]
+tests/test_admin.py::test_admin_can_filter_users_by_role PASSED          [  2%]
+tests/test_admin.py::test_admin_can_search_users_by_email PASSED         [  2%]
+tests/test_admin.py::test_admin_can_suspend_user PASSED                  [  3%]
+tests/test_admin.py::test_admin_can_unsuspend_user PASSED                [  3%]
+tests/test_admin.py::test_admin_can_soft_delete_user PASSED              [  4%]
+tests/test_admin.py::test_admin_cannot_suspend_another_admin PASSED      [  4%]
+tests/test_admin.py::test_suspension_creates_action_log PASSED           [  4%]
+tests/test_admin.py::test_admin_can_see_pending_verifications PASSED     [  5%]
+tests/test_admin.py::test_admin_can_approve_alumni_verification PASSED   [  5%]
+tests/test_admin.py::test_admin_can_reject_alumni_verification PASSED    [  5%]
+tests/test_admin.py::test_alumni_rejection_requires_note PASSED          [  6%]
+tests/test_admin.py::test_verification_action_creates_log PASSED         [  6%]
+tests/test_admin.py::test_admin_can_view_flagged_content PASSED          [  6%]
+tests/test_admin.py::test_admin_can_hide_post PASSED                     [  7%]
+tests/test_admin.py::test_admin_can_approve_flagged_post PASSED          [  7%]
+tests/test_admin.py::test_admin_can_deactivate_referral PASSED           [  8%]
+tests/test_admin.py::test_admin_can_send_broadcast_to_all PASSED         [  8%]
+tests/test_admin.py::test_admin_can_broadcast_to_specific_role PASSED    [  8%]
+tests/test_admin.py::test_broadcast_requires_title_and_message PASSED    [  9%]
+tests/test_admin.py::test_broadcast_creates_action_log PASSED            [  9%]
+tests/test_admin.py::test_admin_can_view_audit_log PASSED                [  9%]
+tests/test_admin.py::test_audit_log_has_required_fields PASSED           [ 10%]
+tests/test_admin.py::test_audit_log_filter_by_action_type PASSED         [ 10%]
+tests/test_admin.py::test_admin_can_list_all_sessions PASSED             [ 10%]
+tests/test_admin.py::test_admin_can_list_all_referrals PASSED            [ 11%]
+tests/test_admin.py::test_suspended_user_api_returns_403 PASSED          [ 11%]
+tests/test_ai_tools.py::test_score_resume_returns_valid_structure PASSED [ 12%]
+tests/test_ai_tools.py::test_score_resume_section_scores_present PASSED  [ 12%]
+tests/test_ai_tools.py::test_analyze_skill_gap_returns_valid_structure PASSED [ 12%]
+tests/test_ai_tools.py::test_generate_interview_questions_structure PASSED [ 13%]
+tests/test_ai_tools.py::test_evaluate_interview_answer_structure PASSED  [ 13%]
+tests/test_ai_tools.py::test_build_resume_returns_sections PASSED        [ 13%]
+tests/test_ai_tools.py::test_ai_service_handles_empty_skills_gracefully PASSED [ 14%]
+tests/test_ai_tools.py::test_resume_score_requires_usage_id PASSED       [ 14%]
+tests/test_ai_tools.py::test_resume_score_rejects_invalid_usage_id PASSED [ 15%]
+tests/test_ai_tools.py::test_resume_score_rejects_wrong_tool_type PASSED [ 15%]
+tests/test_ai_tools.py::test_resume_score_succeeds_with_valid_usage PASSED [ 15%]
+tests/test_ai_tools.py::test_resume_score_result_saved_to_usage PASSED   [ 16%]
+tests/test_ai_tools.py::test_resume_score_returns_cached_result_on_second_call PASSED [ 16%]
+tests/test_ai_tools.py::test_resume_score_get_returns_past_results PASSED [ 16%]
+tests/test_ai_tools.py::test_skill_gap_requires_target_role PASSED       [ 17%]
+tests/test_ai_tools.py::test_skill_gap_succeeds_with_valid_data PASSED   [ 17%]
+tests/test_ai_tools.py::test_skill_gap_result_saved PASSED               [ 17%]
+tests/test_ai_tools.py::test_interview_start_requires_job_role PASSED    [ 18%]
+tests/test_ai_tools.py::test_interview_start_returns_questions PASSED    [ 18%]
+tests/test_ai_tools.py::test_interview_submit_answer PASSED              [ 19%]
+tests/test_ai_tools.py::test_interview_finish_generates_report PASSED    [ 19%]
+tests/test_ai_tools.py::test_interview_invalid_action PASSED             [ 19%]
+tests/test_ai_tools.py::test_resume_builder_requires_usage_id PASSED     [ 20%]
+tests/test_ai_tools.py::test_resume_builder_succeeds PASSED              [ 20%]
+tests/test_ai_tools.py::test_first_resume_check_is_free PASSED           [ 20%]
+tests/test_ai_tools.py::test_after_free_use_no_more_free PASSED          [ 21%]
+tests/test_ai_tools.py::test_ai_interview_has_no_free_uses PASSED        [ 21%]
+tests/test_ai_tools.py::test_resume_builder_has_no_free_uses PASSED      [ 21%]
+tests/test_ai_tools.py::test_skill_gap_has_no_free_uses PASSED           [ 22%]
+tests/test_ai_tools.py::test_cv_parser_is_always_free PASSED             [ 22%]
+tests/test_ai_tools.py::test_another_students_usage_does_not_affect_my_count PASSED [ 23%]
+tests/test_auth_flow.py::test_student_registration_with_college_email PASSED [ 23%]
+tests/test_auth_flow.py::test_student_registration_with_gmail_fails PASSED [ 23%]
+tests/test_auth_flow.py::test_alumni_registration_with_company_email PASSED [ 24%]
+tests/test_auth_flow.py::test_alumni_registration_with_college_email_fails PASSED [ 24%]
+tests/test_auth_flow.py::test_otp_verification_flow PASSED               [ 24%]
+tests/test_auth_flow.py::test_expired_otp_fails PASSED                   [ 25%]
+tests/test_auth_flow.py::test_login_otp_flow PASSED                      [ 25%]
+tests/test_auth_flow.py::test_me_endpoint_requires_auth PASSED           [ 26%]
+tests/test_feed.py::test_authenticated_user_can_view_feed PASSED         [ 26%]
+tests/test_feed.py::test_unauthenticated_user_cannot_view_feed PASSED    [ 26%]
+tests/test_feed.py::test_feed_returns_only_active_posts PASSED           [ 27%]
+tests/test_feed.py::test_feed_filter_by_type_job PASSED                  [ 27%]
+tests/test_feed.py::test_feed_search_in_content PASSED                   [ 27%]
+tests/test_feed.py::test_alumni_can_create_general_post PASSED           [ 28%]
+tests/test_feed.py::test_faculty_can_create_post PASSED                  [ 28%]
+tests/test_feed.py::test_student_cannot_create_post PASSED               [ 28%]
+tests/test_feed.py::test_alumni_create_job_post_requires_company_name PASSED [ 29%]
+tests/test_feed.py::test_post_content_min_length PASSED                  [ 29%]
+tests/test_feed.py::test_author_can_edit_own_post PASSED                 [ 30%]
+tests/test_feed.py::test_other_user_cannot_edit_post PASSED              [ 30%]
+tests/test_feed.py::test_author_can_delete_own_post PASSED               [ 30%]
+tests/test_feed.py::test_student_can_like_post PASSED                    [ 31%]
+tests/test_feed.py::test_like_again_toggles_off PASSED                   [ 31%]
+tests/test_feed.py::test_likes_count_cached_correctly PASSED             [ 31%]
+tests/test_feed.py::test_student_can_comment PASSED                      [ 32%]
+tests/test_feed.py::test_comment_on_nonexistent_post PASSED              [ 32%]
+tests/test_feed.py::test_comment_author_can_delete_own_comment PASSED    [ 32%]
+tests/test_feed.py::test_deleted_comment_shows_placeholder PASSED        [ 33%]
+tests/test_feed.py::test_nested_reply_works PASSED                       [ 33%]
+tests/test_feed.py::test_student_can_save_post PASSED                    [ 34%]
+tests/test_feed.py::test_saved_posts_visible_in_saved_feed PASSED        [ 34%]
+tests/test_feed.py::test_user_can_report_post PASSED                     [ 34%]
+tests/test_feed.py::test_user_cannot_report_same_post_twice PASSED       [ 35%]
+tests/test_integration.py::test_complete_session_booking_flow PASSED     [ 35%]
+tests/test_integration.py::test_complete_referral_flow PASSED            [ 35%]
+tests/test_integration.py::test_alumni_earnings_and_payout_flow PASSED   [ 36%]
+tests/test_integration.py::test_notification_preferences_block_creation PASSED [ 36%]
+tests/test_integration.py::test_suspended_user_blocked_from_all_endpoints PASSED [ 36%]
+tests/test_integration.py::test_admin_protected_from_suspension PASSED   [ 37%]
+tests/test_notifications.py::test_notification_created_with_correct_fields PASSED [ 37%]
+tests/test_notifications.py::test_mark_as_read_updates_fields PASSED     [ 38%]
+tests/test_notifications.py::test_mark_as_read_is_idempotent PASSED      [ 38%]
+tests/test_notifications.py::test_notification_str_representation PASSED [ 38%]
+tests/test_notifications.py::test_notifications_ordered_by_created_at_descending PASSED [ 39%]
+tests/test_notifications.py::test_notification_preference_created_with_defaults PASSED [ 39%]
+tests/test_notifications.py::test_send_notification_creates_db_record PASSED [ 39%]
+tests/test_notifications.py::test_send_notification_respects_inapp_preference PASSED [ 40%]
+tests/test_notifications.py::test_send_notification_does_not_crash_if_redis_unavailable PASSED [ 40%]
+tests/test_notifications.py::test_send_notification_handles_invalid_notif_type_gracefully PASSED [ 41%]
+tests/test_notifications.py::test_user_can_get_own_notifications PASSED  [ 41%]
+tests/test_notifications.py::test_notifications_filter_unread_only PASSED [ 41%]
+tests/test_notifications.py::test_notifications_filter_by_type PASSED    [ 42%]
+tests/test_notifications.py::test_unauthenticated_cannot_access_notifications PASSED [ 42%]
+tests/test_notifications.py::test_user_cannot_see_other_users_notifications PASSED [ 42%]
+tests/test_notifications.py::test_notification_list_has_time_ago_field PASSED [ 43%]
+tests/test_notifications.py::test_user_can_mark_notification_as_read PASSED [ 43%]
+tests/test_notifications.py::test_user_cannot_mark_another_users_notification_read PASSED [ 43%]
+tests/test_notifications.py::test_mark_all_read_bulk_action PASSED       [ 44%]
+tests/test_notifications.py::test_delete_notification PASSED             [ 44%]
+tests/test_notifications.py::test_delete_all_read_bulk_action PASSED     [ 45%]
+tests/test_notifications.py::test_invalid_bulk_action_rejected PASSED    [ 45%]
+tests/test_notifications.py::test_unread_count_endpoint_returns_correct_count PASSED [ 45%]
+tests/test_notifications.py::test_unread_count_decreases_after_mark_read PASSED [ 46%]
+tests/test_notifications.py::test_unread_count_is_zero_when_all_read PASSED [ 46%]
+tests/test_notifications.py::test_user_can_get_preferences PASSED        [ 46%]
+tests/test_notifications.py::test_user_can_update_preferences PASSED     [ 47%]
+tests/test_notifications.py::test_preferences_auto_created_on_first_get PASSED [ 47%]
+tests/test_notifications.py::test_preference_affects_notification_creation PASSED [ 47%]
+tests/test_notifications.py::test_cleanup_old_notifications_deletes_old_read_notifications PASSED [ 48%]
+tests/test_notifications.py::test_cleanup_returns_count PASSED           [ 48%]
+tests/test_notifications.py::test_session_booking_creates_notification PASSED [ 49%]
+tests/test_notifications.py::test_referral_application_creates_notification PASSED [ 49%]
+tests/test_payments.py::test_invoice_number_auto_generated PASSED        [ 49%]
+tests/test_payments.py::test_invoice_numbers_are_unique PASSED           [ 50%]
+tests/test_payments.py::test_70_30_split_calculation PASSED              [ 50%]
+tests/test_payments.py::test_split_for_ai_tools_is_100_percent_platform PASSED [ 50%]
+tests/test_payments.py::test_wallet_created_on_demand PASSED             [ 51%]
+tests/test_payments.py::test_wallet_balance_updates_on_completed_transaction PASSED [ 51%]
+tests/test_payments.py::test_wallet_balance_does_not_update_for_pending_transaction PASSED [ 52%]
+tests/test_payments.py::test_alumni_can_view_own_wallet PASSED           [ 52%]
+tests/test_payments.py::test_student_cannot_view_wallet PASSED           [ 52%]
+tests/test_payments.py::test_wallet_can_withdraw_property PASSED         [ 53%]
+tests/test_payments.py::test_wallet_cannot_withdraw_below_threshold PASSED [ 53%]
+tests/test_payments.py::test_alumni_can_request_payout PASSED            [ 53%]
+tests/test_payments.py::test_payout_below_minimum_rejected PASSED        [ 54%]
+tests/test_payments.py::test_payout_exceeding_balance_rejected PASSED    [ 54%]
+tests/test_payments.py::test_student_cannot_request_payout PASSED        [ 54%]
+tests/test_payments.py::test_payout_locks_pending_withdrawal PASSED      [ 55%]
+tests/test_payments.py::test_admin_can_approve_payout PASSED             [ 55%]
+tests/test_payments.py::test_admin_can_process_payout_with_reference PASSED [ 56%]
+tests/test_payments.py::test_first_resume_check_is_free PASSED           [ 56%]
+tests/test_payments.py::test_ai_interview_has_no_free_uses PASSED        [ 56%]
+tests/test_payments.py::test_free_tool_usage_recorded PASSED             [ 57%]
+tests/test_payments.py::test_paid_tool_usage_requires_payment PASSED     [ 57%]
+tests/test_payments.py::test_invalid_tool_type_rejected PASSED           [ 57%]
+tests/test_payments.py::test_user_can_view_own_transactions PASSED       [ 58%]
+tests/test_payments.py::test_transaction_filter_by_type PASSED           [ 58%]
+tests/test_payments.py::test_invoice_accessible_to_payer PASSED          [ 58%]
+tests/test_payments.py::test_invoice_not_accessible_to_unrelated_user PASSED [ 59%]
+tests/test_payments.py::test_alumni_can_initiate_boost_payment PASSED    [ 59%]
+tests/test_payments.py::test_student_cannot_boost_referral PASSED        [ 60%]
+tests/test_payments.py::test_admin_can_view_revenue PASSED               [ 60%]
+tests/test_payments.py::test_non_admin_cannot_view_revenue PASSED        [ 60%]
+tests/test_profiles.py::test_student_can_get_own_profile PASSED          [ 61%]
+tests/test_profiles.py::test_alumni_can_get_own_profile PASSED           [ 61%]
+tests/test_profiles.py::test_faculty_can_get_own_profile PASSED          [ 61%]
+tests/test_profiles.py::test_unauthenticated_cannot_get_profile PASSED   [ 62%]
+tests/test_profiles.py::test_student_can_update_profile PASSED           [ 62%]
+tests/test_profiles.py::test_alumni_cannot_patch_student_profile PASSED  [ 63%]
+tests/test_profiles.py::test_student_cannot_patch_alumni_profile PASSED  [ 63%]
+tests/test_profiles.py::test_alumni_can_update_own_profile PASSED        [ 63%]
+tests/test_profiles.py::test_alumni_price_60min_less_than_30min_fails PASSED [ 64%]
+tests/test_profiles.py::test_student_invalid_resume_file_type PASSED     [ 64%]
+tests/test_profiles.py::test_profile_completeness_zero_on_fresh_account PASSED [ 64%]
+tests/test_profiles.py::test_profile_completeness_increases_after_update PASSED [ 65%]
+tests/test_profiles.py::test_profile_complete_after_all_fields_filled PASSED [ 65%]
+tests/test_profiles.py::test_cv_upload_accepts_pdf PASSED                [ 65%]
+tests/test_profiles.py::test_cv_upload_rejects_non_pdf PASSED            [ 66%]
+tests/test_profiles.py::test_cv_upload_rejects_large_file PASSED         [ 66%]
+tests/test_profiles.py::test_faculty_cannot_upload_cv PASSED             [ 67%]
+tests/test_profiles.py::test_alumni_list_returns_verified_alumni_only PASSED [ 67%]
+tests/test_profiles.py::test_alumni_list_search_by_name PASSED           [ 67%]
+tests/test_profiles.py::test_alumni_list_filter_by_available PASSED      [ 68%]
+tests/test_profiles.py::test_public_alumni_profile_excludes_wallet PASSED [ 68%]
+tests/test_profiles.py::test_public_alumni_profile_404_for_student PASSED [ 68%]
+tests/test_referrals.py::test_perfect_skill_match_returns_100 PASSED     [ 69%]
+tests/test_referrals.py::test_no_match_returns_0_and_cannot_apply PASSED [ 69%]
+tests/test_referrals.py::test_partial_match_above_threshold_can_apply PASSED [ 69%]
+tests/test_referrals.py::test_partial_match_below_threshold_cannot_apply PASSED [ 70%]
+tests/test_referrals.py::test_preferred_skills_boost_score PASSED        [ 70%]
+tests/test_referrals.py::test_empty_required_skills_always_matches PASSED [ 71%]
+tests/test_referrals.py::test_empty_student_skills_never_matches PASSED  [ 71%]
+tests/test_referrals.py::test_case_insensitive_skill_matching PASSED     [ 71%]
+tests/test_referrals.py::test_authenticated_user_can_view_referrals PASSED [ 72%]
+tests/test_referrals.py::test_unauthenticated_cannot_view_referrals PASSED [ 72%]
+tests/test_referrals.py::test_expired_referrals_not_shown_in_list PASSED [ 72%]
+tests/test_referrals.py::test_filter_by_work_type PASSED                 [ 73%]
+tests/test_referrals.py::test_filter_by_company_name PASSED              [ 73%]
+tests/test_referrals.py::test_search_by_job_title PASSED                 [ 73%]
+tests/test_referrals.py::test_alumni_can_create_referral PASSED          [ 74%]
+tests/test_referrals.py::test_student_cannot_create_referral PASSED      [ 74%]
+tests/test_referrals.py::test_max_applicants_cannot_exceed_5 PASSED      [ 75%]
+tests/test_referrals.py::test_past_deadline_rejected PASSED              [ 75%]
+tests/test_referrals.py::test_student_with_matching_skills_can_apply PASSED [ 75%]
+tests/test_referrals.py::test_student_with_no_skills_cannot_apply PASSED [ 76%]
+tests/test_referrals.py::test_cannot_apply_to_expired_referral PASSED    [ 76%]
+tests/test_referrals.py::test_cannot_apply_to_full_referral PASSED       [ 76%]
+tests/test_referrals.py::test_cannot_apply_twice_to_same_referral PASSED [ 77%]
+tests/test_referrals.py::test_alumni_cannot_apply_to_referral PASSED     [ 77%]
+tests/test_referrals.py::test_total_applications_increments_after_apply PASSED [ 78%]
+tests/test_referrals.py::test_referral_closes_when_all_slots_filled PASSED [ 78%]
+tests/test_referrals.py::test_student_can_view_own_applications PASSED   [ 78%]
+tests/test_referrals.py::test_student_can_withdraw_application PASSED    [ 79%]
+tests/test_referrals.py::test_alumni_can_update_application_status PASSED [ 79%]
+tests/test_referrals.py::test_success_story_created_when_hired PASSED    [ 79%]
+tests/test_referrals.py::test_skill_match_check_endpoint PASSED          [ 80%]
+tests/test_referrals.py::test_faculty_can_recommend_student PASSED       [ 80%]
+tests/test_referrals.py::test_student_cannot_recommend PASSED            [ 80%]
+tests/test_sessions.py::test_any_authenticated_user_can_view_sessions_list PASSED [ 81%]
+tests/test_sessions.py::test_unauthenticated_user_cannot_view_sessions PASSED [ 81%]
+tests/test_sessions.py::test_sessions_list_only_shows_upcoming_by_default PASSED [ 82%]
+tests/test_sessions.py::test_sessions_filter_by_type_group PASSED        [ 82%]
+tests/test_sessions.py::test_sessions_filter_by_type_one_on_one PASSED   [ 82%]
+tests/test_sessions.py::test_sessions_filter_free_only PASSED            [ 83%]
+tests/test_sessions.py::test_sessions_search_by_title PASSED             [ 83%]
+tests/test_sessions.py::test_sessions_search_no_match_returns_empty PASSED [ 83%]
+tests/test_sessions.py::test_sessions_filter_by_price_max PASSED         [ 84%]
+tests/test_sessions.py::test_session_detail_returns_full_description PASSED [ 84%]
+tests/test_sessions.py::test_session_detail_404_for_nonexistent PASSED   [ 84%]
+tests/test_sessions.py::test_alumni_can_create_session PASSED            [ 85%]
+tests/test_sessions.py::test_faculty_can_create_session PASSED           [ 85%]
+tests/test_sessions.py::test_student_cannot_create_session PASSED        [ 86%]
+tests/test_sessions.py::test_cannot_create_session_in_past PASSED        [ 86%]
+tests/test_sessions.py::test_free_session_requires_zero_price PASSED     [ 86%]
+tests/test_sessions.py::test_session_author_can_edit_own_session PASSED  [ 87%]
+tests/test_sessions.py::test_different_user_cannot_edit_session PASSED   [ 87%]
+tests/test_sessions.py::test_student_can_initiate_paid_booking PASSED    [ 87%]
+tests/test_sessions.py::test_free_demo_booking_confirmed_immediately PASSED [ 88%]
+tests/test_sessions.py::test_student_cannot_use_free_demo_twice PASSED   [ 88%]
+tests/test_sessions.py::test_student_cannot_book_full_session PASSED     [ 89%]
+tests/test_sessions.py::test_student_cannot_book_same_session_twice PASSED [ 89%]
+tests/test_sessions.py::test_payment_verification_confirms_booking PASSED [ 89%]
+tests/test_sessions.py::test_wallet_updated_after_payment_confirmed PASSED [ 90%]
+tests/test_sessions.py::test_booked_seats_increases_after_booking_confirmed PASSED [ 90%]
+tests/test_sessions.py::test_student_can_cancel_confirmed_booking_with_refund PASSED [ 90%]
+tests/test_sessions.py::test_cancellation_within_2_hours_gives_no_refund PASSED [ 91%]
+tests/test_sessions.py::test_cannot_cancel_already_cancelled_booking PASSED [ 91%]
+tests/test_sessions.py::test_other_student_cannot_cancel_booking PASSED  [ 91%]
+tests/test_sessions.py::test_student_can_review_completed_session PASSED [ 92%]
+tests/test_sessions.py::test_student_can_review_anonymously PASSED       [ 92%]
+tests/test_sessions.py::test_rating_must_be_between_1_and_5 PASSED       [ 93%]
+tests/test_sessions.py::test_cannot_review_pending_booking PASSED        [ 93%]
+tests/test_sessions.py::test_cannot_review_same_booking_twice PASSED     [ 93%]
+tests/test_sessions.py::test_reviews_visible_on_session_reviews_endpoint PASSED [ 94%]
+tests/test_sessions.py::test_student_can_view_own_bookings PASSED        [ 94%]
+tests/test_sessions.py::test_student_cannot_see_other_students_bookings PASSED [ 94%]
+tests/test_sessions.py::test_alumni_can_view_hosted_sessions PASSED      [ 95%]
+tests/test_sessions.py::test_student_cannot_view_hosted_sessions PASSED  [ 95%]
+tests/test_sessions.py::test_alumni_can_access_earnings_summary PASSED   [ 95%]
+tests/test_sessions.py::test_faculty_can_access_earnings_summary PASSED  [ 96%]
+tests/test_sessions.py::test_student_cannot_access_earnings PASSED       [ 96%]
+tests/test_sessions.py::test_monthly_breakdown_has_6_months PASSED       [ 97%]
+tests/test_sessions.py::test_earnings_reflect_confirmed_bookings PASSED  [ 97%]
+tests/test_sessions.py::test_alumni_can_get_bank_details PASSED          [ 97%]
+tests/test_sessions.py::test_alumni_can_save_valid_bank_details PASSED   [ 98%]
+tests/test_sessions.py::test_bank_details_rejects_invalid_ifsc PASSED    [ 98%]
+tests/test_sessions.py::test_bank_details_rejects_mismatched_account_numbers PASSED [ 98%]
+tests/test_sessions.py::test_bank_details_rejects_short_account_number PASSED [ 99%]
+tests/test_sessions.py::test_bank_details_missing_required_fields PASSED [ 99%]
+tests/test_sessions.py::test_student_cannot_access_bank_details PASSED   [100%]
+
+============================== warnings summary ===============================
+C:\Users\91950\AppData\Local\Programs\Python\Python38\lib\site-packages\django\conf\__init__.py:289
+  C:\Users\91950\AppData\Local\Programs\Python\Python38\lib\site-packages\django\conf\__init__.py:289: RemovedInDjango51Warning: The STATICFILES_STORAGE setting is deprecated. Use STORAGES instead.
+    warnings.warn(STATICFILES_STORAGE_DEPRECATED_MSG, RemovedInDjango51Warning)
+
+tests/test_integration.py: 8 warnings
+tests/test_notifications.py: 6 warnings
+tests/test_payments.py: 1 warning
+tests/test_referrals.py: 12 warnings
+tests/test_sessions.py: 31 warnings
+  C:\Users\91950\AppData\Local\Programs\Python\Python38\lib\site-packages\channels_redis\core.py:89: DeprecationWarning: Call to deprecated close. (Use aclose() instead) -- Deprecated since version 5.0.0.
+    await connection.close(close_connection_pool=True)
+
+tests/test_profiles.py::test_cv_upload_accepts_pdf
+  C:\Users\91950\AppData\Local\Programs\Python\Python38\lib\site-packages\PyPDF2\__init__.py:21: DeprecationWarning: PyPDF2 is deprecated. Please move to the pypdf library instead.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+
+---------- coverage: platform win32, python 3.8.10-final-0 -----------
+Name                                                                                          Stmts   Miss  Cover   Missing
+---------------------------------------------------------------------------------------------------------------------------
+apps\__init__.py                                                                                  0      0   100%
+apps\accounts\__init__.py                                                                         0      0   100%
+apps\accounts\admin.py                                                                          109      9    92%   87-95
+apps\accounts\apps.py                                                                             6      0   100%
+apps\accounts\management\__init__.py                                                              0      0   100%
+apps\accounts\management\commands\__init__.py                                                     0      0   100%
+apps\accounts\management\commands\create_dev_users.py                                            14     14     0%   1-60
+apps\accounts\management\commands\create_roles.py                                                21     21     0%   1-85
+apps\accounts\migrations\0001_initial.py                                                         10      0   100%
+apps\accounts\migrations\0002_studentprofile_availability_and_more.py                             6      0   100%
+apps\accounts\migrations\0003_alumniprofile_bank_details_and_more.py                              4      0   100%
+apps\accounts\migrations\0004_alumniprofile_is_verified_and_more.py                               6      0   100%
+apps\accounts\migrations\__init__.py                                                              0      0   100%
+apps\accounts\models.py                                                                         256     15    94%   42, 54, 113, 156, 193, 212, 232, 250, 262, 274, 292, 308, 333, 365, 416
+apps\accounts\page_urls.py                                                                        3      0   100%
+apps\accounts\profile_views.py                                                                  234     76    68%   45-47, 70-72, 84-89, 94-96, 107-124, 163-193, 218-222, 234-235, 239-243, 245, 281, 285, 370-374, 385-386, 394-406
+apps\accounts\serializers.py                                                                    356     70    80%   35-40, 48-49, 55, 59, 72-73, 103-104, 124-125, 133, 164-165, 168, 173, 193-194, 214-215, 218, 223, 314, 316, 321, 323, 368, 375, 383, 413-421, 442-447, 459-465, 475-477, 494-496, 542-545, 548, 551, 554, 557, 560, 563, 566, 569, 572-573
+apps\accounts\signals.py                                                                         15      0   100%
+apps\accounts\tasks.py                                                                           27      6    78%   73-74, 85-89
+apps\accounts\tests.py                                                                            1      1     0%   1
+apps\accounts\urls.py                                                                             5      0   100%
+apps\accounts\validators.py                                                                      42     12    71%   29, 32-33, 40, 56, 64, 68, 75-85
+apps\accounts\views.py                                                                          403    231    43%   15-16, 83, 106, 132-195, 210-220, 246-251, 266-279, 296-305, 308-311, 319-325, 328-331, 343-348, 355-357, 364-372, 375-378, 385-391, 419-420, 423-427, 438-441, 444, 447-452, 455-456, 491-503, 512-521, 524-527, 536-538, 547-549, 558-566, 569-572, 581-589, 592-595, 605-645, 668-724, 734-743
+apps\ai_tools\__init__.py                                                                         0      0   100%
+apps\ai_tools\admin.py                                                                            1      0   100%
+apps\ai_tools\apps.py                                                                             4      0   100%
+apps\ai_tools\migrations\__init__.py                                                              0      0   100%
+apps\ai_tools\models.py                                                                           1      0   100%
+apps\ai_tools\page_urls.py                                                                        3      0   100%
+apps\ai_tools\serializers.py                                                                      1      1     0%   1
+apps\ai_tools\tasks.py                                                                           44     44     0%   6-86
+apps\ai_tools\tests.py                                                                            1      1     0%   1
+apps\ai_tools\urls.py                                                                             4      0   100%
+apps\ai_tools\views.py                                                                          311     91    71%   20-27, 30-33, 43-49, 135-136, 153, 155-158, 174-175, 187-189, 199-200, 228-271, 313-320, 337, 388, 393, 401, 410-425, 446, 450, 458, 479, 499, 506, 519, 542, 546, 561, 578-595, 614, 623, 628, 640, 649-666
+apps\dashboard\__init__.py                                                                        0      0   100%
+apps\dashboard\admin.py                                                                           1      0   100%
+apps\dashboard\admin_urls.py                                                                      3      0   100%
+apps\dashboard\apps.py                                                                            4      0   100%
+apps\dashboard\migrations\__init__.py                                                             0      0   100%
+apps\dashboard\models.py                                                                          1      0   100%
+apps\dashboard\serializers.py                                                                     1      1     0%   1
+apps\dashboard\tests.py                                                                           1      1     0%   1
+apps\dashboard\urls.py                                                                            3      0   100%
+apps\dashboard\views.py                                                                         432     99    77%   19-24, 27-29, 38-42, 49-53, 60-64, 71-76, 138-139, 216, 229, 231, 235, 239, 241, 278-279, 285-286, 330-341, 364, 393, 402-403, 430-431, 449-453, 473, 501-502, 522-523, 529, 545-546, 567-580, 591, 598, 602, 635, 666-667, 683, 690, 694, 730, 769-777, 780-782
+apps\feed\__init__.py                                                                             0      0   100%
+apps\feed\admin.py                                                                               37      3    92%   17, 22, 26
+apps\feed\apps.py                                                                                 6      0   100%
+apps\feed\migrations\0001_initial.py                                                              8      0   100%
+apps\feed\migrations\0002_add_db_indexes.py                                                       4      0   100%
+apps\feed\migrations\0003_post_feed_post_author__c854fa_idx_and_more.py                           4      0   100%
+apps\feed\migrations\__init__.py                                                                  0      0   100%
+apps\feed\models.py                                                                              66      1    98%   68
+apps\feed\page_urls.py                                                                            3      0   100%
+apps\feed\serializers.py                                                                        140     27    81%   31-33, 68, 70, 102-109, 116-117, 119-122, 133-134, 137-138, 169, 175, 180, 186
+apps\feed\signals.py                                                                             22      1    95%   36
+apps\feed\tests.py                                                                                1      1     0%   1
+apps\feed\urls.py                                                                                 3      0   100%
+apps\feed\views.py                                                                              222     57    74%   59, 63, 70, 105-106, 111, 117, 132-133, 135, 144, 148, 163-164, 185-186, 190-191, 205-206, 226, 243-244, 247-260, 265, 267, 282-283, 294, 346-356, 365-384
+apps\notifications\__init__.py                                                                    0      0   100%
+apps\notifications\admin.py                                                                      23      3    87%   18-19, 23
+apps\notifications\apps.py                                                                        7      0   100%
+apps\notifications\consumers.py                                                                  59     59     0%   1-108
+apps\notifications\middleware.py                                                                 35     35     0%   6-56
+apps\notifications\migrations\0001_initial.py                                                     7      0   100%
+apps\notifications\migrations\0002_notificationpreference_notification_read_at_and_more.py        6      0   100%
+apps\notifications\migrations\0003_notificationpreference_email_admin_broadcast_and_more.py       4      0   100%
+apps\notifications\migrations\__init__.py                                                         0      0   100%
+apps\notifications\models.py                                                                     53      1    98%   91
+apps\notifications\page_urls.py                                                                   3      0   100%
+apps\notifications\routing.py                                                                     3      3     0%   1-4
+apps\notifications\serializers.py                                                                36      1    97%   98
+apps\notifications\tasks.py                                                                      43     27    37%   12-30, 54-97
+apps\notifications\tests.py                                                                       1      1     0%   1
+apps\notifications\urls.py                                                                        3      0   100%
+apps\notifications\views.py                                                                     129     36    72%   21-31, 77-85, 102-103, 164, 176-181, 184-189, 196-201
+apps\payments\__init__.py                                                                         0      0   100%
+apps\payments\admin.py                                                                           42      6    86%   17, 20, 33, 48, 51, 67
+apps\payments\apps.py                                                                             7      0   100%
+apps\payments\migrations\0001_initial.py                                                          8      0   100%
+apps\payments\migrations\0002_add_db_indexes.py                                                   4      0   100%
+apps\payments\migrations\0003_transaction_payments_tr_payer_i_011ac7_idx_and_more.py              4      0   100%
+apps\payments\migrations\__init__.py                                                              0      0   100%
+apps\payments\models.py                                                                         105      6    94%   89, 107, 161, 210, 249, 253
+apps\payments\page_urls.py                                                                        3      0   100%
+apps\payments\page_views.py                                                                      51     34    33%   9-16, 19-22, 29-36, 39-41, 48-50, 57-64
+apps\payments\serializers.py                                                                     44      5    89%   23, 28, 65-67
+apps\payments\signals.py                                                                         76     29    62%   11-12, 19, 23, 39-46, 61-62, 78-82, 95-102, 113-118
+apps\payments\tasks.py                                                                           22     22     0%   1-36
+apps\payments\tests.py                                                                            1      1     0%   1
+apps\payments\urls.py                                                                             3      0   100%
+apps\payments\views.py                                                                          231     66    71%   78, 82, 84, 98-101, 109-110, 124-127, 130, 157-165, 174, 180, 194-195, 223, 240-264, 279, 292-293, 305-349, 402-423, 427, 439, 448-457
+apps\referrals\__init__.py                                                                        0      0   100%
+apps\referrals\admin.py                                                                          35      6    83%   18, 22, 26, 40, 43, 46
+apps\referrals\apps.py                                                                            7      0   100%
+apps\referrals\migrations\0001_initial.py                                                         7      0   100%
+apps\referrals\migrations\0002_add_db_indexes.py                                                  4      0   100%
+apps\referrals\migrations\0003_referral_referrals_r_work_ty_c46a22_idx.py                         4      0   100%
+apps\referrals\migrations\__init__.py                                                             0      0   100%
+apps\referrals\models.py                                                                         93      4    96%   91, 138, 164, 190
+apps\referrals\page_urls.py                                                                       3      0   100%
+apps\referrals\page_views.py                                                                     62     41    34%   8-15, 18-21, 28-32, 39-43, 50-57, 64-71, 74-76
+apps\referrals\serializers.py                                                                   143     33    77%   21-29, 35-37, 79-80, 88, 94-99, 114-119, 135, 137, 152, 189-190, 222, 225
+apps\referrals\signals.py                                                                        62     12    81%   14-15, 48-49, 84-85, 107-108, 117, 123, 138-139
+apps\referrals\tests.py                                                                           1      1     0%   1
+apps\referrals\urls.py                                                                            3      0   100%
+apps\referrals\views.py                                                                         211     64    70%   54, 62, 65, 70-78, 91, 94, 98-116, 140-141, 144-151, 154-159, 176, 185-186, 206-216, 220-237, 275-276, 297, 324, 334, 356, 364, 374, 393, 434-438
+apps\sessions_app\__init__.py                                                                     0      0   100%
+apps\sessions_app\admin.py                                                                       32      3    91%   16, 30, 34
+apps\sessions_app\apps.py                                                                         7      0   100%
+apps\sessions_app\migrations\0001_initial.py                                                      7      0   100%
+apps\sessions_app\migrations\0002_add_db_indexes.py                                               4      0   100%
+apps\sessions_app\migrations\0003_session_sessions_ap_host_id_3f6eb1_idx_and_more.py              4      0   100%
+apps\sessions_app\migrations\__init__.py                                                          0      0   100%
+apps\sessions_app\models.py                                                                      93     11    88%   78-79, 82, 124, 135-139, 142, 167
+apps\sessions_app\page_urls.py                                                                    3      0   100%
+apps\sessions_app\page_views.py                                                                  66     44    33%   9-16, 19-22, 29-32, 39-42, 49-56, 63-70, 77-84
+apps\sessions_app\serializers.py                                                                174     32    82%   25-28, 36-37, 42-44, 72-73, 84, 120, 154, 163, 197-198, 212, 218-222, 243-244, 258, 270-279
+apps\sessions_app\signals.py                                                                    132     49    63%   18-19, 30, 39, 93-103, 136-140, 159-206, 220, 242, 259-260
+apps\sessions_app\tasks.py                                                                       58     13    78%   22-24, 40-42, 56-57, 87-89, 123-124
+apps\sessions_app\tests.py                                                                        1      1     0%   1
+apps\sessions_app\urls.py                                                                         3      0   100%
+apps\sessions_app\views.py                                                                      363     87    76%   11-12, 41, 45, 50, 56-57, 71, 109-110, 138, 152, 158-176, 187-188, 210-215, 235-236, 273, 282-283, 286, 301-302, 330, 344-345, 388, 400-410, 419-452, 464-465, 468, 485-486, 537-539, 613, 615-616, 647, 658
+---------------------------------------------------------------------------------------------------------------------------
+TOTAL                                                                                          5445   1519    72%
+
+================ 273 passed, 60 warnings in 348.01s (0:05:48) =================

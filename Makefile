@@ -1,52 +1,48 @@
-.PHONY: help install migrate run test lint collectstatic shell docker-up docker-down
+.PHONY: dev test migrate shell static clean
 
-help:
-	@echo "AlumniAI — available commands:"
-	@echo "  make install        Install Python dependencies"
-	@echo "  make migrate        Run database migrations"
-	@echo "  make run            Start development server"
-	@echo "  make test           Run test suite"
-	@echo "  make lint           Run flake8 linter"
-	@echo "  make collectstatic  Collect static files"
-	@echo "  make shell          Open Django shell"
-	@echo "  make docker-up      Start all services via Docker Compose"
-	@echo "  make docker-down    Stop Docker Compose services"
-	@echo "  make worker         Start Celery worker"
-	@echo "  make beat           Start Celery beat scheduler"
-	@echo "  make check-deploy   Run Django deployment checks"
+dev:
+	python manage.py runserver --settings=alumni_platform.settings.dev
 
-install:
-	pip install -r requirements.txt
-
-migrate:
-	python manage.py migrate
-
-run:
-	python manage.py runserver
+daphne:
+	daphne -p 8000 alumni_platform.asgi:application
 
 test:
-	pytest tests/ --reuse-db -v
+	pytest tests/ -v --ds=alumni_platform.settings.dev
 
-test-cov:
-	pytest tests/ --reuse-db --cov=apps --cov-report=term-missing -v
+test-fast:
+	pytest tests/ --ds=alumni_platform.settings.dev -x -q
 
-lint:
-	flake8 apps/ utils/ alumni_platform/ --max-line-length=120 --exclude=migrations
+coverage:
+	pytest tests/ --ds=alumni_platform.settings.dev --cov=apps --cov-report=html --cov-report=term-missing
 
-collectstatic:
-	python manage.py collectstatic --noinput
+migrate:
+	python manage.py migrate --settings=alumni_platform.settings.dev
+
+migrations:
+	python manage.py makemigrations --settings=alumni_platform.settings.dev
 
 shell:
-	python manage.py shell
+	python manage.py shell --settings=alumni_platform.settings.dev
+
+static:
+	python manage.py collectstatic --noinput --settings=alumni_platform.settings.dev
+
+devusers:
+	python manage.py create_dev_users --settings=alumni_platform.settings.dev
+
+check:
+	python manage.py check --settings=alumni_platform.settings.dev
+
+clean:
+	find . -type f -name "*.pyc" -delete
+	find . -type d -name "__pycache__" -delete
+	find . -type d -name ".pytest_cache" -exec rm -rf {} +
 
 worker:
 	celery -A alumni_platform worker --loglevel=info
 
 beat:
 	celery -A alumni_platform beat --loglevel=info
-
-check-deploy:
-	python manage.py check --deploy --settings=alumni_platform.settings.prod
 
 docker-up:
 	docker-compose up -d

@@ -33,6 +33,32 @@ class JWTLoginRequiredMixin:
         return ctx
 
 
+class AIToolsHubPageView(JWTLoginRequiredMixin, TemplateView):
+    template_name = 'ai_tools/hub.html'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        user = self.request.user
+
+        from apps.payments.models import AIToolUsage
+        ctx['resume_check_count'] = AIToolUsage.objects.filter(
+            user=user, tool_type='resume_check'
+        ).count()
+        ctx['resume_builder_count'] = AIToolUsage.objects.filter(
+            user=user, tool_type='resume_builder'
+        ).count()
+        ctx['ai_interview_count'] = AIToolUsage.objects.filter(
+            user=user, tool_type='ai_interview'
+        ).count()
+        ctx['skill_gap_count'] = AIToolUsage.objects.filter(
+            user=user, tool_type='skill_gap'
+        ).count()
+        ctx['resume_check_free_remaining'] = AIToolUsage.get_free_uses_remaining(
+            user, 'resume_check'
+        )
+        return ctx
+
+
 class AIToolPageMixin(JWTLoginRequiredMixin, TemplateView):
     tool_type = ''
     tool_name = ''
@@ -46,6 +72,15 @@ class AIToolPageMixin(JWTLoginRequiredMixin, TemplateView):
         ctx['tool_price'] = self.tool_price
         ctx['tool_description'] = self.tool_description
         ctx['razorpay_key_id'] = django_settings.RAZORPAY_KEY_ID
+        
+        user = getattr(self.request, 'user', None)
+        if user:
+            from apps.payments.models import AIToolUsage
+            ctx['free_remaining'] = AIToolUsage.get_free_uses_remaining(user, self.tool_type)
+            ctx['past_results'] = AIToolUsage.objects.filter(
+                user=user, tool_type=self.tool_type
+            ).exclude(result_data={}).order_by('-created_at')[:5]
+            
         return ctx
 
 

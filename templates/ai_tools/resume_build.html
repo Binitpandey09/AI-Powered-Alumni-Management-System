@@ -1,170 +1,173 @@
-{% extends "dashboard/base_dashboard.html" %}
+{% extends 'dashboard/base_dashboard.html' %}
 {% load static %}
 
-{% block title %}Resume Builder — AlumniAI{% endblock %}
+{% block title %}AI Resume Builder — AlumniAI{% endblock %}
 
-{% block sidebar_links %}{% include 'partials/sidebar_student.html' %}{% endblock %}
+{% block sidebar_links %}
+  {% if user.role == 'student' %}{% include 'partials/sidebar_student.html' %}
+  {% elif user.role == 'alumni' %}{% include 'partials/sidebar_alumni.html' %}
+  {% elif user.role == 'faculty' %}{% include 'partials/sidebar_faculty.html' %}
+  {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  @media print {
+    #main-header, #main-sidebar, #action-buttons, #resume-input, #payment-gate,
+    .no-print, .page-body > aside { display: none !important; }
+    #resume-preview-card { box-shadow: none !important; border: none !important; }
+  }
+</style>
+{% endblock %}
 
 {% block dashboard_content %}
-<div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+<div style="max-width:860px; margin:0 auto;">
 
-<div class="max-w-4xl mx-auto space-y-6">
-
-  <!-- Breadcrumb -->
-  <a href="/dashboard/student/" class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors">
-    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-    </svg>
-    Back to Dashboard
-  </a>
-
-  <!-- Tool header -->
-  <div class="bg-white rounded-xl border border-slate-200 p-6">
-    <div class="flex items-start gap-4">
-      <div class="w-14 h-14 rounded-2xl bg-violet-50 flex items-center justify-center flex-shrink-0">
-        <svg class="w-7 h-7 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+  <!-- SECTION A — PAGE HEADER -->
+  <div style="margin-bottom:28px">
+    <a href="/tools/" style="color:#64748B; text-decoration:none; font-size:13px; display:inline-flex; align-items:center; gap:4px; margin-bottom:14px; font-weight:500;">
+      &larr; AI Career Tools
+    </a>
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px">
+      <div style="width:44px; height:44px; border-radius:12px; background:#FFFBEB; display:flex; align-items:center; justify-content:center; flex-shrink:0">
+        <svg width="22" height="22" fill="none" stroke="#D97706" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
         </svg>
       </div>
-      <div class="flex-1">
-        <div class="flex items-center gap-3 flex-wrap">
-          <h1 class="text-xl font-bold text-slate-800">Resume Builder</h1>
-          <span id="free-badge" class="hidden px-2.5 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">1 Free Build Available</span>
-          <span id="price-badge" class="hidden px-2.5 py-0.5 bg-violet-100 text-violet-700 text-xs font-semibold rounded-full">₹149 per build</span>
-        </div>
-        <p class="text-sm text-slate-500 mt-1">{{ tool_description }}</p>
-        <div id="usage-info" class="mt-2 text-xs text-slate-400"></div>
+      <div>
+        <h1 style="font-size:22px; font-weight:700; color:#0F172A; margin:0">AI Resume Builder</h1>
+        <p style="font-size:14px; color:#64748B; margin:4px 0 0">Build a professional resume from your AlumniAI profile in seconds</p>
       </div>
+    </div>
+    <div style="margin-top:10px;">
+      <span style="background:#FFFBEB; color:#92400E; font-size:12px; font-weight:600; padding:4px 12px; border-radius:20px">₹149 per build</span>
     </div>
   </div>
 
-  <!-- Payment gate -->
-  <div id="tool-gate" class="hidden bg-white rounded-xl border border-slate-200 p-8 text-center">
-    <div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-      <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-      </svg>
-    </div>
-    <h3 class="text-base font-semibold text-slate-700 mb-1">Payment Required</h3>
-    <p class="text-sm text-slate-500 mb-5">Pay ₹149 to build your AI-optimized resume.</p>
-    <button onclick="initiateToolPayment('resume_builder')"
-      class="px-6 py-2.5 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 transition-colors">
-      Pay ₹149 &amp; Build Resume
-    </button>
+  <!-- SECTION B — PAYMENT GATE -->
+  <div id="payment-gate" style="background:white; border:1px solid #E2E8F0; border-radius:16px; padding:24px; max-width:520px; margin-bottom:28px;">
+    <h2 style="font-size:18px; font-weight:700; margin:0 0 12px;">Unlock Resume Builder</h2>
+    <div style="font-size:32px; font-weight:800; color:#D97706; margin-bottom:16px;">₹149</div>
+    <ul style="list-style:none; padding:0; margin:0 0 20px; font-size:14px; color:#475569; line-height:2;">
+      <li style="display:flex; gap:8px; align-items:center"><span style="color:#D97706">✓</span> Complete professional resume in seconds</li>
+      <li style="display:flex; gap:8px; align-items:center"><span style="color:#D97706">✓</span> ATS-optimized with right keywords</li>
+      <li style="display:flex; gap:8px; align-items:center"><span style="color:#D97706">✓</span> Tailored to your target role</li>
+      <li style="display:flex; gap:8px; align-items:center"><span style="color:#D97706">✓</span> All sections: Summary, Skills, Education, Projects, Experience</li>
+      <li style="display:flex; gap:8px; align-items:center"><span style="color:#D97706">✓</span> Print-ready format with clean layout</li>
+    </ul>
+    <button onclick="handleToolAccess('resume_builder', '{{ tool_price }}')" style="width:100%; background:#D97706; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; font-size:15px; cursor:pointer;" onmouseover="this.style.background='#B45309'" onmouseout="this.style.background='#D97706'">Pay ₹149 and Build &rarr;</button>
   </div>
 
-  <!-- Tool interface -->
-  <div id="tool-interface" class="hidden space-y-5">
-
-    <!-- Loading state -->
-    <div id="tool-loading" class="hidden bg-white rounded-xl border border-slate-200 p-12 text-center">
-      <div class="w-16 h-16 mx-auto mb-4">
-        <svg class="animate-spin w-16 h-16 text-violet-600" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-        </svg>
-      </div>
-      <p class="text-sm font-semibold text-slate-700">Building your resume with AI...</p>
-      <p class="text-xs text-slate-400 mt-1">This may take 20–40 seconds</p>
+  <!-- SECTION C — INPUT -->
+  <div id="resume-input" style="display:none; max-width:620px; background:white; border:1px solid #E2E8F0; border-radius:16px; padding:24px; margin-bottom:28px;">
+    <div style="margin-bottom:20px;">
+      <label style="display:block; font-size:14px; font-weight:600; margin-bottom:8px;">Target Role (optional)</label>
+      <input type="text" id="resume-target-role" placeholder="e.g. Backend Developer at a fintech startup" style="width:100%; padding:12px 14px; border:1px solid #CBD5E1; border-radius:8px; font-size:14px; box-sizing:border-box;">
+      <div style="font-size:12px; color:#64748B; margin-top:6px;">We will tailor the resume towards this role.</div>
     </div>
-
-    <!-- Input form -->
-    <div id="tool-form" class="bg-white rounded-xl border border-slate-200 p-6">
-      <h2 class="font-semibold text-slate-800 mb-4">Build Your Resume</h2>
-      <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Target Role <span class="text-slate-400 font-normal">(optional)</span></label>
-          <input id="target-role-input" type="text" placeholder="e.g. Full Stack Developer"
-            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">Template Style</label>
-          <div class="grid grid-cols-3 gap-3">
-            <label class="cursor-pointer">
-              <input type="radio" name="template-style" value="professional" checked class="sr-only peer">
-              <div class="border-2 border-slate-200 peer-checked:border-violet-500 peer-checked:bg-violet-50 rounded-xl p-3 text-center transition-all">
-                <div class="text-lg mb-1">💼</div>
-                <p class="text-xs font-semibold text-slate-700">Professional</p>
-              </div>
-            </label>
-            <label class="cursor-pointer">
-              <input type="radio" name="template-style" value="modern" class="sr-only peer">
-              <div class="border-2 border-slate-200 peer-checked:border-violet-500 peer-checked:bg-violet-50 rounded-xl p-3 text-center transition-all">
-                <div class="text-lg mb-1">✨</div>
-                <p class="text-xs font-semibold text-slate-700">Modern</p>
-              </div>
-            </label>
-            <label class="cursor-pointer">
-              <input type="radio" name="template-style" value="minimal" class="sr-only peer">
-              <div class="border-2 border-slate-200 peer-checked:border-violet-500 peer-checked:bg-violet-50 rounded-xl p-3 text-center transition-all">
-                <div class="text-lg mb-1">📄</div>
-                <p class="text-xs font-semibold text-slate-700">Minimal</p>
-              </div>
-            </label>
-          </div>
-        </div>
-        <button id="analyze-btn" onclick="runTool()"
-          class="w-full py-3 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 transition-colors">
-          Build My Resume
-        </button>
+    <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:18px; margin-bottom:20px;">
+      <h3 style="font-size:13px; font-weight:700; color:#334155; margin:0 0 12px;">Your profile data we will use:</h3>
+      <div style="font-size:13px; color:#475569; line-height:1.8;">
+        <div>✓ Basic info (name, email, phone)</div>
+        <div>✓ Skills</div>
+        <div>✓ Education, Projects, Internships, Certifications</div>
       </div>
+      <div style="font-size:12px; color:#64748B; font-style:italic; margin-top:10px; margin-bottom:6px;">The more profile data you have, the better your resume will be.</div>
+      <a href="/profile/student/" style="color:#D97706; font-size:13px; font-weight:600; text-decoration:underline;">Complete your profile &rarr;</a>
     </div>
+    <button id="build-resume-btn" style="width:100%; background:#D97706; color:white; border:none; padding:14px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;" onmouseover="this.style.background='#B45309'" onmouseout="this.style.background='#D97706'">Build My Resume</button>
+  </div>
 
-    <!-- Results -->
-    <div id="results-section" class="hidden space-y-4">
-      <div class="bg-white rounded-xl border border-slate-200 p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="font-semibold text-slate-800">Your AI-Built Resume</h2>
-          <button onclick="copyResumeText()"
-            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-            </svg>
-            Copy
-          </button>
-        </div>
-        <div id="resume-output" class="bg-slate-50 rounded-xl p-5 font-mono text-xs text-slate-700 whitespace-pre-wrap leading-relaxed max-h-[600px] overflow-y-auto border border-slate-100"></div>
-      </div>
+  <!-- LOADING STATE -->
+  <div id="loading-state" style="display:none; padding:40px; text-align:center;">
+    <div style="display:inline-block; width:40px; height:40px; border:4px solid #FEF3C7; border-top:4px solid #D97706; border-radius:50%; animation:spin 1s linear infinite;"></div>
+    <div id="loading-text" style="margin-top:20px; font-weight:600; color:#334155;">Reading your profile...</div>
+    <div style="font-size:13px; color:#64748B; margin-top:8px;">Takes about 20-30 seconds</div>
+  </div>
 
-      <!-- Tailoring notes -->
-      <div class="bg-white rounded-xl border border-slate-200 p-5">
-        <h3 class="font-semibold text-slate-800 mb-2">Tailoring Notes</h3>
-        <p id="tailoring-notes" class="text-sm text-slate-600 leading-relaxed"></p>
-      </div>
+  <!-- RESULT SECTION -->
+  <div id="resume-result" style="display:none; margin-bottom:28px;">
 
-      <!-- ATS keywords -->
-      <div class="bg-white rounded-xl border border-slate-200 p-5">
-        <h3 class="font-semibold text-slate-800 mb-3">ATS Keywords Included</h3>
-        <div id="ats-keywords" class="flex flex-wrap gap-2"></div>
-      </div>
-
-      <button onclick="resetTool()"
-        class="w-full py-2.5 border border-slate-200 text-slate-600 text-sm font-medium rounded-xl hover:bg-slate-50 transition-colors">
-        Build Another Resume
+    <div class="no-print" id="action-buttons" style="display:flex; justify-content:flex-end; gap:12px; margin-bottom:16px;">
+      <button onclick="copyResumeText()" style="background:white; border:1px solid #CBD5E1; color:#334155; padding:8px 14px; border-radius:6px; font-weight:600; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path></svg>
+        Copy as Text
+      </button>
+      <button onclick="window.print()" style="background:#2563EB; border:none; color:white; padding:8px 14px; border-radius:6px; font-weight:600; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+        Print / Save PDF
       </button>
     </div>
+
+    <!-- Resume Preview -->
+    <div id="resume-preview-card" style="background:white; border:1px solid #E2E8F0; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); padding:40px; max-width:800px; margin:0 auto 20px; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; color:#111;"></div>
+
+    <!-- ATS Tips -->
+    <details class="no-print" style="max-width:800px; margin:0 auto 20px; background:white; border:1px solid #E2E8F0; border-radius:12px; overflow:hidden;">
+      <summary style="padding:14px 20px; font-size:14px; font-weight:700; color:#334155; cursor:pointer; background:#F8FAFC;">ATS Optimization Tips ▾</summary>
+      <ul id="resume-ats-tips" style="margin:12px 20px 20px; padding-left:20px; font-size:13px; color:#475569; line-height:1.6;"></ul>
+    </details>
+
+    <div class="no-print" style="display:flex; gap:12px; flex-wrap:wrap;">
+      <button onclick="window.location.reload()" style="background:white; border:1px solid #CBD5E1; color:#334155; padding:10px 16px; border-radius:8px; font-weight:600; cursor:pointer; font-size:14px;">Rebuild for Different Role</button>
+      <a href="/tools/" style="background:white; border:1px solid #CBD5E1; color:#334155; padding:10px 16px; border-radius:8px; font-weight:600; cursor:pointer; text-decoration:none; font-size:14px;">&larr; Back to AI Tools</a>
+    </div>
   </div>
 
-  <!-- Previous builds -->
-  <div id="previous-uses" class="hidden bg-white rounded-xl border border-slate-200 p-6">
-    <h2 class="font-semibold text-slate-800 mb-3">Previous Builds</h2>
-    <div id="previous-uses-list" class="space-y-2"></div>
+  <!-- PAST RESULTS -->
+  {% if past_results %}
+  <div class="no-print" style="margin-top:40px;">
+    <h3 style="font-size:16px; font-weight:700; margin:0 0 14px; display:flex; align-items:center; gap:8px;">
+      Previous Builds <span style="background:#E2E8F0; color:#475569; font-size:12px; padding:2px 8px; border-radius:12px;">{{ past_results|length }}</span>
+    </h3>
+    <div style="background:white; border:1px solid #E2E8F0; border-radius:12px; overflow:hidden;">
+      <table style="width:100%; border-collapse:collapse; font-size:14px; text-align:left;">
+        <thead>
+          <tr style="background:#F8FAFC; border-bottom:1px solid #E2E8F0; color:#64748B;">
+            <th style="padding:12px 16px; font-weight:600;">Date</th>
+            <th style="padding:12px 16px; font-weight:600;">Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for res in past_results %}
+          <tr style="border-bottom:1px solid #F1F5F9;">
+            <td style="padding:12px 16px; color:#334155; white-space:nowrap;">{{ res.created_at|date:"M d, Y" }}</td>
+            <td style="padding:12px 16px; color:#475569; font-size:13px;">{{ res.result_data.tailoring_notes|default:"General Purpose"|truncatewords:20 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
+  {% endif %}
 
 </div>
 
-{% include 'partials/payment_modal.html' %}
+<textarea id="hidden-copy-area" style="position:absolute; left:-9999px; top:0;"></textarea>
 {% endblock %}
 
-{% block dashboard_js %}
+{% block extra_js %}
+{{ block.super }}
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-<script>
-  const TOOL_TYPE = '{{ tool_type }}';
-  const TOOL_NAME = '{{ tool_name }}';
-  const TOOL_PRICE = parseInt('{{ tool_price }}');
-  const RAZORPAY_KEY_ID = '{{ razorpay_key_id }}';
-</script>
-<script src="{% static 'js/api.js' %}"></script>
-<script src="{% static 'js/payments.js' %}"></script>
 <script src="{% static 'js/ai_tools.js' %}"></script>
+<script>
+window.currentToolType = 'resume_builder';
+window.currentToolPrice = '149';
+document.addEventListener('DOMContentLoaded', function() {
+  initToolPage('resume_builder');
+  document.getElementById('build-resume-btn')?.addEventListener('click', runResumeBuilder);
+});
+function copyResumeText() {
+  const container = document.getElementById('resume-preview-card');
+  if (!container) return;
+  const textarea = document.getElementById('hidden-copy-area');
+  textarea.value = container.innerText;
+  textarea.select();
+  document.execCommand('copy');
+  event.currentTarget.textContent = '✓ Copied!';
+  setTimeout(() => event.currentTarget.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path></svg> Copy as Text', 2000);
+}
+</script>
 {% endblock %}

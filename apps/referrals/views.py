@@ -236,6 +236,12 @@ class ReferralApplyView(APIView):
             except Exception:
                 pass
 
+        # Check for existing faculty recommendation
+        from apps.referrals.models import FacultyReferralRecommendation
+        rec = FacultyReferralRecommendation.objects.filter(
+            referral=referral, student=request.user
+        ).first()
+
         application = ReferralApplication.objects.create(
             referral=referral,
             student=request.user,
@@ -244,6 +250,9 @@ class ReferralApplyView(APIView):
             missing_skills=match_result['missing_skills'],
             cover_note=cover_note,
             status='applied',
+            is_faculty_recommended=bool(rec),
+            recommended_by=rec.faculty if rec else None,
+            recommendation_note=rec.note if rec else '',
         )
 
         return Response({
@@ -401,6 +410,15 @@ class FacultyRecommendView(APIView):
             is_faculty_recommended=True,
             recommended_by=request.user,
             recommendation_note=note,
+        )
+
+        from utils.notify import send_notification
+        send_notification(
+            recipient=referral.posted_by,
+            notif_type='general',
+            title='Faculty Recommendation',
+            message=f'{request.user.first_name} recommended {student.first_name} for your referral ({referral.job_title}).',
+            link=f'/referrals/{referral.id}/applications/',
         )
 
         return Response({

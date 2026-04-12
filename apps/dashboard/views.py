@@ -766,10 +766,13 @@ class AdminBasePageMixin:
     """Mixin for all admin panel page views — validates JWT and enforces admin role."""
 
     def dispatch(self, request, *args, **kwargs):
+        import logging
+        logger = logging.getLogger('admin_access')
         token = request.COOKIES.get('access_token', '')
         user = get_user_from_token(token)
         if not user or user.role != 'admin':
             return redirect('/auth/login/?next=' + request.path)
+        logger.info(f'Admin panel accessed by {user.email} from {request.META.get("REMOTE_ADDR")}')
         request.user = user
         return super().dispatch(request, *args, **kwargs)
 
@@ -821,3 +824,505 @@ class AdminBroadcastPageView(AdminBasePageMixin, TemplateView):
 
 class AdminAuditLogPageView(AdminBasePageMixin, TemplateView):
     template_name = 'admin_panel/audit_log.html'
+
+
+# ── Dashboard API Views ────────────────────────────────────────────────────────
+
+class StudentDashboardDataView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'student':
+            return Response({'error': 'Student only.'}, status=403)
+
+        user = request.user
+        from django.utils import timezone
+        from django.db.models import Avg
+
+        # ── Profile data ──
+        profile_score = 0
+        skills = []
+        try:
+            sp = user.student_profile
+            profile_score = sp.profile_completeness_score or 0
+            skills = sp.skills or []
+        except Exception:
+            pass
+
+        # ── Session stats ──
+        from apps.sessions_app.models import Booking, Session
+        total_bookings = Booking.objects.filter(student=user).count()
+        attended = Booking.objects.filter(student=user, status='completed').count()
+        upcoming_bookings = Booking.objects.filter(
+            student=user,
+            status='confirmed',
+            session__scheduled_at__gte=timezone.now()
+        ).select_related('session', 'session__host').order_by('session__scheduled_at')[:5]
+
+        upcoming_sessions_data = [{
+            'booking_id': b.id,
+            'session_id': b.session.id,
+            'title': b.session.title,
+            'session_type': b.session.session_type,
+            'host_name': f"{b.session.host.first_name} {b.session.host.last_name}".strip(),
+            'scheduled_at': b.session.scheduled_at.isoformat(),
+            'duration_minutes': b.session.duration_minutes,
+        } for b in upcoming_bookings]
+
+        # ── Referral stats ──
+        from apps.referrals.models import ReferralApplication, Referral
+        total_applied = ReferralApplication.objects.filter(
+            student=user
+        ).exclude(status='withdrawn').count()
+        shortlisted = ReferralApplication.objects.filter(
+            student=user, status='shortlisted'
+        ).count()
+        hired = ReferralApplication.objects.filter(
+            student=user, status='hired'
+        ).count()
+
+        recent_applications = ReferralApplication.objects.filter(
+            student=user
+        ).exclude(status='withdrawn').select_related(
+            'referral', 'referral__posted_by'
+        ).order_by('-applied_at')[:5]
+
+        applications_data = [{
+            'application_id': a.id,
+            'referral_id': a.referral.id,
+            'job_title': a.referral.job_title,
+            'company_name': a.referral.company_name,
+            'status': a.status,
+            'match_score': a.match_score,
+            'applied_at': a.applied_at.isoformat(),
+        } for a in recent_applications]
+
+        # ── AI tools stats ──
+        from apps.payments.models import AIToolUsage
+        ai_total_uses = AIToolUsage.objects.filter(user=user).count()
+        last_resume_check = AIToolUsage.objects.filter(
+            user=user, tool_type='resume_check'
+        ).exclude(result_data={}).order_by('-created_at').first()
+        last_skill_gap = AIToolUsage.objects.filter(
+            user=user, tool_type='skill_gap'
+        ).exclude(result_data={}).order_by('-created_at').first()
+        last_interview = AIToolUsage.objects.filter(
+            user=user, tool_type='ai_interview'
+        ).exclude(result_data={}).order_by('-created_at').first()
+        resume_check_free = AIToolUsage.get_free_uses_remaining(user, 'resume_check')
+
+        ai_data = {
+            'total_uses': ai_total_uses,
+            'resume_check': {
+                'count': AIToolUsage.objects.filter(user=user, tool_type='resume_check').count(),
+                'last_score': last_resume_check.result_data.get('overall_score') if last_resume_check else None,
+                'last_grade': last_resume_check.result_data.get('grade') if last_resume_check else None,
+                'free_remaining': resume_check_free,
+            },
+            'skill_gap': {
+                'count': AIToolUsage.objects.filter(user=user, tool_type='skill_gap').count(),
+                'last_readiness': last_skill_gap.result_data.get('readiness_score') if last_skill_gap else None,
+                'last_role': last_skill_gap.result_data.get('target_role') if last_skill_gap else None,
+            },
+            'ai_interview': {
+                'count': AIToolUsage.objects.filter(user=user, tool_type='ai_interview').count(),
+                'last_score': last_interview.result_data.get('final_report', {}).get('overall_score') if last_interview else None,
+                'last_recommendation': last_interview.result_data.get('final_report', {}).get('hiring_recommendation') if last_interview else None,
+            },
+            'resume_builder': {
+                'count': AIToolUsage.objects.filter(user=user, tool_type='resume_builder').count(),
+            },
+        }
+
+        # ── Top referrals by match score ──
+        from utils.skill_matcher import calculate_skill_match
+        active_referrals = Referral.objects.filter(status='active').select_related(
+            'posted_by'
+        ).order_by('-created_at')[:20]
+
+        matched_referrals = []
+        for r in active_referrals:
+            result = calculate_skill_match(skills, r.required_skills, r.preferred_skills)
+            matched_referrals.append({
+                'referral_id': r.id,
+                'job_title': r.job_title,
+                'company_name': r.company_name,
+                'work_type': r.work_type,
+                'match_score': result['score'],
+                'slots_remaining': r.slots_remaining,
+                'deadline': r.deadline.isoformat(),
+                'is_urgent': r.is_urgent,
+            })
+        matched_referrals.sort(key=lambda x: -x['match_score'])
+        top_referrals = matched_referrals[:4]
+
+        # ── Recent feed posts ──
+        from apps.feed.models import Post
+        recent_posts = Post.objects.filter(
+            status='active'
+        ).select_related('author').order_by('-created_at')[:4]
+        posts_data = [{
+            'post_id': p.id,
+            'author_name': f"{p.author.first_name} {p.author.last_name}".strip(),
+            'post_type': p.post_type,
+            'content_preview': p.content[:120],
+            'likes_count': p.likes_count,
+            'comments_count': p.comments_count,
+            'created_at': p.created_at.isoformat(),
+        } for p in recent_posts]
+
+        # ── Alumni to connect with ──
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        alumni_to_connect = User.objects.filter(
+            role='alumni', is_active=True, is_verified=True
+        ).select_related('alumni_profile').order_by('-alumni_profile__impact_score')[:4]
+        connect_data = [{
+            'user_id': a.id,
+            'name': f"{a.first_name} {a.last_name}".strip(),
+            'company': getattr(a.alumni_profile, 'company', ''),
+            'designation': getattr(a.alumni_profile, 'designation', ''),
+            'impact_score': getattr(a.alumni_profile, 'impact_score', 0),
+            'profile_pic': a.profile_pic.url if a.profile_pic else None,
+        } for a in alumni_to_connect]
+
+        # ── Notifications unread count ──
+        from apps.notifications.models import Notification
+        unread_notifs = Notification.objects.filter(recipient=user, is_read=False).count()
+
+        return Response({
+            'profile': {
+                'score': profile_score,
+                'skills_count': len(skills),
+                'name': f"{user.first_name} {user.last_name}".strip(),
+            },
+            'sessions': {
+                'total_booked': total_bookings,
+                'attended': attended,
+                'upcoming': upcoming_sessions_data,
+            },
+            'referrals': {
+                'total_applied': total_applied,
+                'shortlisted': shortlisted,
+                'hired': hired,
+                'recent_applications': applications_data,
+            },
+            'ai_tools': ai_data,
+            'top_referrals_for_you': top_referrals,
+            'recent_feed_posts': posts_data,
+            'alumni_to_connect': connect_data,
+            'unread_notifications': unread_notifs,
+        })
+
+
+class AlumniDashboardDataView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'alumni':
+            return Response({'error': 'Alumni only.'}, status=403)
+
+        user = request.user
+        from django.utils import timezone
+        from django.db.models import Sum, Avg
+
+        # ── Wallet data ──
+        from apps.payments.models import Wallet, PayoutRequest, Transaction
+        wallet = None
+        wallet_data = {'balance': '0.00', 'total_earned': '0.00', 'pending_withdrawal': '0.00', 'can_withdraw': False}
+        try:
+            wallet = user.wallet
+            wallet_data = {
+                'balance': str(wallet.balance),
+                'total_earned': str(wallet.total_earned),
+                'pending_withdrawal': str(wallet.pending_withdrawal),
+                'can_withdraw': wallet.can_withdraw,
+            }
+        except Exception:
+            pass
+
+        # ── This month earnings ──
+        now = timezone.now()
+        this_month_earned = Transaction.objects.filter(
+            payee=user,
+            status='completed',
+            created_at__year=now.year,
+            created_at__month=now.month,
+        ).aggregate(total=Sum('payee_amount'))['total'] or 0
+
+        # ── Session stats ──
+        from apps.sessions_app.models import Session, Booking, SessionReview
+        total_sessions = Session.objects.filter(host=user).count()
+        upcoming_sessions = Session.objects.filter(
+            host=user, status='upcoming',
+            scheduled_at__gte=timezone.now()
+        ).order_by('scheduled_at')
+
+        total_students = Booking.objects.filter(
+            session__host=user, status='confirmed'
+        ).values('student').distinct().count()
+
+        upcoming_data = [{
+            'session_id': s.id,
+            'title': s.title,
+            'session_type': s.session_type,
+            'scheduled_at': s.scheduled_at.isoformat(),
+            'booked_seats': s.booked_seats,
+            'max_seats': s.max_seats,
+            'price': str(s.price),
+        } for s in upcoming_sessions[:5]]
+
+        # ── Session reviews ──
+        recent_reviews = SessionReview.objects.filter(
+            session__host=user
+        ).select_related('student', 'session').order_by('-created_at')[:3]
+        avg_rating = SessionReview.objects.filter(
+            session__host=user
+        ).aggregate(avg=Avg('rating'))['avg'] or 0
+
+        reviews_data = [{
+            'student_name': f"{r.student.first_name} {r.student.last_name}".strip(),
+            'rating': r.rating,
+            'comment': r.comment[:100] if r.comment else '',
+            'session_title': r.session.title,
+        } for r in recent_reviews]
+
+        # ── Referral stats ──
+        from apps.referrals.models import Referral, ReferralApplication, ReferralSuccessStory
+        active_referrals = Referral.objects.filter(
+            posted_by=user, status='active'
+        ).order_by('-created_at')
+        total_referrals = Referral.objects.filter(posted_by=user).count()
+        total_applications_received = ReferralApplication.objects.filter(
+            referral__posted_by=user
+        ).count()
+        total_placements = ReferralSuccessStory.objects.filter(alumni=user).count()
+
+        referrals_data = [{
+            'referral_id': r.id,
+            'job_title': r.job_title,
+            'company_name': r.company_name,
+            'total_applications': r.total_applications,
+            'slots_remaining': r.slots_remaining,
+            'deadline': r.deadline.isoformat(),
+            'status': r.status,
+        } for r in active_referrals[:4]]
+
+        # ── Recent applications received ──
+        recent_apps = ReferralApplication.objects.filter(
+            referral__posted_by=user
+        ).select_related('student', 'referral').order_by('-applied_at')[:5]
+        apps_data = [{
+            'application_id': a.id,
+            'student_name': f"{a.student.first_name} {a.student.last_name}".strip(),
+            'referral_title': a.referral.job_title,
+            'company': a.referral.company_name,
+            'match_score': a.match_score,
+            'status': a.status,
+            'applied_at': a.applied_at.isoformat(),
+        } for a in recent_apps]
+
+        # ── Monthly earnings chart ──
+        monthly_earnings = []
+        for i in range(5, -1, -1):
+            m_date = now.replace(day=1)
+            for _ in range(i):
+                if m_date.month == 1:
+                    m_date = m_date.replace(year=m_date.year - 1, month=12)
+                else:
+                    m_date = m_date.replace(month=m_date.month - 1)
+            earned = Transaction.objects.filter(
+                payee=user,
+                status='completed',
+                created_at__year=m_date.year,
+                created_at__month=m_date.month,
+            ).aggregate(total=Sum('payee_amount'))['total'] or 0
+            monthly_earnings.append({
+                'month': m_date.strftime('%b'),
+                'earned': float(earned),
+            })
+
+        # ── Profile verification ──
+        verification_status = 'not_submitted'
+        try:
+            verification_status = user.alumni_profile.verification_status
+        except Exception:
+            pass
+
+        impact_score = 0
+        try:
+            impact_score = user.alumni_profile.impact_score or 0
+        except Exception:
+            pass
+
+        return Response({
+            'wallet': wallet_data,
+            'this_month_earned': str(this_month_earned),
+            'sessions': {
+                'total': total_sessions,
+                'upcoming_count': upcoming_sessions.count(),
+                'total_students_helped': total_students,
+                'upcoming': upcoming_data,
+                'avg_rating': round(float(avg_rating), 1),
+                'recent_reviews': reviews_data,
+            },
+            'referrals': {
+                'total': total_referrals,
+                'total_applications_received': total_applications_received,
+                'total_placements': total_placements,
+                'active_referrals': referrals_data,
+                'recent_applications': apps_data,
+            },
+            'monthly_earnings': monthly_earnings,
+            'verification_status': verification_status,
+            'impact_score': impact_score,
+        })
+
+
+class FacultyDashboardDataView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'faculty':
+            return Response({'error': 'Faculty only.'}, status=403)
+
+        user = request.user
+        from django.utils import timezone
+        from django.db.models import Sum, Avg
+
+        # ── Wallet ──
+        from apps.payments.models import Wallet, Transaction
+        wallet_data = {'balance': '0.00', 'total_earned': '0.00', 'can_withdraw': False}
+        try:
+            w = user.wallet
+            wallet_data = {
+                'balance': str(w.balance),
+                'total_earned': str(w.total_earned),
+                'can_withdraw': w.can_withdraw,
+            }
+        except Exception:
+            pass
+
+        now = timezone.now()
+        this_month_earned = Transaction.objects.filter(
+            payee=user,
+            status='completed',
+            created_at__year=now.year,
+            created_at__month=now.month,
+        ).aggregate(total=Sum('payee_amount'))['total'] or 0
+
+        # ── Sessions ──
+        from apps.sessions_app.models import Session, Booking, SessionReview
+        total_sessions = Session.objects.filter(host=user).count()
+        upcoming_sessions = Session.objects.filter(
+            host=user, status='upcoming',
+            scheduled_at__gte=timezone.now()
+        ).order_by('scheduled_at')[:5]
+
+        total_students = Booking.objects.filter(
+            session__host=user, status='confirmed'
+        ).values('student').distinct().count()
+
+        upcoming_data = [{
+            'session_id': s.id,
+            'title': s.title,
+            'session_type': s.session_type,
+            'scheduled_at': s.scheduled_at.isoformat(),
+            'booked_seats': s.booked_seats,
+            'max_seats': s.max_seats,
+        } for s in upcoming_sessions]
+
+        avg_rating = SessionReview.objects.filter(
+            session__host=user
+        ).aggregate(avg=Avg('rating'))['avg'] or 0
+
+        recent_reviews = SessionReview.objects.filter(
+            session__host=user
+        ).select_related('student', 'session').order_by('-created_at')[:3]
+        reviews_data = [{
+            'student_name': f"{r.student.first_name} {r.student.last_name}".strip(),
+            'rating': r.rating,
+            'comment': r.comment[:100] if r.comment else '',
+            'session_title': r.session.title,
+        } for r in recent_reviews]
+
+        # ── Recommendations ──
+        from apps.referrals.models import FacultyReferralRecommendation, ReferralApplication
+        recommendations_made = FacultyReferralRecommendation.objects.filter(
+            faculty=user
+        ).select_related('student', 'referral').order_by('-created_at')[:5]
+
+        recs_data = []
+        for rec in recommendations_made:
+            application_status = 'not_applied'
+            try:
+                app = ReferralApplication.objects.get(
+                    referral=rec.referral, student=rec.student
+                )
+                application_status = app.status
+            except ReferralApplication.DoesNotExist:
+                pass
+            recs_data.append({
+                'student_name': f"{rec.student.first_name} {rec.student.last_name}".strip(),
+                'referral_title': rec.referral.job_title,
+                'company': rec.referral.company_name,
+                'referral_id': rec.referral.id,
+                'student_id': rec.student.id,
+                'status': application_status,
+                'recommended_at': rec.created_at.isoformat(),
+            })
+
+        # ── Top students to recommend ──
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        top_students = User.objects.filter(
+            role='student', is_active=True, is_verified=True
+        ).select_related('student_profile').order_by(
+            '-student_profile__profile_completeness_score'
+        )[:5]
+        students_data = [{
+            'user_id': s.id,
+            'name': f"{s.first_name} {s.last_name}".strip(),
+            'college': getattr(s, 'college', ''),
+            'skills': getattr(s.student_profile, 'skills', [])[:4],
+            'profile_score': getattr(s.student_profile, 'profile_completeness_score', 0),
+        } for s in top_students]
+
+        # ── Monthly earnings chart ──
+        monthly_earnings = []
+        for i in range(5, -1, -1):
+            m_date = now.replace(day=1)
+            for _ in range(i):
+                if m_date.month == 1:
+                    m_date = m_date.replace(year=m_date.year - 1, month=12)
+                else:
+                    m_date = m_date.replace(month=m_date.month - 1)
+            earned = Transaction.objects.filter(
+                payee=user,
+                status='completed',
+                created_at__year=m_date.year,
+                created_at__month=m_date.month,
+            ).aggregate(total=Sum('payee_amount'))['total'] or 0
+            monthly_earnings.append({
+                'month': m_date.strftime('%b'),
+                'earned': float(earned),
+            })
+
+        return Response({
+            'wallet': wallet_data,
+            'this_month_earned': str(this_month_earned),
+            'sessions': {
+                'total': total_sessions,
+                'upcoming_count': len(upcoming_data),
+                'total_students_mentored': total_students,
+                'upcoming': upcoming_data,
+                'avg_rating': round(float(avg_rating), 1),
+                'recent_reviews': reviews_data,
+            },
+            'recommendations': {
+                'total_made': FacultyReferralRecommendation.objects.filter(faculty=user).count(),
+                'recent': recs_data,
+            },
+            'top_students_to_recommend': students_data,
+            'monthly_earnings': monthly_earnings,
+        })

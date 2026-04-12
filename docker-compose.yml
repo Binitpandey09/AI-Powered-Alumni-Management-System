@@ -1,82 +1,60 @@
-version: '3.9'
+version: '3.8'
 
 services:
   db:
-    image: postgres:15-alpine
-    restart: unless-stopped
+    image: postgres:15
     environment:
       POSTGRES_DB: alumniai_db
       POSTGRES_USER: alumniai_user
-      POSTGRES_PASSWORD: alumniai_pass
+      POSTGRES_PASSWORD: alumniai_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U alumniai_user -d alumniai_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    ports:
+      - "5432:5432"
 
   redis:
     image: redis:7-alpine
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    ports:
+      - "6379:6379"
 
   web:
     build: .
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      DATABASE_URL: postgres://alumniai_user:alumniai_pass@db:5432/alumniai_db
-      REDIS_URL: redis://redis:6379/0
+    command: daphne -b 0.0.0.0 -p 8000 alumni_platform.asgi:application
+    volumes:
+      - .:/app
+      - media_files:/app/media
     ports:
       - "8000:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=alumni_platform.settings.prod
+    env_file:
+      - .env
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    volumes:
-      - media_files:/app/media
-      - log_files:/app/logs
-    command: >
-      sh -c "python manage.py migrate --noinput &&
-             gunicorn --config gunicorn.conf.py alumni_platform.wsgi:application"
+      - db
+      - redis
 
   worker:
     build: .
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      DATABASE_URL: postgres://alumniai_user:alumniai_pass@db:5432/alumniai_db
-      REDIS_URL: redis://redis:6379/0
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    volumes:
-      - log_files:/app/logs
     command: celery -A alumni_platform worker --loglevel=info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
 
   beat:
     build: .
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      DATABASE_URL: postgres://alumniai_user:alumniai_pass@db:5432/alumniai_db
-      REDIS_URL: redis://redis:6379/0
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     command: celery -A alumni_platform beat --loglevel=info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
 
 volumes:
   postgres_data:
   media_files:
-  log_files:

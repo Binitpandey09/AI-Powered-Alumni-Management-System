@@ -312,18 +312,148 @@ class FacultyProfile(models.Model):
     """Extended profile for Faculty users"""
 
     user = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name='faculty_profile'
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='faculty_profile'
     )
     college_email = models.EmailField(unique=True, null=True, blank=True)
-    employee_id = models.CharField(max_length=100, blank=True)
+    
+    # ── Section 2: Professional Information ──
+    college_name = models.CharField(max_length=300, blank=True)
     department = models.CharField(max_length=200, blank=True)
     designation = models.CharField(max_length=200, blank=True)
-    subjects = models.JSONField(default=list, blank=True)
-    wallet_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    total_earned = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    employee_id = models.CharField(max_length=100, blank=True)
+    years_of_experience = models.CharField(
+        max_length=20,
+        choices=[
+            ('0-2', '0-2 years'),
+            ('2-5', '2-5 years'),
+            ('5-10', '5-10 years'),
+            ('10-20', '10-20 years'),
+            ('20+', '20+ years'),
+        ],
+        blank=True
+    )
+    teaching_mode = models.CharField(
+        max_length=20,
+        choices=[
+            ('full_time', 'Full Time'),
+            ('part_time', 'Part Time'),
+            ('visiting', 'Visiting Faculty'),
+            ('guest', 'Guest Lecturer'),
+        ],
+        blank=True
+    )
+
+    # ── Section 3: Academic & Teaching Details ──
+    subjects_taught = models.JSONField(default=list, blank=True)
+    specialization = models.CharField(max_length=300, blank=True)
+    highest_qualification = models.CharField(max_length=200, blank=True)
+    qualification_university = models.CharField(max_length=300, blank=True)
+    research_publications_count = models.IntegerField(default=0)
+
+    # ── Section 4: Skills & Expertise ──
+    technical_skills = models.JSONField(default=list, blank=True)
+    soft_skills = models.JSONField(default=list, blank=True)
+    tools_technologies = models.JSONField(default=list, blank=True)
+    languages_known = models.JSONField(default=list, blank=True)
+
+    # ── Section 5: Session Hosting Details ──
+    available_for_sessions = models.BooleanField(default=True)
+    session_types_offered = models.JSONField(default=list, blank=True)
+    preferred_session_mode = models.CharField(
+        max_length=10,
+        choices=[('online', 'Online'), ('offline', 'Offline'), ('both', 'Both')],
+        default='online'
+    )
+    office_hours = models.CharField(max_length=200, blank=True)
+    max_students_per_session = models.IntegerField(default=10)
+    preferred_session_duration = models.CharField(
+        max_length=10,
+        choices=[
+            ('30', '30 minutes'),
+            ('45', '45 minutes'),
+            ('60', '60 minutes'),
+            ('90', '90 minutes'),
+        ],
+        default='60'
+    )
+
+    # ── Section 6: Social & Online Presence ──
+    linkedin_url = models.URLField(blank=True)
+    google_scholar_url = models.URLField(blank=True)
+    researchgate_url = models.URLField(blank=True)
+    personal_website = models.URLField(blank=True)
+    college_staff_page_url = models.URLField(blank=True)
+
+    # ── Section 7: Bio ──
+    bio = models.TextField(blank=True, max_length=500)
+
+    # ── Section 8: Bank Details ──
     bank_details = models.JSONField(default=dict, blank=True)
     bank_verified = models.BooleanField(default=False)
-    bio = models.TextField(blank=True)
+
+    # ── Auto-calculated fields ──
+    wallet_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    total_earned = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+    # ── Profile completeness ──
+    profile_completeness_score = models.IntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def calculate_completeness(self):
+        score = 0
+        user = self.user
+
+        # Basic info (20 points)
+        if user.first_name and user.last_name:
+            score += 8
+        if user.profile_pic:
+            score += 7
+        if hasattr(user, 'phone') and user.phone:
+            score += 5
+
+        # Professional info (25 points)
+        if self.college_name:
+            score += 8
+        if self.department:
+            score += 8
+        if self.designation:
+            score += 9
+
+        # Subjects taught + skills (20 points)
+        if len(self.subjects_taught or []) >= 3:
+            score += 10
+        elif len(self.subjects_taught or []) >= 1:
+            score += 5
+        if len(self.technical_skills or []) >= 3:
+            score += 10
+        elif len(self.technical_skills or []) >= 1:
+            score += 5
+
+        # Bio (10 points)
+        if self.bio and len(self.bio) >= 50:
+            score += 10
+        elif self.bio:
+            score += 5
+
+        # Session availability (10 points)
+        if self.available_for_sessions and len(self.session_types_offered or []) >= 1:
+            score += 10
+
+        # Social links (5 points)
+        if self.linkedin_url or self.google_scholar_url or self.personal_website:
+            score += 5
+
+        # Bank details (10 points)
+        if self.bank_details and self.bank_details.get('account_number'):
+            score += 10
+
+        return min(100, score)
+
+    def save(self, *args, **kwargs):
+        self.profile_completeness_score = self.calculate_completeness()
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = 'Faculty Profile'

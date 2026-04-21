@@ -3,12 +3,7 @@
 
 {% block title %}AI Mock Interview — AlumniAI{% endblock %}
 
-{% block sidebar_links %}
-  {% if user.role == 'student' %}{% include 'partials/sidebar_student.html' %}
-  {% elif user.role == 'alumni' %}{% include 'partials/sidebar_alumni.html' %}
-  {% elif user.role == 'faculty' %}{% include 'partials/sidebar_faculty.html' %}
-  {% endif %}
-{% endblock %}
+
 
 {% block extra_css %}
 {{ block.super }}

@@ -16,7 +16,7 @@ from .views import (
     AlumniProfilePageView,
     FacultyProfilePageView,
     AlumniProfileSelfPageView,
-    FacultyProfileSelfPageView,
+    FacultyEditProfilePageView,
     DevRoleSwitchView,
 )
 
@@ -31,7 +31,7 @@ urlpatterns = [
     path('profile/edit/', EditProfilePageView.as_view(), name='profile_edit_new'),
     path('profile/student/', StudentProfilePageView.as_view(), name='student_profile'),
     path('profile/alumni/', AlumniProfileSelfPageView.as_view(), name='alumni_profile_self'),
-    path('profile/faculty/', FacultyProfileSelfPageView.as_view(), name='faculty_profile_self'),
+    path('profile/faculty/edit/', FacultyEditProfilePageView.as_view(), name='faculty_profile_edit'),
     # Connect page (replaces Browse Alumni for students)
     path('connect/', ConnectPageView.as_view(), name='connect'),
     # Public profiles

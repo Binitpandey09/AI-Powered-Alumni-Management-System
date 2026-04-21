@@ -562,8 +562,7 @@ class AlumniProfileSelfPageView(JWTLoginRequiredMixin, TemplateView):
             return redirect(f'/auth/login/?next={request.path}')
         if user.role != 'alumni':
             return redirect(f'/dashboard/{user.role}/')
-        request.user = user
-        return TemplateView.dispatch(self, request, *args, **kwargs)
+        return redirect('/profile/edit/')
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -574,23 +573,24 @@ class AlumniProfileSelfPageView(JWTLoginRequiredMixin, TemplateView):
 
 # ── Faculty Profile Self Page View (placeholder for /profile/faculty/) ────────
 
-class FacultyProfileSelfPageView(JWTLoginRequiredMixin, TemplateView):
-    template_name = 'accounts/faculty_profile_self.html'
+class FacultyEditProfilePageView(TemplateView):
+    template_name = 'accounts/faculty_edit_profile.html'
 
     def dispatch(self, request, *args, **kwargs):
+        token = request.COOKIES.get('access_token')
         from utils.auth_helpers import get_user_from_token
-        token = request.COOKIES.get('access_token', '')
         user = get_user_from_token(token)
-        if not user:
+        if not user or user.role != 'faculty':
+            from django.shortcuts import redirect
             return redirect(f'/auth/login/?next={request.path}')
-        if user.role != 'faculty':
-            return redirect(f'/dashboard/{user.role}/')
-        request.user = user
-        return TemplateView.dispatch(self, request, *args, **kwargs)
+        request.portal_user = user
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['user'] = self.request.user
+        token = self.request.COOKIES.get('access_token')
+        from utils.auth_helpers import get_user_from_token
+        user = get_user_from_token(token)
         ctx['user_role'] = 'faculty'
         return ctx
 
@@ -750,7 +750,223 @@ class PublicFacultyProfileView(APIView):
             'batch_year': user.batch_year,
             'department': profile.department,
             'designation': profile.designation,
-            'subjects': profile.subjects,
+            'subjects': profile.subjects_taught,
             'bio': profile.bio,
             'employee_id': profile.employee_id,
+        })
+
+class FacultyProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'faculty':
+            return Response({'error': 'Faculty only.'}, status=403)
+        try:
+            profile = request.user.faculty_profile
+        except Exception:
+            from apps.accounts.models import FacultyProfile
+            profile = FacultyProfile.objects.create(user=request.user)
+
+        # Build profile pic URL
+        pic_url = None
+        if request.user.profile_pic:
+            try:
+                pic_url = request.build_absolute_uri(request.user.profile_pic.url)
+            except Exception:
+                pass
+
+        data = {
+            'id': profile.id,
+            'user_id': request.user.id,
+            'first_name': request.user.first_name,
+            'last_name': request.user.last_name,
+            'email': request.user.email,
+            'phone': getattr(request.user, 'phone', '') or '',
+            'location': getattr(request.user, 'location', '') or '',
+            'gender': getattr(request.user, 'gender', '') or '',
+            'profile_pic': pic_url,
+
+            # Professional
+            'college_name': profile.college_name,
+            'department': profile.department,
+            'designation': profile.designation,
+            'employee_id': profile.employee_id,
+            'years_of_experience': profile.years_of_experience,
+            'teaching_mode': profile.teaching_mode,
+
+            # Academic
+            'subjects_taught': profile.subjects_taught or [],
+            'specialization': profile.specialization,
+            'highest_qualification': profile.highest_qualification,
+            'qualification_university': profile.qualification_university,
+            'research_publications_count': profile.research_publications_count,
+
+            # Skills
+            'technical_skills': profile.technical_skills or [],
+            'soft_skills': profile.soft_skills or [],
+            'tools_technologies': profile.tools_technologies or [],
+            'languages_known': profile.languages_known or [],
+
+            # Sessions
+            'available_for_sessions': profile.available_for_sessions,
+            'session_types_offered': profile.session_types_offered or [],
+            'preferred_session_mode': profile.preferred_session_mode,
+            'office_hours': profile.office_hours,
+            'max_students_per_session': profile.max_students_per_session,
+            'preferred_session_duration': profile.preferred_session_duration,
+
+            # Social
+            'linkedin_url': profile.linkedin_url,
+            'google_scholar_url': profile.google_scholar_url,
+            'researchgate_url': profile.researchgate_url,
+            'personal_website': profile.personal_website,
+            'college_staff_page_url': profile.college_staff_page_url,
+
+            # Bio
+            'bio': profile.bio,
+
+            # Bank
+            'bank_details': profile.bank_details or {},
+            'bank_verified': profile.bank_verified,
+
+            # Stats
+            'wallet_balance': str(profile.wallet_balance),
+            'total_earned': str(profile.total_earned),
+            'profile_completeness_score': profile.profile_completeness_score,
+        }
+        return Response(data)
+
+    def patch(self, request):
+        if request.user.role != 'faculty':
+            return Response({'error': 'Faculty only.'}, status=403)
+        try:
+            profile = request.user.faculty_profile
+        except Exception:
+            from apps.accounts.models import FacultyProfile
+            profile = FacultyProfile.objects.create(user=request.user)
+
+        data = request.data
+
+        # Update User model fields
+        user_fields_changed = False
+        if 'first_name' in data:
+            request.user.first_name = data['first_name'].strip()
+            user_fields_changed = True
+        if 'last_name' in data:
+            request.user.last_name = data['last_name'].strip()
+            user_fields_changed = True
+        if 'phone' in data and hasattr(request.user, 'phone'):
+            request.user.phone = data['phone'].strip()
+            user_fields_changed = True
+        if 'location' in data and hasattr(request.user, 'location'):
+            request.user.location = data['location'].strip()
+            user_fields_changed = True
+        if 'gender' in data and hasattr(request.user, 'gender'):
+            request.user.gender = data['gender'].strip()
+            user_fields_changed = True
+        if user_fields_changed:
+            request.user.save()
+
+        # Update FacultyProfile fields
+        profile_fields = [
+            'college_name', 'department', 'designation', 'employee_id',
+            'years_of_experience', 'teaching_mode', 'subjects_taught',
+            'specialization', 'highest_qualification', 'qualification_university',
+            'research_publications_count', 'technical_skills', 'soft_skills',
+            'tools_technologies', 'languages_known', 'available_for_sessions',
+            'session_types_offered', 'preferred_session_mode', 'office_hours',
+            'max_students_per_session', 'preferred_session_duration',
+            'linkedin_url', 'google_scholar_url', 'researchgate_url',
+            'personal_website', 'college_staff_page_url', 'bio',
+        ]
+        for field in profile_fields:
+            if field in data:
+                value = data[field]
+                if isinstance(value, str):
+                    value = value.strip()
+                setattr(profile, field, value)
+
+        profile.save()  # triggers completeness recalculation
+
+        return Response({
+            'message': 'Profile updated successfully.',
+            'profile_completeness_score': profile.profile_completeness_score,
+        })
+
+class FacultyBankDetailsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'faculty':
+            return Response({'error': 'Faculty only.'}, status=403)
+        try:
+            bd = request.user.faculty_profile.bank_details or {}
+        except Exception:
+            bd = {}
+        # Mask account number for display
+        masked = {}
+        if bd:
+            masked = bd.copy()
+            acc = bd.get('account_number', '')
+            if len(acc) > 4:
+                masked['account_number'] = 'X' * (len(acc) - 4) + acc[-4:]
+        return Response({'bank_details': masked, 'has_bank_details': bool(bd.get('account_number'))})
+
+    def patch(self, request):
+        if request.user.role != 'faculty':
+            return Response({'error': 'Faculty only.'}, status=403)
+
+        required_fields = ['account_holder_name', 'bank_name', 'account_number', 'ifsc_code']
+        for field in required_fields:
+            if not request.data.get(field, '').strip():
+                return Response({'error': f'{field} is required.'}, status=400)
+
+        acc = request.data.get('account_number', '').strip()
+        confirm = request.data.get('confirm_account_number', '').strip()
+        if confirm and acc != confirm:
+            return Response({'error': 'Account numbers do not match.'}, status=400)
+
+        bank_data = {
+            'account_holder_name': request.data.get('account_holder_name', '').strip(),
+            'bank_name': request.data.get('bank_name', '').strip(),
+            'account_number': acc,
+            'ifsc_code': request.data.get('ifsc_code', '').strip().upper(),
+            'account_type': request.data.get('account_type', 'savings'),
+        }
+
+        try:
+            profile = request.user.faculty_profile
+            profile.bank_details = bank_data
+            profile.save(update_fields=['bank_details'])
+            return Response({'message': 'Bank details saved successfully.'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
+from rest_framework.parsers import MultiPartParser, FormParser
+class ProfilePictureView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        if 'profile_pic' not in request.FILES:
+            return Response({'error': 'No image file provided.'}, status=400)
+
+        image = request.FILES['profile_pic']
+
+        # Validate file type
+        allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+        if image.content_type not in allowed_types:
+            return Response({'error': 'Only JPEG, PNG and WebP images are allowed.'}, status=400)
+
+        # Validate file size (max 5MB)
+        if image.size > 5 * 1024 * 1024:
+            return Response({'error': 'Image must be under 5MB.'}, status=400)
+
+        request.user.profile_pic = image
+        request.user.save(update_fields=['profile_pic'])
+
+        pic_url = request.build_absolute_uri(request.user.profile_pic.url)
+        return Response({
+            'message': 'Profile photo updated successfully.',
+            'profile_pic_url': pic_url,
         })

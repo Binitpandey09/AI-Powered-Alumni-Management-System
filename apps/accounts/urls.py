@@ -19,11 +19,13 @@ from .views import (
     FullStudentProfileView,
     FacultyListView,
     PublicFacultyProfileView,
+    FacultyBankDetailsView,
+    FacultyProfileView,
+    ProfilePictureView,
 )
 from .profile_views import (
     AlumniProfileView,
     StudentProfileView,
-    FacultyProfileView,
     ProfilePictureUploadView,
     CVUploadView,
     BasicProfileUpdateView,
@@ -48,8 +50,9 @@ urlpatterns = [
     path('profile/basic/',        BasicProfileUpdateView.as_view(),    name='profile-basic'),
     path('profile/alumni/',       AlumniProfileView.as_view(),         name='profile-alumni'),
     path('profile/student/',      StudentProfileView.as_view(),        name='profile-student'),
-    path('profile/faculty/',      FacultyProfileView.as_view(),        name='profile-faculty'),
-    path('profile/picture/',      ProfilePictureUploadView.as_view(),  name='profile-picture'),
+    path('faculty/profile/',      FacultyProfileView.as_view(),        name='faculty-profile'),
+    path('faculty/bank-details/', FacultyBankDetailsView.as_view(),    name='faculty-bank-details'),
+    path('profile/picture/',      ProfilePictureView.as_view(),        name='profile-picture'),
     path('profile/cv-upload/',    CVUploadView.as_view(),              name='cv-upload'),
     path('profile/completeness/', ProfileCompletenessView.as_view(),   name='profile-completeness'),
 

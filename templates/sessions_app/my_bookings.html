@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "dashboard/base_dashboard.html" %}
 {% load static %}
 {# ------------------------------------------------------------------ #}
 {# my_bookings.html — Student view: lists all session bookings         #}
@@ -7,13 +7,10 @@
 {# ------------------------------------------------------------------ #}
 {% block title %}My Bookings — AlumniAI{% endblock %}
 
-{% block content %}
+{% block dashboard_content %}
 <div style="min-height:100vh;background:#F8FAFC">
 
-  <!-- Breadcrumb -->
-  <div style="background:white;border-bottom:1px solid #E2E8F0;padding:12px 24px">
-    <a href="/sessions/" style="font-size:14px;color:#2563EB;text-decoration:none">← Back to Sessions</a>
-  </div>
+
 
   <!-- Header -->
   <div style="padding:20px 24px 0;max-width:900px;margin:0 auto">

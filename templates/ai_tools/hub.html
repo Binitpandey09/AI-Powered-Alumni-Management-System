@@ -3,12 +3,7 @@
 
 {% block title %}AI Career Tools — AlumniAI{% endblock %}
 
-{% block sidebar_links %}
-  {% if user.role == 'student' %}{% include 'partials/sidebar_student.html' %}
-  {% elif user.role == 'alumni' %}{% include 'partials/sidebar_alumni.html' %}
-  {% elif user.role == 'faculty' %}{% include 'partials/sidebar_faculty.html' %}
-  {% endif %}
-{% endblock %}
+
 
 {% block dashboard_content %}
 <div style="max-width:900px; margin:0 auto;">

@@ -42,6 +42,13 @@ else:
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 
+# Disable Redis for Websockets in dev
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
+
 # Logging
 LOGGING = {
     'version': 1,

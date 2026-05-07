@@ -14,6 +14,14 @@ def send_session_reminder(self, session_id):
         from django.conf import settings
 
         session = Session.objects.select_related('host').get(pk=session_id)
+        
+        # Safety check for eager execution in dev
+        import datetime
+        from django.utils import timezone
+        if timezone.now() < session.scheduled_at - datetime.timedelta(hours=1, minutes=5):
+            logger.info(f'Skipping early reminder for session {session_id}')
+            return
+
         confirmed_bookings = Booking.objects.filter(
             session=session, status='confirmed'
         ).select_related('student')
@@ -54,6 +62,13 @@ def mark_session_completed(self, session_id):
 
         if session.status in ('cancelled',):
             logger.info(f'Session {session_id} is cancelled — skipping completion.')
+            return
+
+        # Safety check for eager execution in dev
+        import datetime
+        from django.utils import timezone
+        if timezone.now() < session.scheduled_at + datetime.timedelta(minutes=session.duration_minutes):
+            logger.info(f'Skipping early completion for session {session_id}')
             return
 
         session.status = 'completed'

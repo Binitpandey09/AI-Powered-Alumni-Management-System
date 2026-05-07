@@ -304,7 +304,7 @@ class AlumniBrowseView(APIView):
                 'batch_year': u.batch_year,
                 'company': p.company,
                 'designation': p.designation,
-                'skills': p.skills,
+                'skills': p.technical_skills,
                 'impact_score': p.impact_score,
                 'is_available_for_1on1': p.is_available_for_1on1,
                 'price_per_30min': str(p.price_per_30min),
@@ -346,7 +346,7 @@ class PublicAlumniProfileView(APIView):
             'company_email': profile.company_email,
             'linkedin_url': profile.linkedin_url,
             'years_of_experience': profile.years_of_experience,
-            'skills': profile.skills,
+            'skills': profile.technical_skills,
             'impact_score': profile.impact_score,
             'is_available_for_1on1': profile.is_available_for_1on1,
             'price_per_30min': str(profile.price_per_30min),
@@ -376,8 +376,7 @@ class ProfileCompletenessView(APIView):
                 'designation': p.designation,
                 'bio': p.bio,
                 'linkedin_url': p.linkedin_url,
-                'skills': p.skills,
-                'company_email': p.company_email,
+                'skills': p.technical_skills,
             }
         elif user.is_student:
             try:

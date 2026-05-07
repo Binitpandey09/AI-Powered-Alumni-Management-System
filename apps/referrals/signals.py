@@ -30,6 +30,11 @@ def handle_application_status_change(sender, instance, created, **kwargs):
         instance.referral.refresh_from_db()
         if instance.referral.is_full:
             Referral.objects.filter(pk=instance.referral.pk).update(status='closed')
+            try:
+                from apps.feed.models import Post
+                Post.objects.filter(post_type='referral', referral=instance.referral).update(status='hidden')
+            except Exception:
+                pass
 
         try:
             from utils.notify import send_notification
@@ -115,6 +120,11 @@ def handle_application_status_change(sender, instance, created, **kwargs):
         instance.referral.refresh_from_db()
         if instance.referral.status == 'closed' and not instance.referral.is_full:
             Referral.objects.filter(pk=instance.referral.pk).update(status='active')
+            try:
+                from apps.feed.models import Post
+                Post.objects.filter(post_type='referral', referral=instance.referral).update(status='active')
+            except Exception:
+                pass
 
 
 @receiver(post_save, sender='referrals.FacultyReferralRecommendation')

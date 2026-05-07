@@ -88,7 +88,12 @@ function startPolling() {
   if (pollingInterval) return;
   pollingInterval = setInterval(async () => {
     const result = await apiGet('/api/notifications/unread-count/');
-    if (result.ok) updateUnreadBadge(result.data.unread_count);
+    if (result.ok) {
+      updateUnreadBadge(result.data.unread_count);
+    } else if (result.status === 401) {
+      clearInterval(pollingInterval);
+      pollingInterval = null;
+    }
   }, 30000);
 }
 

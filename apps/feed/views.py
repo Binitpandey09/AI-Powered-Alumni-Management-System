@@ -1,4 +1,5 @@
 from django.db.models import Q
+from django.utils import timezone
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404
@@ -38,6 +39,8 @@ class FeedListView(APIView):
         return (
             Post.objects
             .filter(status='active')
+            .exclude(post_type='session', session_date__lt=timezone.now())
+            .exclude(post_type='referral', referral__status__in=['closed', 'expired', 'paused'])
             .select_related(
                 'author',
                 'author__alumni_profile',

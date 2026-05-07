@@ -42,6 +42,10 @@ class Post(models.Model):
     session_price = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     session_duration = models.IntegerField(null=True, blank=True)  # minutes
     max_seats = models.IntegerField(null=True, blank=True)
+    session_id = models.IntegerField(null=True, blank=True)
+    referral = models.ForeignKey(
+        'referrals.Referral', on_delete=models.SET_NULL, null=True, blank=True, related_name='feed_posts'
+    )
 
     # Cached engagement counts
     likes_count = models.IntegerField(default=0)

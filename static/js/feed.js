@@ -253,9 +253,13 @@ function renderPostCard(post) {
         ${post.location ? `<span style="font-size:.8125rem;color:#475569;">📍 ${escHtml(post.location)}</span>` : ''}
         ${post.salary_range ? `<span style="font-size:.8125rem;color:#475569;">💰 ${escHtml(post.salary_range)}</span>` : ''}
       </div>
-      ${skillsHtml ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;">${skillsHtml}${moreSkills > 0 ? `<span style="padding:2px 8px;font-size:.6875rem;background:#e2e8f0;color:#64748b;border-radius:9999px;">+${moreSkills} more</span>` : ''}</div>` : ''}
-      ${post.apply_link ? `<div style="margin-top:8px;"><a href="${escHtml(post.apply_link)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:6px 14px;background:#2563eb;color:#fff;font-size:.8125rem;font-weight:600;border-radius:8px;text-decoration:none;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">Apply Now →</a></div>` : ''}
-    </div>`;
+      ${skillsHtml ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;">${skillsHtml}${moreSkills > 0 ? `<span style="padding:2px 8px;font-size:.6875rem;background:#e2e8f0;color:#64748b;border-radius:9999px;">+${moreSkills} more</span>` : ''}</div>` : ''}`;
+      if (post.post_type === 'referral') {
+          extraHtml += `<div style="margin-top:12px;border-top:1px solid #e2e8f0;padding-top:12px;">` + renderReferralActionButton(post) + `</div>`;
+      } else {
+          extraHtml += post.apply_link ? `<div style="margin-top:8px;"><a href="${escHtml(post.apply_link)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:6px 14px;background:#2563eb;color:#fff;font-size:.8125rem;font-weight:600;border-radius:8px;text-decoration:none;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">Apply Now →</a></div>` : '';
+      }
+      extraHtml += `</div>`;
   } else if (post.post_type === 'session') {
     const dateStr = post.session_date ? new Date(post.session_date).toLocaleString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
     extraHtml = `<div style="background:#fdf4ff;border:1px solid #e9d5ff;border-radius:8px;padding:10px 14px;margin:10px 0;">
@@ -264,9 +268,31 @@ function renderPostCard(post) {
         ${post.session_duration ? `<span style="font-size:.8125rem;color:#6d28d9;">⏱ ${post.session_duration} min</span>` : ''}
         ${post.session_price !== null && post.session_price !== undefined ? `<span style="font-size:.8125rem;color:#6d28d9;">💰 ${post.session_price == 0 ? 'Free' : '₹' + post.session_price + ' / seat'}</span>` : ''}
         ${post.max_seats ? `<span style="font-size:.8125rem;color:#6d28d9;">👥 ${post.max_seats} seats</span>` : ''}
-      </div>
-      <div style="margin-top:8px;"><button onclick="showToast('Session booking coming soon!','info')" style="display:inline-flex;align-items:center;gap:4px;padding:6px 14px;background:#7c3aed;color:#fff;font-size:.8125rem;font-weight:600;border:none;border-radius:8px;cursor:pointer;" onmouseover="this.style.background='#6d28d9'" onmouseout="this.style.background='#7c3aed'">Book Session →</button></div>
-    </div>`;
+      </div>`;
+      const userRole = _currentUser ? _currentUser.role : 'student';
+      const currentUserId = _currentUser ? _currentUser.id : 0;
+      const hostId = author ? author.id : null;
+      const isOwnSession = (hostId && parseInt(hostId) === parseInt(currentUserId));
+      
+      let actionBtnHtml = '';
+      
+      if (userRole === 'student') {
+          if (post.is_enrolled_in_session) {
+              actionBtnHtml = `<div style="margin-top:8px;"><button disabled style="display:inline-flex;align-items:center;gap:4px;padding:6px 14px;background:#10b981;color:#fff;font-size:.8125rem;font-weight:600;border:none;border-radius:8px;cursor:not-allowed;">Enrolled ✓</button></div>`;
+          } else {
+              const btnAction = post.session_id ? `window.location.href='/sessions/${post.session_id}/'` : `showToast('Session details unavailable','error')`;
+              actionBtnHtml = `<div style="margin-top:8px;"><button onclick="${btnAction}" style="display:inline-flex;align-items:center;gap:4px;padding:6px 14px;background:#7c3aed;color:#fff;font-size:.8125rem;font-weight:600;border:none;border-radius:8px;cursor:pointer;" onmouseover="this.style.background='#6d28d9'" onmouseout="this.style.background='#7c3aed'">Book Session →</button></div>`;
+          }
+      } else if (userRole === 'alumni' || userRole === 'faculty') {
+          if (isOwnSession) {
+              actionBtnHtml = `<div style="margin-top:8px;"><button onclick="window.location.href='/sessions/hosting/'" style="display:inline-flex;align-items:center;gap:4px;padding:6px 14px;background:#0d9488;color:#fff;font-size:.8125rem;font-weight:600;border:none;border-radius:8px;cursor:pointer;" onmouseover="this.style.background='#0f766e'" onmouseout="this.style.background='#0d9488'">Manage Session →</button></div>`;
+          }
+      } else if (userRole === 'admin') {
+          const btnAction = post.session_id ? `window.location.href='/sessions/${post.session_id}/'` : `showToast('Session details unavailable','error')`;
+          actionBtnHtml = `<div style="margin-top:8px;"><button onclick="${btnAction}" style="display:inline-flex;align-items:center;gap:4px;padding:6px 14px;background:#fff;color:#64748b;font-size:.8125rem;font-weight:600;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">View Session →</button></div>`;
+      }
+      extraHtml += actionBtnHtml;
+      extraHtml += `</div>`;
   }
 
   const isOwn = _currentUser && _currentUser.id === author.id;
@@ -538,7 +564,7 @@ function openCreatePostModal(preType) {
   const submitBtn = document.getElementById('cp-submit-btn');
   if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Post'; }
   ['cp-company','cp-role','cp-location','cp-salary','cp-apply-link','cp-skills',
-   'cp-session-price','cp-max-seats'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+   'cp-session-price','cp-max-seats', 'cp-meeting-link'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const durEl = document.getElementById('cp-session-duration');
   if (durEl) durEl.value = '60';
 
@@ -604,7 +630,8 @@ async function submitPost() {
     payload.session_price = document.getElementById('cp-session-price').value;
     payload.session_duration = document.getElementById('cp-session-duration').value || null;
     payload.max_seats = document.getElementById('cp-max-seats').value || null;
-    if (!payload.session_date || payload.session_price === '') { errEl.textContent = 'Session date and price are required.'; return; }
+    payload.meeting_link = document.getElementById('cp-meeting-link').value.trim();
+    if (!payload.session_date || payload.session_price === '' || !payload.meeting_link) { errEl.textContent = 'Session date, price, and meeting link are required.'; return; }
   }
 
   submitBtn.disabled = true;
@@ -677,4 +704,117 @@ function timeAgo(dateStr) {
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
   return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function renderReferralActionButton(post) {
+    const userRole = _currentUser ? _currentUser.role : 'student';
+    const r = post.referral_data;
+    if (!r || !r.referral_id) return '';
+
+    if (userRole !== 'student') {
+        if (userRole === 'alumni' && post.author && _currentUser && post.author.id === _currentUser.id) {
+            return `<a href="/referrals/${r.referral_id}/manage/"
+                       style="display:inline-flex;align-items:center;gap:6px;background:#7C3AED;
+                              color:white;padding:7px 16px;border-radius:8px;text-decoration:none;
+                              font-size:12px;font-weight:500">
+                       Manage Applications →
+                    </a>`;
+        }
+        return '';
+    }
+
+    const matchScore = r.student_match_score || 0;
+    const hasApplied = r.student_has_applied;
+    const slotsLeft = r.slots_remaining;
+    const isActive = r.status === 'active';
+    const canApply = matchScore >= 40;
+
+    const scoreColor = matchScore >= 80 ? '#16A34A' : matchScore >= 60 ? '#2563EB' : matchScore >= 40 ? '#D97706' : '#EF4444';
+    const scoreBg = matchScore >= 80 ? '#F0FDF4' : matchScore >= 60 ? '#EFF6FF' : matchScore >= 40 ? '#FFFBEB' : '#FEF2F2';
+
+    const matchBadge = `<span style="background:${scoreBg};color:${scoreColor};font-size:11px;font-weight:600;
+                               padding:3px 9px;border-radius:20px;display:inline-flex;align-items:center;gap:4px">
+                          <span>★</span> ${matchScore}% match
+                        </span>`;
+
+    const slotsBadge = slotsLeft > 0
+        ? `<span style="font-size:11px;color:#64748B" data-slot-count>${slotsLeft} slot${slotsLeft !== 1 ? 's' : ''} left</span>`
+        : `<span style="font-size:11px;color:#EF4444;font-weight:500">All slots filled</span>`;
+
+    if (!isActive || slotsLeft === 0) {
+        return `<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+                    <div style="display:flex;align-items:center;gap:8px">${matchBadge}${slotsBadge}</div>
+                    <button disabled style="background:#F1F5F9;color:#94A3B8;padding:7px 16px;border-radius:8px;
+                                           border:none;font-size:12px;font-weight:500;cursor:not-allowed">
+                        Slots Full
+                    </button>
+                </div>`;
+    }
+
+    if (hasApplied) {
+        return `<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+                    <div style="display:flex;align-items:center;gap:8px">${matchBadge}${slotsBadge}</div>
+                    <span style="background:#F0FDF4;color:#16A34A;font-size:12px;font-weight:600;
+                                 padding:7px 14px;border-radius:8px;display:inline-flex;align-items:center;gap:5px">
+                        ✓ Applied
+                    </span>
+                </div>`;
+    }
+
+    if (!canApply) {
+        return `<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+                    <div style="display:flex;align-items:center;gap:8px">${matchBadge}${slotsBadge}</div>
+                    <button disabled title="Your skills don't match enough for this role (need 40%+)"
+                            style="background:#FEF2F2;color:#EF4444;padding:7px 16px;border-radius:8px;
+                                   border:1px solid #FECACA;font-size:12px;font-weight:500;cursor:not-allowed">
+                        Low Match
+                    </button>
+                </div>`;
+    }
+
+    return `<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+                <div style="display:flex;align-items:center;gap:8px">${matchBadge}${slotsBadge}</div>
+                <button onclick="applyToReferralFromFeed(${r.referral_id}, this)"
+                        style="background:#2563EB;color:white;padding:7px 16px;border-radius:8px;
+                               border:none;font-size:12px;font-weight:600;cursor:pointer;
+                               transition:background .15s"
+                        onmouseover="this.style.background='#1D4ED8'"
+                        onmouseout="this.style.background='#2563EB'">
+                    Apply Now →
+                </button>
+            </div>`;
+}
+
+async function applyToReferralFromFeed(referralId, btnElement) {
+    if (btnElement.disabled) return;
+    btnElement.textContent = 'Applying...';
+    btnElement.disabled = true;
+    btnElement.style.background = '#1D4ED8';
+
+    const result = await apiPost(`/api/referrals/${referralId}/apply/`, {
+        cover_note: ''
+    });
+
+    if (result.ok) {
+        const btnContainer = btnElement.parentElement;
+        const appliedBadge = document.createElement('span');
+        appliedBadge.style.cssText = 'background:#F0FDF4;color:#16A34A;font-size:12px;font-weight:600;padding:7px 14px;border-radius:8px;display:inline-flex;align-items:center;gap:5px;';
+        appliedBadge.innerHTML = '✓ Applied';
+        btnElement.replaceWith(appliedBadge);
+        showToast('Successfully applied! Check My Applications for updates.', 'success');
+
+        const slotSpan = btnContainer.previousElementSibling?.querySelector('[data-slot-count]');
+        if (slotSpan) {
+            const current = parseInt(slotSpan.textContent);
+            if (!isNaN(current) && current > 0) {
+                slotSpan.textContent = `${current - 1} slot${current - 1 !== 1 ? 's' : ''} left`;
+            }
+        }
+    } else {
+        btnElement.textContent = 'Apply Now →';
+        btnElement.disabled = false;
+        btnElement.style.background = '#2563EB';
+        const error = result.data?.error || result.data?.detail || 'Application failed. Please try again.';
+        showToast(error, 'error');
+    }
 }

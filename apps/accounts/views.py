@@ -82,7 +82,20 @@ class LoginRequestView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer.save()
+        result = serializer.save()
+        
+        # --- DEMO MODE BYPASS ---
+        if isinstance(result, dict) and 'access' in result:
+            response = Response(result, status=status.HTTP_200_OK)
+            response.set_cookie(
+                key='access_token',
+                value=result['access'],
+                httponly=True,
+                secure=not django_settings.DEBUG,
+                samesite='Lax'
+            )
+            return response
+
         return Response(
             {'message': 'OTP sent to your registered email.'},
             status=status.HTTP_200_OK,
@@ -970,3 +983,256 @@ class ProfilePictureView(APIView):
             'message': 'Profile photo updated successfully.',
             'profile_pic_url': pic_url,
         })
+
+
+class AlumniProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'alumni':
+            return Response({'error': 'Alumni only.'}, status=403)
+        try:
+            profile = request.user.alumni_profile
+        except Exception:
+            from apps.accounts.models import AlumniProfile
+            profile = AlumniProfile.objects.create(user=request.user)
+
+        pic_url = None
+        if request.user.profile_pic:
+            try:
+                pic_url = request.build_absolute_uri(request.user.profile_pic.url)
+            except Exception:
+                pass
+
+        data = {
+            'id': profile.id,
+            'user_id': request.user.id,
+            'first_name': request.user.first_name,
+            'last_name': request.user.last_name,
+            'email': request.user.email,
+            'phone': getattr(request.user, 'phone', '') or '',
+            'gender': getattr(request.user, 'gender', '') or '',
+            'profile_pic': pic_url,
+
+            # Professional
+            'company': profile.company,
+            'designation': profile.designation,
+            'employment_type': profile.employment_type,
+            'industry': profile.industry,
+            'years_of_experience': profile.years_of_experience,
+            'current_location': profile.current_location,
+            'is_open_to_opportunities': profile.is_open_to_opportunities,
+
+            # Academic
+            'graduation_year': profile.graduation_year,
+            'degree': profile.degree,
+            'branch': profile.branch,
+            'college_name': profile.college_name or getattr(request.user, 'college', '') or '',
+            'cgpa_or_percentage': profile.cgpa_or_percentage,
+
+            # Skills
+            'technical_skills': profile.technical_skills or [],
+            'domain_expertise': profile.domain_expertise or [],
+            'tools_used': profile.tools_used or [],
+            'soft_skills': profile.soft_skills or [],
+            'languages_known': profile.languages_known or [],
+
+            # Mentorship
+            'available_for_mentorship': profile.available_for_mentorship,
+            'mentorship_areas': profile.mentorship_areas or [],
+            'preferred_session_mode': profile.preferred_session_mode,
+            'preferred_session_duration': profile.preferred_session_duration,
+            'max_students_per_week': profile.max_students_per_week,
+            'session_price_range': profile.session_price_range,
+
+            # Social
+            'linkedin_url': profile.linkedin_url,
+            'github_url': profile.github_url,
+            'twitter_url': profile.twitter_url,
+            'portfolio_url': profile.portfolio_url,
+            'blog_url': profile.blog_url,
+
+            # Bio
+            'bio': profile.bio,
+            'achievements': profile.achievements,
+            'advice_for_students': profile.advice_for_students,
+
+            # Verification
+            'is_verified': profile.is_verified,
+            'verification_status': profile.verification_status,
+            'verification_document_url': profile.verification_document_url,
+            'verification_note': profile.verification_note,
+
+            # Bank
+            'bank_details': profile.bank_details or {},
+            'bank_verified': profile.bank_verified,
+
+            # Stats
+            'wallet_balance': str(profile.wallet_balance),
+            'total_earned': str(profile.total_earned),
+            'impact_score': profile.impact_score,
+            'profile_completeness_score': profile.profile_completeness_score,
+        }
+        return Response(data)
+
+    def patch(self, request):
+        if request.user.role != 'alumni':
+            return Response({'error': 'Alumni only.'}, status=403)
+        try:
+            profile = request.user.alumni_profile
+        except Exception:
+            from apps.accounts.models import AlumniProfile
+            profile = AlumniProfile.objects.create(user=request.user)
+
+        data = request.data
+
+        # Update User model fields
+        user_changed = False
+        for field in ['first_name', 'last_name', 'phone', 'gender']:
+            if field in data:
+                val = data[field]
+                if isinstance(val, str):
+                    val = val.strip()
+                if field in ['first_name', 'last_name', 'phone', 'gender']:
+                    if hasattr(request.user, field) or field in ['first_name', 'last_name']:
+                        setattr(request.user, field, val)
+                        user_changed = True
+        if user_changed:
+            request.user.save()
+
+        # Update AlumniProfile fields
+        profile_fields = [
+            'company', 'designation', 'employment_type', 'industry',
+            'years_of_experience', 'current_location', 'is_open_to_opportunities',
+            'graduation_year', 'degree', 'branch', 'college_name', 'cgpa_or_percentage',
+            'technical_skills', 'domain_expertise', 'tools_used', 'soft_skills', 'languages_known',
+            'available_for_mentorship', 'mentorship_areas', 'preferred_session_mode',
+            'preferred_session_duration', 'max_students_per_week', 'session_price_range',
+            'linkedin_url', 'github_url', 'twitter_url', 'portfolio_url', 'blog_url',
+            'bio', 'achievements', 'advice_for_students',
+        ]
+        for field in profile_fields:
+            if field in data:
+                value = data[field]
+                if isinstance(value, str):
+                    value = value.strip()
+                setattr(profile, field, value)
+
+        profile.save()
+
+        return Response({
+            'message': 'Profile updated successfully.',
+            'profile_completeness_score': profile.profile_completeness_score,
+        })
+
+
+class AlumniBankDetailsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'alumni':
+            return Response({'error': 'Alumni only.'}, status=403)
+        try:
+            bd = request.user.alumni_profile.bank_details or {}
+        except Exception:
+            bd = {}
+        masked = {}
+        if bd:
+            masked = bd.copy()
+            acc = bd.get('account_number', '')
+            if len(acc) > 4:
+                masked['account_number'] = 'X' * (len(acc) - 4) + acc[-4:]
+        return Response({'bank_details': masked, 'has_bank_details': bool(bd.get('account_number'))})
+
+    def patch(self, request):
+        if request.user.role != 'alumni':
+            return Response({'error': 'Alumni only.'}, status=403)
+
+        required = ['account_holder_name', 'bank_name', 'account_number', 'ifsc_code']
+        for field in required:
+            if not request.data.get(field, '').strip():
+                return Response({'error': f'{field} is required.'}, status=400)
+
+        acc = request.data.get('account_number', '').strip()
+        confirm = request.data.get('confirm_account_number', '').strip()
+        if confirm and acc != confirm:
+            return Response({'error': 'Account numbers do not match.'}, status=400)
+
+        bank_data = {
+            'account_holder_name': request.data.get('account_holder_name', '').strip(),
+            'bank_name': request.data.get('bank_name', '').strip(),
+            'account_number': acc,
+            'ifsc_code': request.data.get('ifsc_code', '').strip().upper(),
+            'account_type': request.data.get('account_type', 'savings'),
+        }
+
+        try:
+            profile = request.user.alumni_profile
+            profile.bank_details = bank_data
+            profile.save(update_fields=['bank_details'])
+            return Response({'message': 'Bank details saved successfully.'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
+
+class AlumniVerificationSubmitView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if request.user.role != 'alumni':
+            return Response({'error': 'Alumni only.'}, status=403)
+
+        linkedin_url = request.data.get('linkedin_url', '').strip()
+        if not linkedin_url:
+            return Response({'error': 'LinkedIn URL is required for verification.'}, status=400)
+
+        try:
+            profile = request.user.alumni_profile
+            profile.verification_document_url = linkedin_url
+            profile.verification_status = 'pending'
+            profile.linkedin_url = linkedin_url
+            profile.save(update_fields=['verification_document_url', 'verification_status', 'linkedin_url'])
+
+            # Notify admin (create notification for admin users)
+            try:
+                from django.contrib.auth import get_user_model
+                User = get_user_model()
+                from apps.notifications.models import Notification
+                admin_users = User.objects.filter(role='admin', is_active=True)
+                for admin in admin_users:
+                    Notification.objects.create(
+                        recipient=admin,
+                        notif_type='general',
+                        title='New Alumni Verification Request',
+                        message=f'{request.user.first_name} {request.user.last_name} has submitted their LinkedIn profile for verification.',
+                        link='/admin-panel/alumni-verification/',
+                    )
+            except Exception:
+                pass
+
+            return Response({'message': 'Verification request submitted. Admin will review within 1-2 business days.'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
+
+class AlumniEditProfilePageView(TemplateView):
+    template_name = 'accounts/alumni_edit_profile.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        token = request.COOKIES.get('access_token')
+        from utils.auth_helpers import get_user_from_token
+        user = get_user_from_token(token)
+        if not user or user.role != 'alumni':
+            from django.shortcuts import redirect
+            return redirect('/auth/login/?next=/profile/alumni/edit/')
+        request.portal_user = user
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        token = self.request.COOKIES.get('access_token')
+        from utils.auth_helpers import get_user_from_token
+        user = get_user_from_token(token)
+        ctx['user_role'] = 'alumni'
+        return ctx
+

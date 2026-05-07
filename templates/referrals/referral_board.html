@@ -6,7 +6,7 @@
 
 
 {% block dashboard_content %}
-<div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
 
 <!-- Header -->
 <div class="flex items-center justify-between mb-6">
@@ -290,9 +290,9 @@
 
 {% block dashboard_js %}
 <script>
-  const USER_ROLE = '{{ user_role }}';
-  const CAN_POST = {{ can_post|yesno:"true,false" }};
-  const IS_STUDENT = {{ is_student|yesno:"true,false" }};
+  const USER_ROLE = '{{ user_role|default:"" }}';
+  const CAN_POST = '{{ can_post|yesno:"true,false" }}' === 'true';
+  const IS_STUDENT = '{{ is_student|yesno:"true,false" }}' === 'true';
 </script>
 <script src="{% static 'js/referrals.js' %}"></script>
 {% endblock %}

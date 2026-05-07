@@ -60,58 +60,229 @@ class User(AbstractUser):
 
 
 class AlumniProfile(models.Model):
-    """Extended profile for Alumni users"""
 
     user = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name='alumni_profile'
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='alumni_profile'
     )
+
+    # ── Section 2: Professional Information ──
     company = models.CharField(max_length=300, blank=True)
-    designation = models.CharField(max_length=300, blank=True)
-    company_email = models.EmailField(unique=True, null=True, blank=True)
-    linkedin_url = models.URLField(blank=True)
-    years_of_experience = models.IntegerField(default=0)
-    skills = models.JSONField(default=list, blank=True)
-    wallet_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    total_earned = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    bank_details = models.JSONField(default=dict, blank=True)
-    bank_verified = models.BooleanField(default=False)
-    impact_score = models.IntegerField(default=0)
-    verification_document = models.FileField(
-        upload_to='verification_docs/', blank=True, null=True
+    # Current company name e.g. "Google", "Microsoft", "Infosys"
+    designation = models.CharField(max_length=200, blank=True)
+    # Current job title e.g. "Software Engineer", "Product Manager", "Data Scientist"
+    employment_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('full_time', 'Full Time'),
+            ('part_time', 'Part Time'),
+            ('freelance', 'Freelance / Consultant'),
+            ('entrepreneur', 'Entrepreneur / Founder'),
+            ('not_working', 'Not Currently Working'),
+        ],
+        blank=True
     )
-    is_available_for_1on1 = models.BooleanField(default=False)
-    price_per_30min = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
-    price_per_60min = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
-    bio = models.TextField(blank=True)
-    # Verification fields
+    industry = models.CharField(max_length=200, blank=True)
+    # e.g. "Information Technology", "Finance", "Healthcare", "EdTech"
+    years_of_experience = models.CharField(
+        max_length=20,
+        choices=[
+            ('0-1', 'Fresher (0-1 years)'),
+            ('1-3', '1-3 years'),
+            ('3-5', '3-5 years'),
+            ('5-10', '5-10 years'),
+            ('10+', '10+ years'),
+        ],
+        blank=True
+    )
+    current_location = models.CharField(max_length=200, blank=True)
+    # e.g. "Bangalore, Karnataka, India"
+    is_open_to_opportunities = models.BooleanField(default=False)
+    # Whether alumni is open to new job opportunities
+
+    # ── Section 3: Academic Background ──
+    graduation_year = models.IntegerField(null=True, blank=True)
+    # Year they graduated e.g. 2020
+    degree = models.CharField(max_length=200, blank=True)
+    # e.g. "B.Tech", "B.E.", "MCA", "MBA"
+    branch = models.CharField(max_length=200, blank=True)
+    # e.g. "Computer Science", "Electronics", "Mechanical Engineering"
+    college_name = models.CharField(max_length=300, blank=True)
+    # College where they studied (auto-filled from User.college usually)
+    cgpa_or_percentage = models.CharField(max_length=20, blank=True)
+    # e.g. "8.5" or "85%"
+
+    # ── Section 4: Skills & Expertise ──
+    technical_skills = models.JSONField(default=list, blank=True)
+    # e.g. ["Python", "Django", "React", "System Design", "AWS"]
+    domain_expertise = models.JSONField(default=list, blank=True)
+    # Higher-level domains e.g. ["Backend Development", "Machine Learning", "DevOps"]
+    tools_used = models.JSONField(default=list, blank=True)
+    # e.g. ["Git", "Docker", "Kubernetes", "Jira", "Figma"]
+    soft_skills = models.JSONField(default=list, blank=True)
+    # e.g. ["Leadership", "Mentoring", "Communication", "Problem Solving"]
+    languages_known = models.JSONField(default=list, blank=True)
+    # e.g. ["English", "Hindi", "Tamil"]
+
+    # ── Section 5: Mentorship Preferences ──
+    available_for_mentorship = models.BooleanField(default=True)
+    # Can students book sessions with them?
+    mentorship_areas = models.JSONField(default=list, blank=True)
+    # What they mentor in e.g. ["Career Guidance", "Resume Review", "DSA Prep", "Interview Prep", "Project Help"]
+    preferred_session_mode = models.CharField(
+        max_length=10,
+        choices=[('online', 'Online'), ('offline', 'Offline'), ('both', 'Both')],
+        default='online'
+    )
+    preferred_session_duration = models.CharField(
+        max_length=10,
+        choices=[
+            ('30', '30 minutes'),
+            ('45', '45 minutes'),
+            ('60', '60 minutes'),
+            ('90', '90 minutes'),
+        ],
+        default='60'
+    )
+    max_students_per_week = models.IntegerField(default=5)
+    # How many students they can take per week across all sessions
+    session_price_range = models.CharField(max_length=50, blank=True)
+    # e.g. "₹299 - ₹999" — informational only, actual price set per session
+
+    # ── Section 6: Social & Online Presence ──
+    linkedin_url = models.URLField(blank=True)
+    github_url = models.URLField(blank=True)
+    twitter_url = models.URLField(blank=True)
+    portfolio_url = models.URLField(blank=True)
+    # Personal website or portfolio
+    blog_url = models.URLField(blank=True)
+
+    # ── Section 7: Bio & About ──
+    bio = models.TextField(blank=True, max_length=600)
+    # Shown on connect page, session cards, referral cards
+    # Describe expertise, what you help students with, career highlights
+    achievements = models.TextField(blank=True, max_length=500)
+    # Notable achievements e.g. "Led a team of 15, shipped product used by 1M+ users"
+    advice_for_students = models.TextField(blank=True, max_length=400)
+    # Optional motivational advice shown on public profile
+
+    # ── Section 8: Verification (for admin) ──
     is_verified = models.BooleanField(default=False)
     verification_status = models.CharField(
         max_length=20,
         choices=[
+            ('not_submitted', 'Not Submitted'),
             ('pending', 'Pending Review'),
             ('verified', 'Verified'),
             ('rejected', 'Rejected'),
-            ('not_submitted', 'Not Submitted'),
         ],
-        default='not_submitted',
+        default='not_submitted'
     )
     verification_document_url = models.URLField(blank=True)
+    # LinkedIn URL or company email submitted for verification
     verification_note = models.TextField(blank=True)
+    # Admin note on approval or rejection
     verified_at = models.DateTimeField(null=True, blank=True)
     verified_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True, blank=True,
-        related_name='alumni_verifications_done',
+        related_name='alumni_verifications_done'
     )
+
+    # ── Section 9: Bank Details (for payouts) ──
+    bank_details = models.JSONField(default=dict, blank=True)
+    # {account_holder_name, bank_name, account_number, ifsc_code, account_type}
+    bank_verified = models.BooleanField(default=False)
+
+    # ── Auto-calculated / Platform fields ──
+    wallet_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total_earned = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    impact_score = models.IntegerField(default=0)
+    average_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0)
+    total_ratings = models.IntegerField(default=0)
+    # Impact score increases with: sessions hosted (+2 each), students helped (+1 each), placements (+5 each)
+
+    # ── Profile completeness ──
+    profile_completeness_score = models.IntegerField(default=0)
+
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def calculate_completeness(self):
+        score = 0
+        user = self.user
+
+        # Basic info (20 points)
+        if user.first_name and user.last_name:
+            score += 7
+        if user.profile_pic:
+            score += 7
+        if self.current_location:
+            score += 3
+        if hasattr(user, 'phone') and user.phone:
+            score += 3
+
+        # Professional info (25 points)
+        if self.company:
+            score += 8
+        if self.designation:
+            score += 8
+        if self.industry:
+            score += 4
+        if self.years_of_experience:
+            score += 5
+
+        # Academic background (10 points)
+        if self.graduation_year:
+            score += 4
+        if self.degree and self.branch:
+            score += 4
+        if self.college_name:
+            score += 2
+
+        # Skills (20 points)
+        if len(self.technical_skills or []) >= 5:
+            score += 12
+        elif len(self.technical_skills or []) >= 2:
+            score += 6
+        if len(self.domain_expertise or []) >= 1:
+            score += 4
+        if len(self.tools_used or []) >= 1:
+            score += 4
+
+        # Bio (10 points)
+        if self.bio and len(self.bio) >= 80:
+            score += 10
+        elif self.bio and len(self.bio) >= 30:
+            score += 5
+
+        # Mentorship preferences set (5 points)
+        if self.available_for_mentorship and len(self.mentorship_areas or []) >= 1:
+            score += 5
+
+        # Social links (5 points)
+        if self.linkedin_url:
+            score += 3
+        if self.github_url or self.portfolio_url:
+            score += 2
+
+        # Bank details (5 points)
+        if self.bank_details and self.bank_details.get('account_number'):
+            score += 5
+
+        return min(100, score)
+
+    def save(self, *args, **kwargs):
+        self.profile_completeness_score = self.calculate_completeness()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"AlumniProfile — {self.user.email}"
 
     class Meta:
         verbose_name = 'Alumni Profile'
-        verbose_name_plural = 'Alumni Profiles'
-
-    def __str__(self):
-        return f"Alumni Profile — {self.user.email}"
-
 
 class StudentProfile(models.Model):
     """Extended profile for Student users"""
@@ -394,6 +565,8 @@ class FacultyProfile(models.Model):
     # ── Auto-calculated fields ──
     wallet_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     total_earned = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    average_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0)
+    total_ratings = models.IntegerField(default=0)
 
     # ── Profile completeness ──
     profile_completeness_score = models.IntegerField(default=0)

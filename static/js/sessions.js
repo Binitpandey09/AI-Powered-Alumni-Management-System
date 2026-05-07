@@ -123,8 +123,8 @@ function renderSessionCard(session) {
     ? '<img src="'+session.host.profile_pic+'" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.8)">'
     : '<div style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.25);border:2px solid rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white">'+hostInitials+'</div>';
 
-  const ratingHtml = session.average_rating
-    ? '<span style="color:#F59E0B;font-size:11px">\u2605 '+parseFloat(session.average_rating).toFixed(1)+'</span>'
+  const ratingHtml = session.host?.average_rating
+    ? '<span style="color:#F59E0B;font-size:11px">\u2605 '+parseFloat(session.host.average_rating).toFixed(1)+'</span>'
     : '<span style="background:rgba(255,255,255,0.2);color:rgba(255,255,255,0.9);font-size:10px;padding:1px 6px;border-radius:8px">New</span>';
 
   // Colored gradient header (no thumbnail needed)
@@ -464,7 +464,10 @@ function renderBookingCard(booking) {
     actionsHtml = '<a href="/sessions/'+(session?.id||'')+'/" style="font-size:12px;color:#2563EB;text-decoration:none;border:1px solid #2563EB;padding:5px 10px;border-radius:6px">View \u2192</a>'
       + '<a href="#" onclick="cancelBooking('+booking.id+');return false" style="font-size:12px;color:#DC2626;text-decoration:none">Cancel</a>';
   } else if (st === 'completed') {
-    actionsHtml = '<a href="/sessions/'+(session?.id||'')+'/" style="font-size:12px;color:#2563EB;text-decoration:none;border:1px solid #2563EB;padding:5px 10px;border-radius:6px">View \u2192</a>';
+    const safeTitle = (session?.title||'').replace(/'/g, "\\'").replace(/"/g, "&quot;");
+    const safeHost = ((session?.host?.first_name||'')+' '+(session?.host?.last_name||'')).replace(/'/g, "\\'").replace(/"/g, "&quot;");
+    const rateBtn = `<button onclick="if(typeof openRatingModal==='function') openRatingModal(${booking.id}, 'student_to_host', '${safeTitle}', '${safeHost}')" style="font-size:12px;color:white;background:#F59E0B;border:none;padding:5px 10px;border-radius:6px;cursor:pointer">Rate Session ★</button>`;
+    actionsHtml = rateBtn + ' <a href="/sessions/'+(session?.id||'')+'/" style="font-size:12px;color:#2563EB;text-decoration:none;border:1px solid #2563EB;padding:5px 10px;border-radius:6px">View \u2192</a>';
   } else if (st === 'confirmed' && isPast) {
     actionsHtml = '<a href="/sessions/'+(session?.id||'')+'/" style="font-size:12px;color:#2563EB;text-decoration:none;border:1px solid #2563EB;padding:5px 10px;border-radius:6px">View \u2192</a>';
   }
@@ -545,7 +548,7 @@ function renderHostedSessionCard(session) {
       +'<button onclick="cancelHostedSession('+session.id+','+session.booked_seats+')" style="border:1px solid #EF4444;color:#EF4444;background:white;border-radius:7px;padding:7px 12px;font-size:12px;cursor:pointer">Cancel Session</button>';
   } else if (session.status === 'completed') {
     actionsHtml =
-      '<a href="/sessions/'+session.id+'/bookings/" style="border:1px solid #2563EB;color:#2563EB;background:white;border-radius:7px;padding:7px 12px;font-size:12px;cursor:pointer;text-decoration:none">View Bookings ('+session.booked_seats+')</a>'
+      '<button onclick="if(typeof openRatingModal===\'function\') openRatingModal('+session.id+', \'host_to_student\', \''+(session.title||'').replace(/'/g, "\\'")+'\', \'Students\')" style="border:none;background:#F59E0B;color:white;border-radius:7px;padding:7px 12px;font-size:12px;cursor:pointer">Rate Students ★</button>'
       +'<button onclick="showToast(\'Analytics coming soon!\',\'info\')" style="border:1px solid #E2E8F0;color:#374151;background:white;border-radius:7px;padding:7px 12px;font-size:12px;cursor:pointer">Session Analytics</button>';
   }
 

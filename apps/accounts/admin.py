@@ -20,10 +20,10 @@ class AlumniProfileInline(admin.StackedInline):
     fk_name = 'user'
     extra = 0
     fields = (
-        'company', 'designation', 'company_email', 'linkedin_url',
-        'years_of_experience', 'skills', 'wallet_balance', 'total_earned',
-        'bank_verified', 'impact_score', 'is_available_for_1on1',
-        'price_per_30min', 'price_per_60min', 'bio', 'verification_document',
+        'company', 'designation', 'linkedin_url',
+        'years_of_experience', 'wallet_balance', 'total_earned',
+        'bank_verified', 'impact_score', 'available_for_mentorship',
+        'bio', 'verification_document_url',
     )
 
 
@@ -101,7 +101,7 @@ class UserAdmin(BaseUserAdmin):
 class AlumniProfileAdmin(admin.ModelAdmin):
     list_display  = ['user', 'company', 'designation', 'bank_verified', 'wallet_balance']
     search_fields = ['user__email', 'company', 'designation']
-    list_filter   = ['bank_verified', 'is_available_for_1on1']
+    list_filter   = ['bank_verified', 'available_for_mentorship']
 
 
 @admin.register(StudentProfile)

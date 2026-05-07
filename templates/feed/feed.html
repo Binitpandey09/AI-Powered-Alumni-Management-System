@@ -110,8 +110,8 @@
 
       <!-- Create post box (alumni/faculty) -->
       <div id="create-post-box" class="create-box hidden">
-        <div style="display:flex;align-items:center;gap:12px;" onclick="openCreatePostModal('')" style="cursor:pointer;">
-          <div id="create-avatar" style="width:40px;height:40px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0;cursor:pointer;">?</div>
+        <div style="display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="openCreatePostModal('')">
+          <div id="create-avatar" style="width:40px;height:40px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0;">?</div>
           <div class="create-input-fake">Share something with the community...</div>
         </div>
         <div class="mt-3 pt-3 border-t border-slate-100 flex gap-1 flex-wrap">
@@ -181,7 +181,7 @@
         <div class="space-y-3">
           <div style="display:flex;align-items:center;gap:10px;">
             <div style="width:36px;height:36px;border-radius:50%;background:#534AB7;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;flex-shrink:0;">RK</div>
-            <div style="flex:1;min-width:0;"><p style="font-size:.8125rem;font-weight:600;color:#0f172a;margin:0;truncate;">Rahul Kumar</p><p style="font-size:.75rem;color:#94a3b8;margin:0;">SDE @ Google</p></div>
+            <div style="flex:1;min-width:0;"><p class="truncate" style="font-size:.8125rem;font-weight:600;color:#0f172a;margin:0;">Rahul Kumar</p><p style="font-size:.75rem;color:#94a3b8;margin:0;">SDE @ Google</p></div>
             <a href="/connect/" style="font-size:.75rem;color:#2563eb;font-weight:500;white-space:nowrap;">View</a>
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
@@ -269,6 +269,7 @@
           </div>
           <div><label style="display:block;font-size:.75rem;font-weight:500;color:#475569;margin-bottom:4px;">Max Seats</label><input id="cp-max-seats" type="number" min="1" placeholder="10" style="width:100%;padding:8px 12px;font-size:.875rem;border:1px solid #e2e8f0;border-radius:8px;outline:none;"/></div>
         </div>
+        <div style="margin-bottom:10px;"><label style="display:block;font-size:.75rem;font-weight:500;color:#475569;margin-bottom:4px;">Meeting Link <span style="color:#ef4444;">*</span></label><input id="cp-meeting-link" type="url" placeholder="https://zoom.us/j/..." style="width:100%;padding:8px 12px;font-size:.875rem;border:1px solid #e2e8f0;border-radius:8px;outline:none;"/></div>
       </div>
       <!-- Tags -->
       <div><label style="display:block;font-size:.75rem;font-weight:500;color:#475569;margin-bottom:4px;">Tags <span style="color:#94a3b8;font-weight:400;">(comma separated)</span></label>

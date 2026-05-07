@@ -97,7 +97,10 @@
 {% block dashboard_js %}
 <script>
   document.addEventListener('DOMContentLoaded', async function() {
-    document.querySelectorAll('.loading-state').forEach(el => el.innerHTML = '');
+    document.querySelectorAll('.loading-state').forEach(el => {
+      el.classList.remove('loading-state');
+      el.innerHTML = '';
+    });
     const res = await apiGet('/api/dashboard/faculty-data/');
     if (!res.ok) return;
     const d = res.data;
@@ -127,7 +130,7 @@
           </div>
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:500;color:#0F172A">${s.title}</div>
-            <div style="font-size:11px;color:#64748B">${s.booked_seats}/${s.max_seats} booked</div>
+            <div style="font-size:11px;color:#64748B">By ${s.host_name} · ${s.booked_seats}/${s.max_seats} booked</div>
           </div>`;
         upList.appendChild(el);
       });

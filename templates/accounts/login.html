@@ -215,6 +215,16 @@
     spinner.classList.add('hidden');
 
     if (result.ok) {
+      // --- DEMO MODE BYPASS ---
+      if (result.data.access) {
+        saveTokens(result.data.access, result.data.refresh);
+        showToast('Demo login successful!', 'success');
+        const role = result.data.user && result.data.user.role;
+        const dashMap = { alumni: '/dashboard/alumni/', student: '/dashboard/student/', faculty: '/dashboard/faculty/' };
+        setTimeout(() => { window.location.href = dashMap[role] || '/dashboard/student/'; }, 800);
+        return;
+      }
+
       loginEmail = email;
       document.getElementById('step2-email-display').textContent = email;
       document.getElementById('step-1').classList.add('hidden');

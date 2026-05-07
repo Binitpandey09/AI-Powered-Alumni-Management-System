@@ -43,3 +43,9 @@ urlpatterns = [
     # DEV ONLY — instant role switcher (returns 404 when DEBUG=False)
     path('__dev__/switch/<str:role>/', DevRoleSwitchView.as_view(), name='dev_role_switch'),
 ]
+
+from .views import AlumniEditProfilePageView
+
+urlpatterns += [
+    path('profile/alumni/edit/', AlumniEditProfilePageView.as_view(), name='alumni_profile_edit'),
+]

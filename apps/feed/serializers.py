@@ -97,6 +97,7 @@ class PostCreateSerializer(serializers.Serializer):
     )
     session_duration = serializers.IntegerField(required=False, allow_null=True)
     max_seats = serializers.IntegerField(required=False, allow_null=True)
+    meeting_link = serializers.URLField(required=False, allow_blank=True, allow_null=True)
 
     def validate_image(self, value):
         if value is None:
@@ -125,6 +126,7 @@ class PostCreateSerializer(serializers.Serializer):
     def create(self, validated_data):
         tags_str = validated_data.pop('tags', '')
         image = validated_data.pop('image', None)
+        meeting_link = validated_data.pop('meeting_link', '')
         author = self.context['request'].user
 
         post = Post.objects.create(author=author, **validated_data)
@@ -136,6 +138,45 @@ class PostCreateSerializer(serializers.Serializer):
         if tags_str:
             tag_list = [t.strip() for t in tags_str.split(',') if t.strip()]
             post.tags.set(*tag_list)
+
+        # Create actual Session if post is a session
+        if post.post_type == 'session':
+            from apps.sessions_app.models import Session
+            session = Session.objects.create(
+                host=author,
+                session_type='one_on_one',
+                title=post.title or 'Mentorship Session',
+                description=post.content,
+                scheduled_at=post.session_date,
+                duration_minutes=post.session_duration or 60,
+                max_seats=post.max_seats or 1,
+                price=post.session_price,
+                is_free=(post.session_price == 0),
+                meeting_link=meeting_link,
+                status='upcoming'
+            )
+            post.session_id = session.id
+            post.save(update_fields=['session_id'])
+
+        if post.post_type == 'referral':
+            from apps.referrals.models import Referral
+            from django.utils import timezone
+            from datetime import timedelta
+            
+            referral = Referral.objects.create(
+                posted_by=author,
+                company_name=post.company_name or 'Unknown Company',
+                job_title=post.job_role or post.title or 'Unknown Role',
+                job_description=post.content,
+                location=post.location or '',
+                salary_range=post.salary_range or '',
+                required_skills=post.required_skills or [],
+                apply_link=post.apply_link or '',
+                deadline=timezone.now() + timedelta(days=30),
+                max_applicants=post.max_seats or 5,
+            )
+            post.referral = referral
+            post.save(update_fields=['referral'])
 
         return post
 
@@ -155,10 +196,69 @@ class PostListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'author', 'post_type', 'title', 'content', 'image', 'tags',
             'company_name', 'job_role', 'location', 'salary_range',
-            'session_date', 'session_price', 'session_duration', 'max_seats',
+            'session_date', 'session_price', 'session_duration', 'max_seats', 'session_id', 'is_enrolled_in_session',
             'likes_count', 'comments_count',
-            'is_liked', 'is_saved', 'created_at', 'status',
+            'is_liked', 'is_saved', 'created_at', 'status', 'referral_data',
         ]
+
+    is_enrolled_in_session = serializers.SerializerMethodField()
+    referral_data = serializers.SerializerMethodField()
+
+    def get_referral_data(self, obj):
+        if obj.post_type != 'referral' or not hasattr(obj, 'referral') or not obj.referral:
+            return None
+            
+        r = obj.referral
+        request = self.context.get('request')
+        
+        data = {
+            'referral_id': r.id,
+            'job_title': r.job_title,
+            'company_name': r.company_name,
+            'work_type': r.work_type,
+            'experience_level': r.experience_level,
+            'location': r.location,
+            'salary_range': r.salary_range,
+            'required_skills': r.required_skills,
+            'slots_remaining': r.slots_remaining,
+            'max_applicants': r.max_applicants,
+            'total_applications': r.total_applications,
+            'deadline': r.deadline.isoformat() if r.deadline else None,
+            'status': r.status,
+            'is_urgent': r.is_urgent,
+            'student_match_score': None,
+            'student_has_applied': False,
+        }
+        
+        if request and request.user.is_authenticated and request.user.role == 'student':
+            from utils.skill_matcher import calculate_skill_match
+            from apps.referrals.models import ReferralApplication
+            
+            try:
+                sp = request.user.student_profile
+                skills = sp.skills or []
+                match_result = calculate_skill_match(
+                    skills,
+                    r.required_skills or [],
+                    r.preferred_skills or []
+                )
+                data['student_match_score'] = match_result['score']
+            except Exception:
+                data['student_match_score'] = 0
+                
+            data['student_has_applied'] = ReferralApplication.objects.filter(
+                referral=r,
+                student=request.user
+            ).exclude(status='withdrawn').exists()
+            
+        return data
+
+    def get_is_enrolled_in_session(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated or obj.post_type != 'session' or not obj.session_id:
+            return False
+        from apps.sessions_app.models import Booking
+        return Booking.objects.filter(student=request.user, session_id=obj.session_id).exclude(status__in=['cancelled_by_student', 'cancelled_by_host', 'refunded']).exists()
 
     def get_tags(self, obj):
         return list(obj.tags.names())

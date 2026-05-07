@@ -101,6 +101,16 @@
   <div class="dash-grid" style="display:grid; grid-template-columns: 1fr 360px; gap:20px;">
     <!-- LEFT COLUMN -->
     <div>
+      <!-- Pending Ratings Widget -->
+      <div id="pending-ratings-widget" style="display:none; background:linear-gradient(135deg, #FFF1F2, #FFE4E6); border:1px solid #FECDD3; border-radius:12px; padding:16px; margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+          <div style="display:flex; align-items:center; gap:8px">
+            <span style="font-size:18px">⭐</span>
+            <span style="font-size:14px; font-weight:600; color:#9F1239">Pending Reviews</span>
+          </div>
+        </div>
+        <div id="pending-ratings-list" style="display:flex; flex-direction:column; gap:8px"></div>
+      </div>
       <!-- Upcoming Sessions -->
       <div style="background:white; border:1px solid #E2E8F0; border-radius:12px; padding:0; overflow:hidden; margin-bottom:16px">
         <div style="padding:14px 16px; border-bottom:1px solid #F1F5F9; display:flex; justify-content:space-between; align-items:center">
@@ -112,7 +122,7 @@
             </svg>
             <span style="font-size:14px; font-weight:600; color:#0F172A">Upcoming Sessions</span>
           </div>
-          <a href="/sessions/student/" style="font-size:12px; color:#2563EB; text-decoration:none; font-weight:500">View all →</a>
+          <a href="/sessions/" style="font-size:12px; color:#2563EB; text-decoration:none; font-weight:500">View all →</a>
         </div>
         <div id="upcoming-sessions-list" style="max-height:240px; overflow-y:auto; padding:8px" class="loading-state">
           <div id="upcoming-sessions-empty" style="display:none; padding:24px; text-align:center; color:#94A3B8; font-size:13px">
@@ -218,7 +228,13 @@
     console.log('Dashboard: token exists?', !!token);
 
     // Basic loading skeleton reset
-    document.querySelectorAll('.loading-state').forEach(el => el.innerHTML = '');
+    document.querySelectorAll('.loading-state').forEach(el => {
+      el.classList.remove('loading-state');
+      el.innerHTML = '';
+    });
+
+    // Load pending ratings
+    loadPendingRatings();
 
     const result = await apiGet('/api/dashboard/student-data/');
     
@@ -462,6 +478,42 @@
       </svg>
       <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:${color}">${score}</div>
     </div>`;
+  }
+
+  async function loadPendingRatings() {
+    const res = await apiGet('/api/ratings/pending/');
+    if (!res.ok) return;
+    const data = res.data;
+    if (data.count > 0) {
+      document.getElementById('pending-ratings-widget').style.display = 'block';
+      const list = document.getElementById('pending-ratings-list');
+      list.innerHTML = data.pending_ratings.map(item => {
+        let titleHtml = item.title;
+        let subtitleHtml = item.subtitle;
+        let onClickStr = '';
+        if (item.type === 'session') {
+          const safeTitle = item.title.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+          const safeSub = item.subtitle.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+          onClickStr = `if(typeof openRatingModal==='function') { openRatingModal(${item.booking_id}, 'student_to_host', '${safeTitle}', '${safeSub}'); }`;
+          subtitleHtml += ` <span style="color:#EF4444;font-size:10px;margin-left:6px">(${item.days_remaining} days left)</span>`;
+        } else if (item.type === 'referral') {
+          const safeTitle = item.title.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+          const safeSub = item.subtitle.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+          onClickStr = `if(typeof openReferralRatingModal==='function') { openReferralRatingModal(${item.application_id}, '${safeTitle}', '${safeSub}'); }`;
+        }
+        return `
+          <div style="background:white; border-radius:8px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; border:1px solid #FECDD3">
+            <div>
+              <div style="font-size:13px; font-weight:600; color:#0F172A">${titleHtml}</div>
+              <div style="font-size:11px; color:#64748B">${subtitleHtml}</div>
+            </div>
+            <button onclick="${onClickStr}" style="background:#E11D48; color:white; border:none; border-radius:6px; padding:6px 12px; font-size:12px; font-weight:500; cursor:pointer">
+              Rate Now
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
   }
 </script>
 {% endblock %}

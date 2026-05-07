@@ -853,21 +853,19 @@ class StudentDashboardDataView(APIView):
         from apps.sessions_app.models import Booking, Session
         total_bookings = Booking.objects.filter(student=user).count()
         attended = Booking.objects.filter(student=user, status='completed').count()
-        upcoming_bookings = Booking.objects.filter(
-            student=user,
-            status='confirmed',
-            session__scheduled_at__gte=timezone.now()
-        ).select_related('session', 'session__host').order_by('session__scheduled_at')[:5]
+        upcoming_sessions = Session.objects.filter(
+            status='upcoming',
+            scheduled_at__gte=timezone.now()
+        ).select_related('host').order_by('scheduled_at')[:5]
 
         upcoming_sessions_data = [{
-            'booking_id': b.id,
-            'session_id': b.session.id,
-            'title': b.session.title,
-            'session_type': b.session.session_type,
-            'host_name': f"{b.session.host.first_name} {b.session.host.last_name}".strip(),
-            'scheduled_at': b.session.scheduled_at.isoformat(),
-            'duration_minutes': b.session.duration_minutes,
-        } for b in upcoming_bookings]
+            'session_id': s.id,
+            'title': s.title,
+            'session_type': s.session_type,
+            'host_name': f"{s.host.first_name} {s.host.last_name}".strip(),
+            'scheduled_at': s.scheduled_at.isoformat(),
+            'duration_minutes': s.duration_minutes,
+        } for s in upcoming_sessions]
 
         # ── Referral stats ──
         from apps.referrals.models import ReferralApplication, Referral
@@ -960,6 +958,8 @@ class StudentDashboardDataView(APIView):
         from apps.feed.models import Post
         recent_posts = Post.objects.filter(
             status='active'
+        ).exclude(
+            post_type='session', session_date__lt=timezone.now()
         ).select_related('author').order_by('-created_at')[:4]
         posts_data = [{
             'post_id': p.id,
@@ -1054,9 +1054,10 @@ class AlumniDashboardDataView(APIView):
         from apps.sessions_app.models import Session, Booking, SessionReview
         total_sessions = Session.objects.filter(host=user).count()
         upcoming_sessions = Session.objects.filter(
-            host=user, status='upcoming',
+            status='upcoming',
+            host__role='alumni',
             scheduled_at__gte=timezone.now()
-        ).order_by('scheduled_at')
+        ).select_related('host').order_by('scheduled_at')
 
         total_students = Booking.objects.filter(
             session__host=user, status='confirmed'
@@ -1070,21 +1071,22 @@ class AlumniDashboardDataView(APIView):
             'booked_seats': s.booked_seats,
             'max_seats': s.max_seats,
             'price': str(s.price),
+            'host_name': f"{s.host.first_name} {s.host.last_name}".strip(),
         } for s in upcoming_sessions[:5]]
 
         # ── Session reviews ──
         recent_reviews = SessionReview.objects.filter(
-            session__host=user
-        ).select_related('student', 'session').order_by('-created_at')[:3]
+            booking__session__host=user
+        ).select_related('booking__student', 'booking__session').order_by('-created_at')[:3]
         avg_rating = SessionReview.objects.filter(
-            session__host=user
+            booking__session__host=user
         ).aggregate(avg=Avg('rating'))['avg'] or 0
 
         reviews_data = [{
-            'student_name': f"{r.student.first_name} {r.student.last_name}".strip(),
+            'student_name': f"{r.booking.student.first_name} {r.booking.student.last_name}".strip(),
             'rating': r.rating,
-            'comment': r.comment[:100] if r.comment else '',
-            'session_title': r.session.title,
+            'comment': r.review_text[:100] if r.review_text else '',
+            'session_title': r.booking.session.title,
         } for r in recent_reviews]
 
         # ── Referral stats ──
@@ -1215,9 +1217,10 @@ class FacultyDashboardDataView(APIView):
         from apps.sessions_app.models import Session, Booking, SessionReview
         total_sessions = Session.objects.filter(host=user).count()
         upcoming_sessions = Session.objects.filter(
-            host=user, status='upcoming',
+            status='upcoming',
+            host__role='faculty',
             scheduled_at__gte=timezone.now()
-        ).order_by('scheduled_at')[:5]
+        ).select_related('host').order_by('scheduled_at')[:5]
 
         total_students = Booking.objects.filter(
             session__host=user, status='confirmed'
@@ -1230,20 +1233,21 @@ class FacultyDashboardDataView(APIView):
             'scheduled_at': s.scheduled_at.isoformat(),
             'booked_seats': s.booked_seats,
             'max_seats': s.max_seats,
+            'host_name': f"{s.host.first_name} {s.host.last_name}".strip(),
         } for s in upcoming_sessions]
 
         avg_rating = SessionReview.objects.filter(
-            session__host=user
+            booking__session__host=user
         ).aggregate(avg=Avg('rating'))['avg'] or 0
 
         recent_reviews = SessionReview.objects.filter(
-            session__host=user
-        ).select_related('student', 'session').order_by('-created_at')[:3]
+            booking__session__host=user
+        ).select_related('booking__student', 'booking__session').order_by('-created_at')[:3]
         reviews_data = [{
-            'student_name': f"{r.student.first_name} {r.student.last_name}".strip(),
+            'student_name': f"{r.booking.student.first_name} {r.booking.student.last_name}".strip(),
             'rating': r.rating,
-            'comment': r.comment[:100] if r.comment else '',
-            'session_title': r.session.title,
+            'comment': r.review_text[:100] if r.review_text else '',
+            'session_title': r.booking.session.title,
         } for r in recent_reviews]
 
         # ── Recommendations ──

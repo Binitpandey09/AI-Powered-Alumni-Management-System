@@ -100,3 +100,11 @@ urlpatterns = [
     path('faculty/',               FacultyListView.as_view(),          name='faculty-list'),
     path('faculty/<int:user_id>/', PublicFacultyProfileView.as_view(), name='faculty-public'),
 ]
+
+from .views import AlumniProfileView, AlumniBankDetailsView, AlumniVerificationSubmitView
+
+urlpatterns += [
+    path('alumni/profile/', AlumniProfileView.as_view()),
+    path('alumni/bank-details/', AlumniBankDetailsView.as_view()),
+    path('alumni/submit-verification/', AlumniVerificationSubmitView.as_view()),
+]

@@ -173,10 +173,32 @@ class LoginRequestSerializer(serializers.Serializer):
             raise serializers.ValidationError("Your account has been deactivated.")
 
         data['user'] = user
+
+        # --- DEMO MODE BYPASS ---
+        from django.conf import settings
+        DEMO_EMAILS = ['student@test.com', 'faculty@test.com', 'alumni@test.com']
+        if getattr(settings, 'DEBUG', False) and email in DEMO_EMAILS:
+            data['is_demo'] = True
+
         return data
 
     def save(self):
         user = self.validated_data['user']
+
+        # --- DEMO MODE BYPASS ---
+        if self.validated_data.get('is_demo'):
+            refresh = RefreshToken.for_user(user)
+            return {
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'role': user.role,
+                    'full_name': user.full_name,
+                    'is_profile_complete': user.is_profile_complete,
+                },
+            }
 
         otp_code = generate_otp()
         EmailOTP.objects.create(

@@ -36,10 +36,15 @@ const _PUBLIC_PATHS = ['/', '/auth/'];
 
 function _handleUnauthorized() {
   const path = window.location.pathname;
-  // Don't redirect on public pages — just silently fail
-  if (path === '/' || _PUBLIC_PATHS.some(p => path.startsWith(p))) return;
   clearTokens();
   document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+  
+  // Don't redirect on public pages — just let them view as anonymous
+  if (path === '/' || _PUBLIC_PATHS.some(p => path.startsWith(p))) {
+      // If we are on a public page and we just cleared the token, reload to clear auth state
+      // if it was previously displaying as logged in. Or just return.
+      return;
+  }
   window.location.href = '/auth/login/?next=' + encodeURIComponent(path);
 }
 

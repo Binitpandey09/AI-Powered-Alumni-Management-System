@@ -28,6 +28,7 @@ urlpatterns = [
     path('api/referrals/', include('apps.referrals.urls')),
     path('api/payments/', include('apps.payments.urls')),
     path('api/ai/', include('apps.ai_tools.urls')),
+    path('api/ratings/', include('apps.ratings.urls')),
     path('notifications/', include('apps.notifications.page_urls')),
     path('api/notifications/', include('apps.notifications.urls')),
     # Dashboard page routes

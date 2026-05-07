@@ -61,3 +61,4 @@ services:
   - type: redis
     name: alumniai-redis
     plan: free
+    ipAllowList: []   # allow all internal Render services

@@ -16,10 +16,8 @@ from .serializers import (
     CVUploadSerializer,
     ProfilePictureSerializer,
 )
-from utils.cv_parser import extract_cv_text
-from utils.ai_cv_parser import parse_cv_with_ai
+from utils.affinda_parser import parse_cv_with_affinda
 from utils.permissions import IsAlumni, IsStudent, IsFaculty
-
 
 # ── Profile Retrieve / Update ─────────────────────────────────────────────────
 
@@ -146,23 +144,22 @@ class CVUploadView(APIView):
         user = request.user
         cv_file = serializer.validated_data['cv_file']
 
-        # ── Parse with Gemini ─────────────────────────────────────────────────
+        # ── Parse with Affinda ────────────────────────────────────────────────
         from django.conf import settings
         from utils.ai_cv_parser import apply_cv_data_to_profile
 
         cv_data = {}
         parse_error = None
 
-        cv_file.seek(0)
-        cv_text = extract_cv_text(cv_file, cv_file.name)
-        if not cv_text:
-            return Response(
-                {'message': 'Could not extract text from the uploaded file.'},
-                status=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            )
         try:
-            cv_data = parse_cv_with_ai(cv_text)
-        except RuntimeError as exc:
+            if not getattr(settings, 'AFFINDA_API_KEY', ''):
+                parse_error = "Affinda API Key is not configured."
+            else:
+                cv_file.seek(0)
+                cv_data = parse_cv_with_affinda(cv_file, cv_file.name)
+                if not cv_data:
+                    parse_error = "Affinda parsing failed or returned no data."
+        except Exception as exc:
             parse_error = str(exc)
 
         # ── Save resume file regardless of parse outcome ───────────────────────

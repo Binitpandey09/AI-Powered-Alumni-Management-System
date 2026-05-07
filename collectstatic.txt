@@ -1,2 +1,0 @@
-
-0 static files copied to 'D:\AI powered Alumni system\staticfiles', 178 unmodified.

@@ -302,7 +302,7 @@ class UserBasicSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'email', 'first_name', 'last_name', 'role',
-                  'profile_pic', 'college', 'is_verified']
+                  'phone', 'profile_pic', 'college', 'is_verified']
         read_only_fields = fields
 
 
@@ -548,7 +548,7 @@ class StudentEmploymentSerializer(serializers.ModelSerializer):
 
 class FullStudentProfileSerializer(serializers.Serializer):
     """Returns everything about a student in one response."""
-    user = UserBasicSerializer(read_only=True)
+    user = UserBasicSerializer(source='*', read_only=True)
     profile = serializers.SerializerMethodField()
     educations = serializers.SerializerMethodField()
     projects = serializers.SerializerMethodField()

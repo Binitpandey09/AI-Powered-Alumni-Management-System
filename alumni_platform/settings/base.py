@@ -199,6 +199,11 @@ DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER', default='noreply@alumniconnect.co
 GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
 GEMINI_MODEL = 'gemini-2.0-flash'
 
+# Affinda Configuration (Alternate resume parsing)
+AFFINDA_API_KEY = config('AFFINDA_API_KEY', default='')
+AFFINDA_WORKSPACE_ID = config('AFFINDA_WORKSPACE_ID', default='')
+AFFINDA_COLLECTION_ID = config('AFFINDA_COLLECTION_ID', default='')
+
 # OpenAI Configuration (AI tools — resume scorer, builder, interview, skill gap)
 OPENAI_API_KEY = config('OPENAI_API_KEY', default='')
 

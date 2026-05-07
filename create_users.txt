@@ -1,5 +1,0 @@
-Already exists: dev.student@college.ac.in
-Already exists: dev.alumni@techcompany.com
-Already exists: dev.faculty@college.ac.in
-Already exists: dev.admin@alumniai.com
-Dev users ready.

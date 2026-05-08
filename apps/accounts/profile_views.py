@@ -279,7 +279,7 @@ class AlumniBrowseView(APIView):
 
         skill = request.query_params.get('skill', '').strip()
         if skill:
-            qs = qs.filter(skills__icontains=skill)
+            qs = qs.filter(technical_skills__icontains=skill)
 
         # Simple pagination
         page = max(int(request.query_params.get('page', 1)), 1)
@@ -303,9 +303,11 @@ class AlumniBrowseView(APIView):
                 'designation': p.designation,
                 'skills': p.technical_skills,
                 'impact_score': p.impact_score,
-                'is_available_for_1on1': p.is_available_for_1on1,
-                'price_per_30min': str(p.price_per_30min),
-                'price_per_60min': str(p.price_per_60min),
+                'is_available_for_1on1': p.available_for_mentorship,
+                'price_per_30min': p.session_price_range,
+                'price_per_60min': '',
+                'average_rating': float(p.average_rating),
+                'bio': p.bio,
             })
 
         return Response({
@@ -340,15 +342,15 @@ class PublicAlumniProfileView(APIView):
             'batch_year': user.batch_year,
             'company': profile.company,
             'designation': profile.designation,
-            'company_email': profile.company_email,
             'linkedin_url': profile.linkedin_url,
             'years_of_experience': profile.years_of_experience,
             'skills': profile.technical_skills,
             'impact_score': profile.impact_score,
-            'is_available_for_1on1': profile.is_available_for_1on1,
-            'price_per_30min': str(profile.price_per_30min),
-            'price_per_60min': str(profile.price_per_60min),
+            'is_available_for_1on1': profile.available_for_mentorship,
+            'price_per_30min': profile.session_price_range,
+            'price_per_60min': '',
             'bio': profile.bio,
+            'average_rating': float(profile.average_rating),
         })
 
 

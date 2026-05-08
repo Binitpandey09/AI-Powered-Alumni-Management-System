@@ -651,8 +651,9 @@ class FacultyListView(APIView):
                 'batch_year': u.batch_year,
                 'department': p.department,
                 'designation': p.designation,
-                'subjects': p.subjects,
+                'subjects': p.subjects_taught,
                 'bio': p.bio,
+                'average_rating': float(p.average_rating),
             })
 
         return Response({

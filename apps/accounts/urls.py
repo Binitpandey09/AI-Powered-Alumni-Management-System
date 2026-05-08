@@ -108,3 +108,18 @@ urlpatterns += [
     path('alumni/bank-details/', AlumniBankDetailsView.as_view()),
     path('alumni/submit-verification/', AlumniVerificationSubmitView.as_view()),
 ]
+
+from .connection_views import (
+    SendConnectionView, RespondConnectionView,
+    RemoveConnectionView, ConnectionStatusView,
+    MyConnectionsView, ProfileViewStatsView,
+)
+
+urlpatterns += [
+    path('connections/',                              MyConnectionsView.as_view(),      name='my-connections'),
+    path('connections/request/<int:user_id>/',        SendConnectionView.as_view(),      name='send-connection'),
+    path('connections/<int:connection_id>/respond/',  RespondConnectionView.as_view(),   name='respond-connection'),
+    path('connections/remove/<int:user_id>/',         RemoveConnectionView.as_view(),    name='remove-connection'),
+    path('connections/status/<int:user_id>/',         ConnectionStatusView.as_view(),    name='connection-status'),
+    path('profile-views/stats/',                      ProfileViewStatsView.as_view(),    name='profile-view-stats'),
+]

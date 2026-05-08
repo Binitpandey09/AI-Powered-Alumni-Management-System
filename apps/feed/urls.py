@@ -10,6 +10,7 @@ from .views import (
     SavedPostsView,
     AdminFlaggedPostsView,
     AdminPostActionView,
+    MarkJobAppliedView,
 )
 
 urlpatterns = [
@@ -23,4 +24,5 @@ urlpatterns = [
     path('<int:pk>/comments/', PostCommentListView.as_view()),             # GET, POST comments
     path('<int:pk>/report/', PostReportView.as_view()),                    # POST report
     path('comments/<int:comment_id>/', PostCommentDetailView.as_view()),  # PATCH, DELETE comment
+    path('<int:pk>/mark-applied/', MarkJobAppliedView.as_view()),         # POST mark applied, DELETE unmark
 ]

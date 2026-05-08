@@ -1,0 +1,56 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+{% block title %}Post Detail — AlumniAI{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+  /* ── Badges ── */
+  .post-type-badge{display:inline-flex;align-items:center;padding:4px 12px;border-radius:9999px;font-size:.6875rem;font-weight:700;letter-spacing:.03em;}
+  .badge-job{background:#dbeafe;color:#1d4ed8;}
+  .badge-referral{background:#d1fae5;color:#065f46;}
+  .badge-session{background:#ede9fe;color:#5b21b6;}
+  .badge-announcement{background:#fef3c7;color:#92400e;}
+  .badge-general{background:#f1f5f9;color:#475569;}
+  .badge-ad{background:#fce7f3;color:#9d174d;}
+
+  /* ── Action buttons ── */
+  .action-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;font-size:.8125rem;color:#64748b;border:none;background:none;cursor:pointer;border-radius:9px;transition:all .15s;}
+  .action-btn:hover{background:#f1f5f9;color:#2563eb;}
+  .action-btn.liked{color:#ef4444;}
+  .action-btn.saved{color:#f59e0b;}
+
+  /* ── Spin animation ── */
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ── Responsive: collapse right panel on small screens ── */
+  @media (max-width: 900px) {
+    #pd-action-col {
+      width: 100% !important;
+      position: static !important;
+      order: -1;
+    }
+    #pd-layout {
+      flex-direction: column !important;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block sidebar_links %}
+  {% if user.role == 'student' %}{% include 'partials/sidebar_student.html' %}
+  {% elif user.role == 'alumni' %}{% include 'partials/sidebar_alumni.html' %}
+  {% elif user.role == 'faculty' %}{% include 'partials/sidebar_faculty.html' %}
+  {% endif %}
+{% endblock %}
+
+{% block dashboard_content %}
+<div style="padding:24px 20px 40px;">
+  <div id="post-detail-root" data-post-id="{{ post_id }}" style="max-width:1000px;margin:0 auto;"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/post_detail.js' %}?v={{ CACHE_BUST }}"></script>
+{% endblock %}

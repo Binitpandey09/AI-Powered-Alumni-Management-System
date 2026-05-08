@@ -3,7 +3,12 @@
 
 {% block title %}Referral Detail — AlumniAI{% endblock %}
 
-
+{% block sidebar_links %}
+  {% if user_role == 'student' %}{% include 'partials/sidebar_student.html' %}
+  {% elif user_role == 'alumni' %}{% include 'partials/sidebar_alumni.html' %}
+  {% elif user_role == 'faculty' %}{% include 'partials/sidebar_faculty.html' %}
+  {% endif %}
+{% endblock %}
 
 {% block dashboard_content %}
 <!-- Back -->

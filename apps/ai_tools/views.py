@@ -112,8 +112,17 @@ class SkillGapPageView(AIToolPageMixin):
     template_name = 'ai_tools/skill_gap.html'
     tool_type = 'skill_gap'
     tool_name = 'Skill Gap Analyzer'
-    tool_price = '79'
+    tool_price = '0'
     tool_description = 'Discover exactly what skills you need for your dream role.'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['quick_roles'] = [
+            'Full Stack Dev', 'Backend Dev', 'Frontend Dev',
+            'Data Scientist', 'ML Engineer', 'DevOps Engineer',
+            'Android Dev', 'Cloud Engineer',
+        ]
+        return ctx
 
 
 # ── API Views ─────────────────────────────────────────────────────────────────

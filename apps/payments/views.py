@@ -176,6 +176,11 @@ class AIToolPaymentInitView(APIView):
         price = AIToolUsage.get_price(tool_type)
         free_remaining = AIToolUsage.get_free_uses_remaining(request.user, tool_type)
 
+        # Demo bypass — @test.com accounts get all tools free
+        from django.conf import settings as _s
+        if getattr(_s, 'DEMO_OTP', '') and request.user.email.endswith('@test.com'):
+            free_remaining = max(free_remaining, 1)
+
         if free_remaining > 0 or price == Decimal('0.00'):
             return Response({
                 'is_free': True,

@@ -14,7 +14,7 @@ for u in urls:
     print(f"[x] {u} -> {r.status_code}")
 
 try:
-    student = User.objects.get(email='dev.student@college.ac.in')
+    student = User.objects.get(email='test.student@college.ac.in')
     c.force_login(student)
     student_urls = ['/dashboard/student/', '/feed/', '/sessions/', '/referrals/', '/notifications/', '/tools/resume-check/']
     print("\nSTUDENT URLS:")
@@ -25,7 +25,7 @@ except BaseException as e:
     print("Dev student not found or error:", e)
 
 try:
-    alumni = User.objects.get(email='dev.alumni@techcompany.com')
+    alumni = User.objects.get(email='test.alumni@techcompany.com')
     c.force_login(alumni)
     alumni_urls = ['/dashboard/alumni/', '/sessions/hosting/', '/payments/wallet/']
     print("\nALUMNI URLS:")
@@ -36,7 +36,7 @@ except BaseException as e:
     print("Dev alumni not found or error:", e)
 
 try:
-    admin = User.objects.get(email='dev.admin@alumniai.com')
+    admin = User.objects.get(email='test.admin@alumniai.com')
     c.force_login(admin)
     print("\nADMIN URLS:")
     r = c.get('/admin-panel/', HTTP_HOST='localhost')

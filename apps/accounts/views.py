@@ -562,6 +562,12 @@ class FacultyProfilePageView(JWTLoginRequiredMixin, TemplateView):
         return ctx
 
 
+# ── My Network / Connections Page ────────────────────────────────────────────
+
+class ConnectionsPageView(JWTLoginRequiredMixin, TemplateView):
+    template_name = 'accounts/connections.html'
+
+
 # ── Alumni Profile Page View (placeholder for /profile/alumni/) ───────────────
 
 class AlumniProfileSelfPageView(JWTLoginRequiredMixin, TemplateView):
@@ -671,73 +677,6 @@ class FacultyListView(APIView):
 from django.views import View
 
 
-class DevRoleSwitchView(View):
-    """
-    DEV ONLY — instantly logs in as a test user for the given role.
-    Completely disabled when DEBUG=False.
-    """
-
-    def get(self, request, role):
-        # Hard block in production — must be the very first check
-        if not django_settings.DEBUG:
-            return HttpResponse('Not available in production.', status=404)
-
-        role_emails = {
-            'student': 'dev.student@college.ac.in',
-            'alumni':  'dev.alumni@techcompany.com',
-            'faculty': 'dev.faculty@college.ac.in',
-            'admin':   'dev.admin@alumniai.com',
-        }
-
-        email = role_emails.get(role)
-        if not email:
-            return HttpResponse('Invalid role.', status=400)
-
-        from django.contrib.auth import get_user_model
-        _User = get_user_model()
-        try:
-            user = _User.objects.get(email=email, is_verified=True)
-        except _User.DoesNotExist:
-            return HttpResponse(
-                f'Dev user for role "{role}" not found. Run: python manage.py create_dev_users',
-                status=404,
-            )
-
-        from rest_framework_simplejwt.tokens import RefreshToken as _RefreshToken
-        refresh = _RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-        refresh_token = str(refresh)
-
-        redirects = {
-            'student': '/dashboard/student/',
-            'alumni':  '/dashboard/alumni/',
-            'faculty': '/dashboard/faculty/',
-            'admin':   '/admin-panel/',
-        }
-        redirect_url = redirects.get(role, '/')
-
-        response = HttpResponse(f'''<html>
-<head><title>Switching to {role}...</title></head>
-<body>
-<script>
-  localStorage.setItem('access_token', '{access_token}');
-  localStorage.setItem('refresh_token', '{refresh_token}');
-  window.location.href = '{redirect_url}';
-</script>
-<p>Switching to <strong>{role}</strong>... if not redirected <a href="{redirect_url}">click here</a></p>
-</body>
-</html>''')
-
-        response.set_cookie(
-            'access_token',
-            access_token,
-            httponly=True,
-            samesite='Lax',
-            max_age=3600,
-        )
-        return response
-
-
 # ── Public Faculty Profile API ────────────────────────────────────────────────
 
 class PublicFacultyProfileView(APIView):
@@ -752,6 +691,10 @@ class PublicFacultyProfileView(APIView):
             profile = user.faculty_profile
         except (User.DoesNotExist, Exception):
             return Response({'detail': 'Faculty not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Track profile view
+        from .profile_views import _record_profile_view
+        _record_profile_view(request.user, user)
 
         pic_url = user.profile_pic.url if user.profile_pic else None
         return Response({

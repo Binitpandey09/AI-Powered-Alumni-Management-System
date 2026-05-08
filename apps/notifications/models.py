@@ -16,6 +16,8 @@ class Notification(models.Model):
         ('session_cancelled_by_host', 'Session Cancelled by Host'),
         ('referral_applied', 'Referral Applied'),
         ('payout', 'Payout'),
+        ('connection_request', 'Connection Request'),
+        ('connection_accepted', 'Connection Accepted'),
     ]
 
     recipient = models.ForeignKey(

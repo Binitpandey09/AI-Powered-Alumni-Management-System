@@ -41,7 +41,9 @@
           <h1 id="prof-name" class="text-xl font-bold text-slate-900"></h1>
           <p id="prof-designation" class="text-sm text-slate-600 mt-0.5"></p>
           <p id="prof-department" class="text-sm text-teal-600 mt-0.5"></p>
-          <p id="prof-college" class="text-xs text-slate-400 mt-0.5"></p>
+          <p id="prof-college" class="text-xs text-slate-400 mt-0.5 mb-3"></p>
+          <!-- Connect button area -->
+          <div id="fp-connect-area"></div>
         </div>
       </div>
 
@@ -129,6 +131,73 @@ async function loadFacultyProfile() {
   }
 
   document.getElementById('profile-card').classList.remove('hidden');
+
+  // Load connect button
+  loadFacultyConnectButton(FACULTY_USER_ID);
+}
+
+// ── Connect button ────────────────────────────────────────────
+async function loadFacultyConnectButton(targetUserId) {
+  const area = document.getElementById('fp-connect-area');
+  if (!area) return;
+  const meRes = await apiGet('/api/accounts/me/');
+  if (!meRes.ok) return;
+  if (meRes.data.id === targetUserId) return;
+  const statusRes = await apiGet(`/api/accounts/connections/status/${targetUserId}/`);
+  if (!statusRes.ok) return;
+  renderFacultyConnectBtn(area, statusRes.data, targetUserId);
+}
+
+function renderFacultyConnectBtn(area, statusData, targetUserId) {
+  const { status, connection_id } = statusData;
+  area.innerHTML = '';
+  if (status === 'connected') {
+    area.innerHTML = `<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 14px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:8px;font-size:12px;font-weight:600;">
+      ✓ Connected
+      <button onclick="fpRemoveConn(${targetUserId})" style="background:none;border:none;cursor:pointer;color:#94a3b8;margin-left:4px;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">✕</button>
+    </span>`;
+  } else if (status === 'pending_sent') {
+    area.innerHTML = `<button onclick="fpWithdraw(${targetUserId})" style="padding:6px 14px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">⏳ Request Sent</button>`;
+  } else if (status === 'pending_received') {
+    area.innerHTML = `<div style="display:flex;gap:6px;">
+      <button onclick="fpRespond(${connection_id},'accept')" style="padding:6px 14px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">Accept</button>
+      <button onclick="fpRespond(${connection_id},'reject')" style="padding:6px 14px;background:#f1f5f9;color:#64748b;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">Decline</button>
+    </div>`;
+  } else {
+    area.innerHTML = `<button onclick="fpConnect(${targetUserId})" id="fp-connect-btn"
+      style="display:inline-flex;align-items:center;gap:6px;padding:7px 16px;background:#0d9488;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
+      + Connect
+    </button>`;
+  }
+}
+
+async function fpConnect(id) {
+  const btn = document.getElementById('fp-connect-btn');
+  if (btn) { btn.textContent = 'Sending…'; btn.disabled = true; }
+  const res = await apiPost(`/api/accounts/connections/request/${id}/`, {});
+  if (res.ok) {
+    showToast('Connection request sent!', 'success');
+    renderFacultyConnectBtn(document.getElementById('fp-connect-area'), { status: 'pending_sent' }, id);
+  } else {
+    if (btn) { btn.textContent = '+ Connect'; btn.disabled = false; }
+    showToast(res.data?.detail || 'Failed', 'error');
+  }
+}
+async function fpWithdraw(id) {
+  const res = await apiFetch(`/api/accounts/connections/remove/${id}/`, { method: 'DELETE' });
+  if (res.ok || res.status === 204) { showToast('Withdrawn', 'info'); renderFacultyConnectBtn(document.getElementById('fp-connect-area'), { status: 'none' }, id); }
+}
+async function fpRemoveConn(id) {
+  if (!confirm('Remove connection?')) return;
+  const res = await apiFetch(`/api/accounts/connections/remove/${id}/`, { method: 'DELETE' });
+  if (res.ok || res.status === 204) { showToast('Removed', 'info'); renderFacultyConnectBtn(document.getElementById('fp-connect-area'), { status: 'none' }, id); }
+}
+async function fpRespond(connId, action) {
+  const res = await apiPost(`/api/accounts/connections/${connId}/respond/`, { action });
+  if (res.ok) {
+    showToast(action === 'accept' ? 'Connected!' : 'Declined', 'success');
+    renderFacultyConnectBtn(document.getElementById('fp-connect-area'), { status: action === 'accept' ? 'connected' : 'none', connection_id: connId }, FACULTY_USER_ID);
+  }
 }
 
 document.addEventListener('DOMContentLoaded', loadFacultyProfile);

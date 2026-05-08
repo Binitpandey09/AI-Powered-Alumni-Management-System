@@ -318,6 +318,24 @@ class AlumniBrowseView(APIView):
         })
 
 
+def _record_profile_view(viewer, profile_owner):
+    """Increment or create a ProfileView row. Silently ignores self-views."""
+    if viewer.id == profile_owner.id:
+        return
+    try:
+        from .models import ProfileView
+        pv, created = ProfileView.objects.get_or_create(
+            viewer=viewer,
+            profile_owner=profile_owner,
+            defaults={'view_count': 1},
+        )
+        if not created:
+            from django.db.models import F
+            ProfileView.objects.filter(pk=pv.pk).update(view_count=F('view_count') + 1)
+    except Exception:
+        pass
+
+
 class PublicAlumniProfileView(APIView):
     """GET /api/accounts/alumni/{user_id}/ — public alumni profile"""
     permission_classes = [IsAuthenticated]
@@ -330,6 +348,8 @@ class PublicAlumniProfileView(APIView):
             profile = user.alumni_profile
         except (User.DoesNotExist, AlumniProfile.DoesNotExist):
             return Response({'detail': 'Alumni not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        _record_profile_view(request.user, user)
 
         pic_url = user.profile_pic.url if user.profile_pic else None
         return Response({

@@ -240,7 +240,7 @@ async function loadAlumni(page) {
       : '';
 
     return `
-      <div class="alumni-card cursor-pointer" onclick="openAlumniModal(${a.user_id})">
+      <div class="alumni-card" style="cursor:pointer;" onclick="window.location.href='/alumni/${a.user_id}/'">
         <div class="flex items-start gap-3 mb-3">
           <div class="flex-shrink-0 relative">${picHtml}</div>
           <div class="flex-1 min-w-0">
@@ -258,7 +258,7 @@ async function loadAlumni(page) {
           ${a.is_available_for_1on1 && a.price_per_30min > 0
             ? `<span class="text-xs text-slate-500">From ₹${a.price_per_30min}/30min</span>`
             : '<span></span>'}
-          <button class="text-xs text-blue-600 font-medium hover:underline">View Profile →</button>
+          <span class="text-xs text-blue-600 font-medium">View Profile →</span>
         </div>
       </div>`;
   }).join('');

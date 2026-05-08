@@ -195,6 +195,14 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER', default='noreply@alumniconnect.com')
 
+# Demo OTP bypass — @test.com accounts accept this fixed code instead of email OTP
+# Set to empty string '' to disable the bypass in production
+DEMO_OTP = config('DEMO_OTP', default='')
+
+# Groq API (AI Career Tools — resume scorer, builder, interview, skill gap)
+GROQ_API_KEY = config('GROQ_API_KEY', default='')
+GROQ_MODEL   = 'llama-3.3-70b-versatile'   # Free tier, fast, high quality
+
 # Gemini Configuration (resume parsing + AI summary)
 GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
 GEMINI_MODEL = 'gemini-2.0-flash'

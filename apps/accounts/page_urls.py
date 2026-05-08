@@ -17,7 +17,6 @@ from .views import (
     FacultyProfilePageView,
     AlumniProfileSelfPageView,
     FacultyEditProfilePageView,
-    DevRoleSwitchView,
 )
 
 urlpatterns = [
@@ -40,12 +39,11 @@ urlpatterns = [
     path('students/<int:user_id>/profile/', PublicStudentProfilePageView.as_view(), name='student_public_profile'),
     # Keep old /alumni/ route for backward compat (redirects to /connect/)
     path('alumni/', BrowseAlumniPageView.as_view(), name='browse_alumni'),
-    # DEV ONLY — instant role switcher (returns 404 when DEBUG=False)
-    path('__dev__/switch/<str:role>/', DevRoleSwitchView.as_view(), name='dev_role_switch'),
 ]
 
-from .views import AlumniEditProfilePageView
+from .views import AlumniEditProfilePageView, ConnectionsPageView
 
 urlpatterns += [
     path('profile/alumni/edit/', AlumniEditProfilePageView.as_view(), name='alumni_profile_edit'),
+    path('connections/', ConnectionsPageView.as_view(), name='connections'),
 ]

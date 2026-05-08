@@ -240,6 +240,9 @@ function renderPostCard(post) {
     `<button onclick="filterByTag('${escHtml(t)}')" style="padding:2px 8px;font-size:.6875rem;background:#f1f5f9;color:#475569;border:none;border-radius:9999px;cursor:pointer;" onmouseover="this.style.background='#dbeafe';this.style.color='#2563eb'" onmouseout="this.style.background='#f1f5f9';this.style.color='#475569'">#${escHtml(t)}</button>`
   ).join('');
 
+  // Expiry badge
+  const expiryBadgeHtml = buildExpiryBadge(post);
+
   // Job/referral extra
   let extraHtml = '';
   if (post.post_type === 'job' || post.post_type === 'referral') {
@@ -257,7 +260,22 @@ function renderPostCard(post) {
       if (post.post_type === 'referral') {
           extraHtml += `<div style="margin-top:12px;border-top:1px solid #e2e8f0;padding-top:12px;">` + renderReferralActionButton(post) + `</div>`;
       } else {
-          extraHtml += post.apply_link ? `<div style="margin-top:8px;"><a href="${escHtml(post.apply_link)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:6px 14px;background:#2563eb;color:#fff;font-size:.8125rem;font-weight:600;border-radius:8px;text-decoration:none;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">Apply Now →</a></div>` : '';
+          // Only students can apply to external job posts
+          const _jobRole = _currentUser ? _currentUser.role : 'student';
+          if (_jobRole === 'student' && post.apply_link) {
+              if (post.is_externally_applied) {
+                  extraHtml += `<div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+                      <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:8px;font-size:.8125rem;font-weight:600;">✓ Applied</span>
+                      <a href="/feed/${post.id}/" style="font-size:.8125rem;color:#64748b;text-decoration:none;" onmouseover="this.style.color='#2563eb'" onmouseout="this.style.color='#64748b'">View →</a>
+                  </div>`;
+              } else {
+                  extraHtml += `<div style="margin-top:8px;"><a href="${escHtml(post.apply_link)}" target="_blank" rel="noopener"
+                      onclick="feedJobApplyClick(${post.id}, event)"
+                      style="display:inline-flex;align-items:center;gap:4px;padding:6px 14px;background:#2563eb;color:#fff;font-size:.8125rem;font-weight:600;border-radius:8px;text-decoration:none;"
+                      onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">Apply Now →</a>
+                  </div>`;
+              }
+          }
       }
       extraHtml += `</div>`;
   } else if (post.post_type === 'session') {
@@ -309,16 +327,23 @@ function renderPostCard(post) {
       </div>
       <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
         ${badge.label ? `<span class="post-type-badge ${badge.cls}">${badge.label}</span>` : ''}
+        ${expiryBadgeHtml}
         ${isOwn ? `<button onclick="deletePost(${post.id})" title="Delete" style="background:none;border:none;cursor:pointer;color:#cbd5e1;padding:4px;border-radius:6px;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#cbd5e1'">
           <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
         </button>` : ''}
       </div>
     </div>
-    ${post.title ? `<p style="font-size:.9375rem;font-weight:600;color:#0f172a;margin:0 0 6px;">${escHtml(post.title)}</p>` : ''}
+    ${post.title ? `<a href="/feed/${post.id}/" style="font-size:.9375rem;font-weight:600;color:#0f172a;margin:0 0 6px;display:block;text-decoration:none;" onmouseover="this.style.color='#2563eb'" onmouseout="this.style.color='#0f172a'">${escHtml(post.title)}</a>` : ''}
     <p style="font-size:.875rem;color:#374151;line-height:1.65;margin:0 0 8px;white-space:pre-line;">${contentHtml}</p>
     ${post.image ? `<img src="${escHtml(post.image)}" alt="Post image" style="width:100%;border-radius:8px;max-height:400px;object-fit:cover;margin-bottom:10px;"/>` : ''}
     ${extraHtml}
     ${tagsHtml ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">${tagsHtml}</div>` : ''}
+    <div style="margin-bottom:8px;">
+      <a href="/feed/${post.id}/" style="font-size:.8125rem;color:#2563eb;text-decoration:none;font-weight:500;display:inline-flex;align-items:center;gap:3px;"
+         onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+        View full details →
+      </a>
+    </div>
     <div style="display:flex;align-items:center;gap:2px;padding-top:10px;border-top:1px solid #f1f5f9;">
       <button class="action-btn ${post.is_liked ? 'liked' : ''}" id="like-btn-${post.id}" onclick="toggleLike(${post.id}, this)">
         <svg width="16" height="16" fill="${post.is_liked ? 'currentColor' : 'none'}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
@@ -564,7 +589,7 @@ function openCreatePostModal(preType) {
   const submitBtn = document.getElementById('cp-submit-btn');
   if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Post'; }
   ['cp-company','cp-role','cp-location','cp-salary','cp-apply-link','cp-skills',
-   'cp-session-price','cp-max-seats', 'cp-meeting-link'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+   'cp-session-price','cp-max-seats','cp-meeting-link','cp-deadline','cp-announce-expiry'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const durEl = document.getElementById('cp-session-duration');
   if (durEl) durEl.value = '60';
 
@@ -586,6 +611,7 @@ function selectPostType(type) {
   if (titleEl) titleEl.textContent = titleMap[type] || 'Create Post';
   document.getElementById('cp-job-fields').style.display = (type === 'job' || type === 'referral') ? 'block' : 'none';
   document.getElementById('cp-session-fields').style.display = type === 'session' ? 'block' : 'none';
+  document.getElementById('cp-announcement-fields').style.display = type === 'announcement' ? 'block' : 'none';
 }
 
 function updateCharCount() {
@@ -622,7 +648,16 @@ async function submitPost() {
     payload.apply_link = document.getElementById('cp-apply-link').value.trim();
     const skillsRaw = document.getElementById('cp-skills').value.trim();
     payload.required_skills = skillsRaw ? skillsRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const deadlineVal = document.getElementById('cp-deadline').value;
     if (!payload.company_name || !payload.job_role) { errEl.textContent = 'Company name and job role are required.'; return; }
+    if (!deadlineVal) { errEl.textContent = 'Application deadline is required.'; return; }
+    payload.expires_at = new Date(deadlineVal).toISOString();
+  }
+
+  if (type === 'announcement') {
+    const expiryVal = document.getElementById('cp-announce-expiry').value;
+    if (expiryVal) payload.expires_at = new Date(expiryVal).toISOString();
+    // If blank, backend defaults to 60 days
   }
 
   if (type === 'session') {
@@ -706,13 +741,96 @@ function timeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+// ── External job apply tracking (feed cards) ──────────────────
+
+function feedJobApplyClick(postId, event) {
+    // Link opens normally; after a moment show the popup inside the card
+    const card = document.querySelector(`[data-post-id="${postId}"]`);
+    if (!card) return;
+    if (card.querySelector('.feed-job-apply-popup')) return; // already shown
+
+    const popup = document.createElement('div');
+    popup.className = 'feed-job-apply-popup';
+    popup.style.cssText = 'background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-top:8px;animation:fadeInUp .2s ease;';
+    popup.innerHTML = `
+        <p style="font-size:.875rem;font-weight:600;color:#0f172a;margin:0 0 4px;">Did you apply?</p>
+        <p style="font-size:.75rem;color:#64748b;margin:0 0 10px;">Let us know so we can track your application.</p>
+        <div style="display:flex;gap:8px;">
+            <button onclick="feedMarkApplied(${postId}, this)"
+                style="flex:1;padding:7px;background:#0f172a;color:#fff;border:none;border-radius:7px;font-size:.8125rem;font-weight:600;cursor:pointer;">Yes</button>
+            <button onclick="this.closest('.feed-job-apply-popup').remove()"
+                style="flex:1;padding:7px;background:#fff;color:#64748b;border:1px solid #e2e8f0;border-radius:7px;font-size:.8125rem;font-weight:600;cursor:pointer;">No</button>
+        </div>`;
+
+    // Insert after the apply link div
+    const applyDiv = card.querySelector('a[href*="apply"]')?.closest('div') ||
+                     card.querySelector('[style*="margin-top:8px"]');
+    if (applyDiv) applyDiv.after(popup);
+    else card.querySelector('[style*="border-top"]')?.after(popup);
+}
+
+async function feedMarkApplied(postId, btn) {
+    btn.textContent = '…'; btn.disabled = true;
+    const res = await apiPost(`/api/feed/${postId}/mark-applied/`, {});
+    if (res.ok) {
+        // Replace the entire job action section on this card
+        const card = document.querySelector(`[data-post-id="${postId}"]`);
+        const popup = card?.querySelector('.feed-job-apply-popup');
+        if (popup) popup.remove();
+        // Find the apply link and swap it for "Applied ✓"
+        const applyLink = card?.querySelector('a[target="_blank"]');
+        if (applyLink) {
+            const wrapper = applyLink.closest('div');
+            if (wrapper) wrapper.innerHTML = `<div style="display:flex;align-items:center;gap:8px;">
+                <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:8px;font-size:.8125rem;font-weight:600;">✓ Applied</span>
+            </div>`;
+        }
+        showToast('Application tracked! ✅', 'success');
+    } else {
+        btn.textContent = 'Yes'; btn.disabled = false;
+        showToast('Could not track — please try again.', 'error');
+    }
+}
+
+// ── Expiry badge ──────────────────────────────────────────────
+function buildExpiryBadge(post) {
+  if (!post.expires_at) return '';
+  // Sessions handled separately (no badge needed — "Book Session" button carries the date)
+  if (post.post_type === 'session') return '';
+
+  const now = Date.now();
+  const exp = new Date(post.expires_at).getTime();
+  const diffMs = exp - now;
+  if (diffMs <= 0) return '';
+
+  const diffDays = Math.floor(diffMs / 86400000);
+  const diffHours = Math.floor(diffMs / 3600000);
+
+  let label, bg, color;
+  if (diffHours < 24) {
+    label = `⏰ Closes in ${diffHours}h`;
+    bg = '#fef2f2'; color = '#dc2626';
+  } else if (diffDays <= 3) {
+    label = `🔥 ${diffDays}d left`;
+    bg = '#fff7ed'; color = '#c2410c';
+  } else if (diffDays <= 7) {
+    label = `⏳ ${diffDays}d left`;
+    bg = '#fffbeb'; color = '#d97706';
+  } else {
+    const dateStr = new Date(post.expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    label = `📅 Until ${dateStr}`;
+    bg = '#f0fdf4'; color = '#15803d';
+  }
+  return `<span style="padding:2px 8px;font-size:.6875rem;font-weight:600;background:${bg};color:${color};border-radius:9999px;white-space:nowrap;">${label}</span>`;
+}
+
 function renderReferralActionButton(post) {
     const userRole = _currentUser ? _currentUser.role : 'student';
     const r = post.referral_data;
     if (!r || !r.referral_id) return '';
 
     if (userRole !== 'student') {
-        if (userRole === 'alumni' && post.author && _currentUser && post.author.id === _currentUser.id) {
+        if ((userRole === 'alumni' || userRole === 'faculty') && post.author && _currentUser && post.author.id === _currentUser.id) {
             return `<a href="/referrals/${r.referral_id}/manage/"
                        style="display:inline-flex;align-items:center;gap:6px;background:#7C3AED;
                               color:white;padding:7px 16px;border-radius:8px;text-decoration:none;

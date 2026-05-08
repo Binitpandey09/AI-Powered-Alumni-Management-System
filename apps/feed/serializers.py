@@ -2,7 +2,7 @@ import os
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from .models import Post, PostComment, PostLike, PostSave
+from .models import Post, PostComment, PostLike, PostSave, ExternalJobApplication
 
 User = get_user_model()
 
@@ -99,6 +99,9 @@ class PostCreateSerializer(serializers.Serializer):
     max_seats = serializers.IntegerField(required=False, allow_null=True)
     meeting_link = serializers.URLField(required=False, allow_blank=True, allow_null=True)
 
+    # Expiry — required for job, optional for announcement (default 60d), n/a for others
+    expires_at = serializers.DateTimeField(required=False, allow_null=True)
+
     def validate_image(self, value):
         if value is None:
             return value
@@ -110,12 +113,17 @@ class PostCreateSerializer(serializers.Serializer):
         return value
 
     def validate(self, data):
+        from django.utils import timezone
         post_type = data.get('post_type')
         if post_type in ('job', 'referral'):
             if not data.get('company_name'):
                 raise serializers.ValidationError({'company_name': 'Required for job/referral posts.'})
             if not data.get('job_role'):
                 raise serializers.ValidationError({'job_role': 'Required for job/referral posts.'})
+            if not data.get('expires_at'):
+                raise serializers.ValidationError({'expires_at': 'Application deadline is required for job/referral posts.'})
+            if data['expires_at'] <= timezone.now():
+                raise serializers.ValidationError({'expires_at': 'Deadline must be a future date.'})
         if post_type == 'session':
             if not data.get('session_date'):
                 raise serializers.ValidationError({'session_date': 'Required for session posts.'})
@@ -124,10 +132,24 @@ class PostCreateSerializer(serializers.Serializer):
         return data
 
     def create(self, validated_data):
+        from django.utils import timezone
+        from datetime import timedelta
+
         tags_str = validated_data.pop('tags', '')
         image = validated_data.pop('image', None)
         meeting_link = validated_data.pop('meeting_link', '')
         author = self.context['request'].user
+        post_type = validated_data.get('post_type')
+
+        # Auto-set expires_at when not explicitly provided
+        if post_type == 'session':
+            # Session expires at its scheduled time (already in validated_data as session_date)
+            validated_data.setdefault('expires_at', validated_data.get('session_date'))
+        elif post_type == 'announcement':
+            # Announcement defaults to 60 days if poster didn't choose a date
+            validated_data.setdefault('expires_at', timezone.now() + timedelta(days=60))
+        # job & referral: expires_at is already required and validated above
+        # general: stays null (never expires)
 
         post = Post.objects.create(author=author, **validated_data)
 
@@ -160,9 +182,7 @@ class PostCreateSerializer(serializers.Serializer):
 
         if post.post_type == 'referral':
             from apps.referrals.models import Referral
-            from django.utils import timezone
-            from datetime import timedelta
-            
+
             referral = Referral.objects.create(
                 posted_by=author,
                 company_name=post.company_name or 'Unknown Company',
@@ -172,7 +192,7 @@ class PostCreateSerializer(serializers.Serializer):
                 salary_range=post.salary_range or '',
                 required_skills=post.required_skills or [],
                 apply_link=post.apply_link or '',
-                deadline=timezone.now() + timedelta(days=30),
+                deadline=post.expires_at,
                 max_applicants=post.max_seats or 5,
             )
             post.referral = referral
@@ -198,11 +218,12 @@ class PostListSerializer(serializers.ModelSerializer):
             'company_name', 'job_role', 'location', 'salary_range',
             'session_date', 'session_price', 'session_duration', 'max_seats', 'session_id', 'is_enrolled_in_session',
             'likes_count', 'comments_count',
-            'is_liked', 'is_saved', 'created_at', 'status', 'referral_data',
+            'is_liked', 'is_saved', 'is_externally_applied', 'created_at', 'expires_at', 'status', 'referral_data',
         ]
 
     is_enrolled_in_session = serializers.SerializerMethodField()
     referral_data = serializers.SerializerMethodField()
+    is_externally_applied = serializers.SerializerMethodField()
 
     def get_referral_data(self, obj):
         if obj.post_type != 'referral' or not hasattr(obj, 'referral') or not obj.referral:
@@ -274,6 +295,14 @@ class PostListSerializer(serializers.ModelSerializer):
         if not request or not request.user.is_authenticated:
             return False
         return PostSave.objects.filter(post=obj, user=request.user).exists()
+
+    def get_is_externally_applied(self, obj):
+        if obj.post_type != 'job':
+            return False
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        return ExternalJobApplication.objects.filter(post=obj, user=request.user).exists()
 
     def get_content(self, obj):
         if len(obj.content) > 300:

@@ -44,6 +44,9 @@ django-taggit==6.1.0
 # ── AI / ML ───────────────────────────────────────────────────
 openai==1.6.1
 affinda==4.27.0
+google-generativeai>=0.8.0
+google-genai>=0.8.0
+groq>=1.2.0
 
 # ── Payments ──────────────────────────────────────────────────
 razorpay>=2.0.1

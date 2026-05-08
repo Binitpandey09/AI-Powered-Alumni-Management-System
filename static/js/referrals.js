@@ -268,7 +268,7 @@ function renderReferralCard(r) {
     rightGroup.appendChild(scoreEl);
   }
 
-  // Apply / Applied badge
+  // Apply / Applied badge (students)
   if (typeof IS_STUDENT !== 'undefined' && IS_STUDENT) {
     if (r.has_applied) {
       const applied = document.createElement('span');
@@ -287,6 +287,21 @@ function renderReferralCard(r) {
       closed.textContent = r.is_expired ? 'Expired' : 'Full';
       rightGroup.appendChild(closed);
     }
+  }
+
+  // Applicants link (alumni / faculty)
+  if (typeof CAN_POST !== 'undefined' && CAN_POST) {
+    const manageLink = document.createElement('a');
+    manageLink.href = `/referrals/${r.id}/manage/`;
+    manageLink.onclick = (e) => e.stopPropagation();
+    if (r.total_applications > 0) {
+      manageLink.className = 'px-3 py-1.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-lg hover:bg-blue-100 transition-colors';
+      manageLink.textContent = `${r.total_applications} Applicant${r.total_applications !== 1 ? 's' : ''} →`;
+    } else {
+      manageLink.className = 'px-3 py-1.5 bg-slate-50 text-slate-400 text-xs font-medium rounded-lg hover:bg-slate-100 transition-colors';
+      manageLink.textContent = 'Manage →';
+    }
+    rightGroup.appendChild(manageLink);
   }
 
   footer.appendChild(rightGroup);

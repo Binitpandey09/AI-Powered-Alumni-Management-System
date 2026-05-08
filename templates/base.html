@@ -84,64 +84,6 @@
 
   {% block extra_js %}{% endblock %}
 
-  {% if debug %}
-  <!-- ═══ DEV ROLE SWITCHER — only renders when DEBUG=True ═══ -->
-  <div id="dev-switcher" style="position:fixed;bottom:16px;left:16px;z-index:99999;font-family:system-ui,sans-serif">
-    <button onclick="document.getElementById('dev-panel').classList.toggle('hidden')"
-      style="background:#1E293B;color:white;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(0,0,0,0.3)">
-      <span style="width:8px;height:8px;border-radius:50%;background:#22C55E;display:inline-block"></span>
-      DEV
-    </button>
-    <div id="dev-panel" class="hidden"
-      style="position:absolute;bottom:40px;left:0;background:#1E293B;border-radius:10px;padding:12px;min-width:180px;box-shadow:0 4px 20px rgba(0,0,0,0.4)">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:#64748B;text-transform:uppercase;margin-bottom:8px">Switch Role</div>
-      <a href="/__dev__/switch/student/"
-        style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;text-decoration:none;margin-bottom:4px;background:#F59E0B22"
-        onmouseover="this.style.background='#F59E0B44'" onmouseout="this.style.background='#F59E0B22'">
-        <span style="width:8px;height:8px;border-radius:50%;background:#F59E0B;flex-shrink:0"></span>
-        <span style="color:white;font-size:13px;font-weight:500">Student</span>
-        <span style="color:#64748B;font-size:10px;margin-left:auto">→</span>
-      </a>
-      <a href="/__dev__/switch/alumni/"
-        style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;text-decoration:none;margin-bottom:4px;background:#534AB722"
-        onmouseover="this.style.background='#534AB744'" onmouseout="this.style.background='#534AB722'">
-        <span style="width:8px;height:8px;border-radius:50%;background:#534AB7;flex-shrink:0"></span>
-        <span style="color:white;font-size:13px;font-weight:500">Alumni</span>
-        <span style="color:#64748B;font-size:10px;margin-left:auto">→</span>
-      </a>
-      <a href="/__dev__/switch/faculty/"
-        style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;text-decoration:none;margin-bottom:4px;background:#0F6E5622"
-        onmouseover="this.style.background='#0F6E5644'" onmouseout="this.style.background='#0F6E5622'">
-        <span style="width:8px;height:8px;border-radius:50%;background:#0F6E56;flex-shrink:0"></span>
-        <span style="color:white;font-size:13px;font-weight:500">Faculty</span>
-        <span style="color:#64748B;font-size:10px;margin-left:auto">→</span>
-      </a>
-      <a href="/__dev__/switch/admin/"
-        style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;text-decoration:none;margin-bottom:8px;background:#EF444422"
-        onmouseover="this.style.background='#EF444444'" onmouseout="this.style.background='#EF444422'">
-        <span style="width:8px;height:8px;border-radius:50%;background:#EF4444;flex-shrink:0"></span>
-        <span style="color:white;font-size:13px;font-weight:500">Admin</span>
-        <span style="color:#64748B;font-size:10px;margin-left:auto">→</span>
-      </a>
-      <div style="border-top:1px solid #334155;padding-top:8px">
-        <div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:#64748B;text-transform:uppercase;margin-bottom:6px">Current</div>
-        <div id="dev-current-user" style="font-size:12px;color:#94A3B8">Not logged in</div>
-      </div>
-    </div>
-  </div>
-  <script>
-  (function() {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const el = document.getElementById('dev-current-user');
-        if (el && payload.user_id) el.textContent = 'User ID: ' + payload.user_id;
-      } catch(e) {}
-    }
-  })();
-  </script>
-  {% endif %}
 
   <!-- RATING MODAL -->
   <div id="rating-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; padding:16px">

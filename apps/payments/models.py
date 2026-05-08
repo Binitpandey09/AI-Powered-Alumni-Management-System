@@ -174,15 +174,15 @@ class AIToolUsage(models.Model):
         'resume_check': Decimal('49.00'),
         'resume_builder': Decimal('149.00'),
         'ai_interview': Decimal('99.00'),
-        'skill_gap': Decimal('79.00'),
+        'skill_gap': Decimal('0.00'),     # Free for all users
         'cv_parser': Decimal('0.00'),
         'summary_generator': Decimal('0.00'),
     }
     FREE_USES = {
-        'resume_check': 1,
-        'resume_builder': 0,
-        'ai_interview': 0,
-        'skill_gap': 0,
+        'resume_check': 1,       # 1 free check, then ₹49
+        'resume_builder': 0,     # Paid only (₹149)
+        'ai_interview': 0,       # Paid only (₹99)
+        'skill_gap': 999,        # Always free
         'cv_parser': 999,
         'summary_generator': 3,
     }

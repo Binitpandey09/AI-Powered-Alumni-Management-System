@@ -756,11 +756,11 @@ def admin_api_client(api_client):
     from rest_framework_simplejwt.tokens import RefreshToken
     User = get_user_model()
     try:
-        admin = User.objects.get(email='dev.admin@alumniai.com')
+        admin = User.objects.get(email='test.admin@alumniai.com')
     except User.DoesNotExist:
         admin = User.objects.create_user(
-            username='dev.admin@alumniai.com',
-            email='dev.admin@alumniai.com',
+            username='test.admin@alumniai.com',
+            email='test.admin@alumniai.com',
             password='DevPass@123',
             role='admin',
             first_name='Dev',

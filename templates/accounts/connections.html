@@ -1,0 +1,258 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+{% block title %}My Network — AlumniAI{% endblock %}
+
+{% block sidebar_links %}
+  {% if user.role == 'student' %}{% include 'partials/sidebar_student.html' %}
+  {% elif user.role == 'alumni' %}{% include 'partials/sidebar_alumni.html' %}
+  {% elif user.role == 'faculty' %}{% include 'partials/sidebar_faculty.html' %}
+  {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .net-tab{padding:8px 20px;border:none;background:transparent;font-size:.875rem;font-weight:500;color:#64748b;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;}
+  .net-tab.active{color:#2563eb;border-bottom-color:#2563eb;font-weight:600;}
+  .person-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;display:flex;align-items:center;gap:14px;transition:box-shadow .15s;}
+  .person-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.07);}
+  .avatar-circle{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0;}
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div style="max-width:800px;margin:0 auto;padding:24px 16px 40px;">
+
+  <!-- Header -->
+  <div style="margin-bottom:24px;">
+    <h1 style="font-size:1.375rem;font-weight:800;color:#0f172a;margin:0 0 4px;">My Network</h1>
+    <p style="font-size:.875rem;color:#64748b;margin:0;">Manage your connections and connection requests.</p>
+  </div>
+
+  <!-- Stats row -->
+  <div id="net-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;">
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;text-align:center;">
+      <p id="stat-connections" style="font-size:1.5rem;font-weight:800;color:#0f172a;margin:0;">—</p>
+      <p style="font-size:.75rem;color:#64748b;margin:4px 0 0;">Connections</p>
+    </div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;text-align:center;">
+      <p id="stat-pending" style="font-size:1.5rem;font-weight:800;color:#f59e0b;margin:0;">—</p>
+      <p style="font-size:.75rem;color:#64748b;margin:4px 0 0;">Pending Requests</p>
+    </div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;text-align:center;">
+      <p id="stat-views" style="font-size:1.5rem;font-weight:800;color:#2563eb;margin:0;">—</p>
+      <p style="font-size:.75rem;color:#64748b;margin:4px 0 0;">Profile Views (30d)</p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div style="display:flex;border-bottom:1px solid #e2e8f0;margin-bottom:20px;">
+    <button class="net-tab active" id="tab-pending"   onclick="switchTab('pending')">
+      Requests <span id="tab-pending-badge" style="display:none;background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:9999px;margin-left:4px;"></span>
+    </button>
+    <button class="net-tab" id="tab-connected" onclick="switchTab('connected')">Connected</button>
+    <button class="net-tab" id="tab-sent"      onclick="switchTab('sent')">Sent</button>
+    <button class="net-tab" id="tab-viewers"   onclick="switchTab('viewers')">Who viewed me</button>
+  </div>
+
+  <!-- Tab panels -->
+  <div id="panel-pending"></div>
+  <div id="panel-connected" style="display:none;"></div>
+  <div id="panel-sent"      style="display:none;"></div>
+  <div id="panel-viewers"   style="display:none;"></div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+/* ── state ── */
+let _connections = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadNetwork();
+});
+
+async function loadNetwork() {
+  const [connRes, viewRes] = await Promise.all([
+    apiGet('/api/accounts/connections/'),
+    apiGet('/api/accounts/profile-views/stats/'),
+  ]);
+
+  if (connRes.ok) {
+    _connections = connRes.data;
+    const c = connRes.data.counts;
+    document.getElementById('stat-connections').textContent = c.total_connections;
+    document.getElementById('stat-pending').textContent     = c.pending_received;
+    if (c.pending_received > 0) {
+      const badge = document.getElementById('tab-pending-badge');
+      badge.textContent = c.pending_received;
+      badge.style.display = 'inline';
+    }
+    renderPending(connRes.data.pending_received);
+    renderConnected(connRes.data.accepted);
+    renderSent(connRes.data.pending_sent);
+  }
+
+  if (viewRes.ok) {
+    document.getElementById('stat-views').textContent = viewRes.data.profile_views_30d;
+    renderViewers(viewRes.data.recent_viewers);
+  }
+}
+
+/* ── tabs ── */
+function switchTab(tab) {
+  ['pending','connected','sent','viewers'].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+    document.getElementById(`panel-${t}`).style.display = t === tab ? 'block' : 'none';
+  });
+}
+
+/* ── renderers ── */
+function renderPending(requests) {
+  const el = document.getElementById('panel-pending');
+  if (!requests.length) {
+    el.innerHTML = emptyState('No pending connection requests', 'When someone sends you a request, it will appear here.');
+    return;
+  }
+  el.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px;">${requests.map(r => personCardHtml(r.user, `
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button onclick="respond(${r.connection_id},'accept')" style="flex:1;padding:8px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:.8125rem;font-weight:600;cursor:pointer;">Accept</button>
+      <button onclick="respond(${r.connection_id},'reject')" style="flex:1;padding:8px;background:#f1f5f9;color:#64748b;border:none;border-radius:8px;font-size:.8125rem;font-weight:600;cursor:pointer;">Decline</button>
+    </div>
+    ${r.message ? `<p style="font-size:.75rem;color:#64748b;margin:8px 0 0;font-style:italic;">"${escH(r.message)}"</p>` : ''}
+  `, r.sent_at)).join('')}</div>`;
+}
+
+function renderConnected(connections) {
+  const el = document.getElementById('panel-connected');
+  if (!connections.length) {
+    el.innerHTML = emptyState('No connections yet', 'Browse alumni and faculty from the Connect page and send connection requests.');
+    return;
+  }
+  el.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px;">${connections.map(c => personCardHtml(c.user, `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;">
+      <a href="/${c.user.role}/${c.user.id}/" style="font-size:.8125rem;color:#2563eb;font-weight:500;text-decoration:none;">View Profile →</a>
+      <button onclick="removeConn(${c.connection_id}, this)" style="font-size:.75rem;color:#94a3b8;background:none;border:none;cursor:pointer;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">Remove</button>
+    </div>
+  `, c.connected_at)).join('')}</div>`;
+}
+
+function renderSent(sent) {
+  const el = document.getElementById('panel-sent');
+  if (!sent.length) {
+    el.innerHTML = emptyState('No pending outgoing requests', 'Your sent connection requests will appear here.');
+    return;
+  }
+  el.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px;">${sent.map(s => personCardHtml(s.user, `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;">
+      <span style="font-size:.75rem;color:#64748b;">Pending…</span>
+      <button onclick="withdraw(${s.user.id}, this)" style="font-size:.75rem;color:#ef4444;background:none;border:none;cursor:pointer;">Withdraw</button>
+    </div>
+  `, s.sent_at)).join('')}</div>`;
+}
+
+function renderViewers(viewers) {
+  const el = document.getElementById('panel-viewers');
+  if (!viewers.length) {
+    el.innerHTML = emptyState('No profile views yet', 'When someone visits your profile, they\'ll appear here.');
+    return;
+  }
+  el.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px;">${viewers.map(v => personCardHtml(v.user, `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;">
+      <a href="/${v.user.role}/${v.user.id}/" style="font-size:.8125rem;color:#2563eb;font-weight:500;text-decoration:none;">View Profile →</a>
+      <span style="font-size:.75rem;color:#94a3b8;">Viewed ${v.view_count}× · ${timeAgo(v.viewed_at)}</span>
+    </div>
+  `, v.viewed_at)).join('')}</div>`;
+}
+
+/* ── card builder ── */
+function personCardHtml(user, actionsHtml, dateStr) {
+  const rc = { alumni: '#534AB7', student: '#2563EB', faculty: '#0F6E56' };
+  const color = rc[user.role] || '#2563eb';
+  const initials = ((user.first_name?.[0]||'') + (user.last_name?.[0]||'')).toUpperCase() || '?';
+  const rd = user.role_detail || {};
+  let sub = '';
+  if (user.role === 'alumni' && rd.company)   sub = `${rd.designation||''} @ ${rd.company}`.trim().replace(/^@ /,'');
+  else if (user.role === 'faculty' && rd.department) sub = `${rd.designation||'Faculty'} · ${rd.department}`;
+  else if (user.role === 'student' && rd.degree) sub = `${rd.degree||''} ${rd.branch||''}`.trim();
+
+  const avatarHtml = user.profile_pic
+    ? `<img src="${escH(user.profile_pic)}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+       <div class="avatar-circle" style="display:none;background:${color};">${initials}</div>`
+    : `<div class="avatar-circle" style="background:${color};">${initials}</div>`;
+
+  const roleBadgeColors = { alumni:'background:#ede9fe;color:#5b21b6;', student:'background:#dbeafe;color:#1d4ed8;', faculty:'background:#ccfbf1;color:#065f46;' };
+
+  return `<div class="person-card">
+    <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">${avatarHtml}</div>
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:.9375rem;font-weight:700;color:#0f172a;">${escH(user.full_name)}</span>
+        <span style="padding:1px 8px;border-radius:9999px;font-size:.6875rem;font-weight:600;${roleBadgeColors[user.role]||''}">${user.role}</span>
+      </div>
+      ${sub ? `<p style="font-size:.8125rem;color:#64748b;margin:2px 0 0;">${escH(sub)}</p>` : ''}
+      ${user.college ? `<p style="font-size:.75rem;color:#94a3b8;margin:1px 0 0;">${escH(user.college)}</p>` : ''}
+      ${actionsHtml}
+    </div>
+  </div>`;
+}
+
+/* ── actions ── */
+async function respond(connId, action) {
+  const res = await apiPost(`/api/accounts/connections/${connId}/respond/`, { action });
+  if (res.ok) {
+    showToast(action === 'accept' ? 'Connected!' : 'Declined.', action === 'accept' ? 'success' : 'info');
+    await loadNetwork();
+    switchTab(action === 'accept' ? 'connected' : 'pending');
+  } else {
+    showToast('Something went wrong.', 'error');
+  }
+}
+
+async function removeConn(connId, btn) {
+  if (!confirm('Remove this connection?')) return;
+  btn.textContent = '…';
+  const res = await apiFetch(`/api/accounts/connections/remove/${connId}/`, { method: 'DELETE' });
+  if (res.ok || res.status === 204) {
+    showToast('Connection removed.', 'info');
+    await loadNetwork();
+  }
+}
+
+async function withdraw(userId, btn) {
+  if (!confirm('Withdraw this request?')) return;
+  btn.textContent = '…';
+  const res = await apiFetch(`/api/accounts/connections/remove/${userId}/`, { method: 'DELETE' });
+  if (res.ok || res.status === 204) {
+    showToast('Request withdrawn.', 'info');
+    await loadNetwork();
+  }
+}
+
+/* ── helpers ── */
+function emptyState(title, sub) {
+  return `<div style="text-align:center;padding:48px 20px;">
+    <div style="font-size:2rem;margin-bottom:10px;">👥</div>
+    <p style="font-size:.9375rem;font-weight:600;color:#0f172a;margin:0 0 4px;">${title}</p>
+    <p style="font-size:.875rem;color:#94a3b8;margin:0;">${sub}</p>
+  </div>`;
+}
+
+function escH(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+  if (diff < 604800) return `${Math.floor(diff/86400)}d ago`;
+  return new Date(dateStr).toLocaleDateString('en-IN', { day:'numeric', month:'short' });
+}
+</script>
+{% endblock %}

@@ -14,6 +14,7 @@ class Post(models.Model):
     ]
     STATUS_CHOICES = [
         ('active', 'Active'),
+        ('expired', 'Expired'),
         ('hidden', 'Hidden by Admin'),
         ('deleted', 'Deleted'),
         ('flagged', 'Flagged for Review'),
@@ -51,6 +52,12 @@ class Post(models.Model):
     likes_count = models.IntegerField(default=0)
     comments_count = models.IntegerField(default=0)
 
+    # Expiry
+    expires_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text='Post auto-hides after this datetime. Null = never expires.'
+    )
+
     # Moderation
     admin_note = models.TextField(blank=True)
     flagged_count = models.IntegerField(default=0)
@@ -66,6 +73,7 @@ class Post(models.Model):
             models.Index(fields=['post_type', '-created_at']),
             models.Index(fields=['author', 'status']),
             models.Index(fields=['post_type', 'status']),
+            models.Index(fields=['expires_at']),
         ]
 
     def __str__(self):
@@ -127,6 +135,22 @@ class PostSave(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='saved_posts'
     )
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('post', 'user')
+
+
+class ExternalJobApplication(models.Model):
+    """Tracks when a student self-reports applying to an external job post."""
+    post = models.ForeignKey(
+        Post, on_delete=models.CASCADE, related_name='external_applications'
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='external_job_applications'
+    )
+    match_score = models.IntegerField(default=0)
+    applied_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('post', 'user')

@@ -893,7 +893,32 @@ class StudentDashboardDataView(APIView):
             'status': a.status,
             'match_score': a.match_score,
             'applied_at': a.applied_at.isoformat(),
+            'link': f'/referrals/{a.referral.id}/',
+            'source': 'referral',
         } for a in recent_applications]
+
+        # Merge external job applications
+        from apps.feed.models import ExternalJobApplication
+        ext_apps = ExternalJobApplication.objects.filter(
+            user=user
+        ).select_related('post').order_by('-applied_at')[:5]
+
+        for ea in ext_apps:
+            applications_data.append({
+                'application_id': f'ext_{ea.id}',
+                'referral_id': None,
+                'job_title': ea.post.job_role or ea.post.title or 'Job',
+                'company_name': ea.post.company_name or 'Company',
+                'status': 'applied',
+                'match_score': ea.match_score,
+                'applied_at': ea.applied_at.isoformat(),
+                'link': f'/feed/{ea.post.id}/',
+                'source': 'external',
+            })
+
+        # Sort combined list by applied_at descending, keep latest 5
+        applications_data.sort(key=lambda x: x['applied_at'], reverse=True)
+        applications_data = applications_data[:5]
 
         # ── AI tools stats ──
         from apps.payments.models import AIToolUsage

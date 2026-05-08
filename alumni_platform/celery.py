@@ -21,6 +21,10 @@ app.conf.beat_schedule = {
         'task': 'apps.notifications.tasks.cleanup_old_notifications',
         'schedule': crontab(hour=2, minute=0),  # Daily at 2 AM
     },
+    'expire-old-posts': {
+        'task': 'apps.feed.tasks.expire_old_posts',
+        'schedule': crontab(minute='*/10'),  # Every 10 minutes
+    },
 }
 
 

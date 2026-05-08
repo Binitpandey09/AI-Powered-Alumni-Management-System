@@ -230,11 +230,11 @@
           <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #f1f5f9;">
             <div style="padding:12px 16px;border-right:1px solid #f1f5f9;">
               <p style="font-size:0.6875rem;color:#94a3b8;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;margin:0 0 2px;">Profile Views</p>
-              <p style="font-size:0.8125rem;color:#64748b;font-style:italic;margin:0;">Coming soon</p>
+              <p id="dd-profile-views" style="font-size:1rem;font-weight:700;color:#0f172a;margin:0;">—</p>
             </div>
             <div style="padding:12px 16px;">
               <p style="font-size:0.6875rem;color:#94a3b8;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;margin:0 0 2px;">Connections</p>
-              <p style="font-size:0.8125rem;color:#64748b;font-style:italic;margin:0;">Coming soon</p>
+              <p id="dd-connections" style="font-size:1rem;font-weight:700;color:#0f172a;margin:0;">—</p>
             </div>
           </div>
 
@@ -449,7 +449,19 @@
   });
 
   async function updateDropdownDetails() {
-    const res = await apiGet('/api/accounts/me/');
+    // Load profile views + connections in parallel with user data
+    const [res, viewRes, connRes] = await Promise.all([
+      apiGet('/api/accounts/me/'),
+      apiGet('/api/accounts/profile-views/stats/'),
+      apiGet('/api/accounts/connections/'),
+    ]);
+
+    // Populate stats
+    const viewsEl = document.getElementById('dd-profile-views');
+    const connEl  = document.getElementById('dd-connections');
+    if (viewsEl && viewRes.ok) viewsEl.textContent = viewRes.data.profile_views_30d ?? '0';
+    if (connEl  && connRes.ok) connEl.textContent  = connRes.data.counts?.total_connections ?? '0';
+
     if (res.ok) {
       const u = res.data;
       const nameEl   = document.getElementById('dropdown-user-name');

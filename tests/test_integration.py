@@ -272,10 +272,10 @@ def test_alumni_earnings_and_payout_flow(full_client_set, verified_alumni):
     # Admin processes payout
     User = get_user_model()
     try:
-        admin = User.objects.get(email='dev.admin@alumniai.com')
+        admin = User.objects.get(email='test.admin@alumniai.com')
     except User.DoesNotExist:
         admin = User.objects.create_user(
-            username='dev.admin@alumniai.com', email='dev.admin@alumniai.com',
+            username='test.admin@alumniai.com', email='test.admin@alumniai.com',
             password='DevPass@123', role='admin', is_verified=True,
         )
     admin_client = APIClient()

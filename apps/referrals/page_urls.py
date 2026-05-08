@@ -5,10 +5,12 @@ from .page_views import (
     MyApplicationsPageView,
     ManageApplicationsPageView,
     SuccessStoriesPageView,
+    AllApplicantsPageView,
 )
 
 urlpatterns = [
     path('', ReferralBoardPageView.as_view(), name='referral_board'),
+    path('applicants/', AllApplicantsPageView.as_view(), name='all_applicants'),
     path('my-applications/', MyApplicationsPageView.as_view(), name='my_applications'),
     path('success-stories/', SuccessStoriesPageView.as_view(), name='success_stories'),
     path('<int:referral_id>/', ReferralDetailPageView.as_view(), name='referral_detail'),

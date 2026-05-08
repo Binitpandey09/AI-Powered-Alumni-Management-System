@@ -76,5 +76,25 @@ class ManageApplicationsPageView(JWTLoginRequiredMixin, TemplateView):
         return ctx
 
 
+class AllApplicantsPageView(JWTLoginRequiredMixin, TemplateView):
+    template_name = 'referrals/all_applicants.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        token = request.COOKIES.get('access_token', '')
+        user = get_user_from_token(token)
+        if not user:
+            return redirect(f'/auth/login/?next={request.path}')
+        if user.role not in ('alumni', 'faculty', 'admin'):
+            return redirect('/referrals/')
+        request.user = user
+        return super(JWTLoginRequiredMixin, self).dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['user'] = self.request.user
+        ctx['user_role'] = self.request.user.role
+        return ctx
+
+
 class SuccessStoriesPageView(JWTLoginRequiredMixin, TemplateView):
     template_name = 'referrals/success_stories.html'

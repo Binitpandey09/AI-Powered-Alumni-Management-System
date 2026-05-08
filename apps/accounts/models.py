@@ -670,6 +670,72 @@ class EmailOTP(models.Model):
     def is_expired(self):
         return timezone.now() > self.expires_at
 
+
+# ── Connection ────────────────────────────────────────────────────────────────
+
+class Connection(models.Model):
+    STATUS_PENDING  = 'pending'
+    STATUS_ACCEPTED = 'accepted'
+    STATUS_REJECTED = 'rejected'
+    STATUS_CHOICES = [
+        (STATUS_PENDING,  'Pending'),
+        (STATUS_ACCEPTED, 'Accepted'),
+        (STATUS_REJECTED, 'Rejected'),
+    ]
+
+    requester = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='sent_connections',
+    )
+    receiver = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='received_connections',
+    )
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    message = models.CharField(max_length=300, blank=True, help_text='Optional note with the request')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('requester', 'receiver')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['receiver', 'status']),
+            models.Index(fields=['requester', 'status']),
+        ]
+
+    def __str__(self):
+        return f"Connection {self.requester.email} → {self.receiver.email} [{self.status}]"
+
+
+# ── Profile View ──────────────────────────────────────────────────────────────
+
+class ProfileView(models.Model):
+    viewer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='profile_views_given',
+    )
+    profile_owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='profile_views_received',
+    )
+    view_count = models.PositiveIntegerField(default=1)
+    last_viewed_at = models.DateTimeField(auto_now=True)
+    first_viewed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('viewer', 'profile_owner')
+        indexes = [
+            models.Index(fields=['profile_owner', 'last_viewed_at']),
+        ]
+
+    def __str__(self):
+        return f"View: {self.viewer.email} → {self.profile_owner.email} ({self.view_count}x)"
+
     def is_valid(self):
         return not self.is_used and not self.is_expired()
 

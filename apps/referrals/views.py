@@ -18,6 +18,7 @@ from .serializers import (
 )
 from utils.permissions import CanPostReferral, IsReferralAuthorOrAdmin, IsApplicationOwnerOrReferralAuthor
 from utils.skill_matcher import calculate_skill_match
+from utils.ai_skill_matcher import ai_calculate_skill_match
 
 
 class ReferralPagination(PageNumberPagination):
@@ -180,14 +181,7 @@ class ReferralApplyView(APIView):
         ).exclude(status='withdrawn').exists():
             return Response({'error': 'You have already applied to this referral.'}, status=400)
 
-        try:
-            student_skills = request.user.student_profile.skills or []
-        except Exception:
-            student_skills = []
-
-        match_result = calculate_skill_match(
-            student_skills, referral.required_skills, referral.preferred_skills
-        )
+        match_result = ai_calculate_skill_match(request.user, referral)
 
         if not match_result['can_apply']:
             return Response({
@@ -270,13 +264,11 @@ class SkillMatchCheckView(APIView):
 
     def get(self, request, pk):
         referral = get_object_or_404(Referral, pk=pk)
+        result = ai_calculate_skill_match(request.user, referral)
         try:
             student_skills = request.user.student_profile.skills or []
         except Exception:
             student_skills = []
-        result = calculate_skill_match(
-            student_skills, referral.required_skills, referral.preferred_skills
-        )
         return Response({
             'referral_id': pk,
             'job_title': referral.job_title,
@@ -284,6 +276,82 @@ class SkillMatchCheckView(APIView):
             'required_skills': referral.required_skills,
             'student_skills': student_skills,
             **result,
+        })
+
+
+class AllMyApplicantsView(APIView):
+    """GET /api/referrals/applicants/ — all applications across all of current user's referrals."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role not in ('alumni', 'faculty', 'admin'):
+            return Response({'error': 'Only alumni/faculty can view applicants.'}, status=403)
+
+        referrals = Referral.objects.filter(posted_by=request.user).order_by('-created_at')
+
+        qs = ReferralApplication.objects.filter(
+            referral__in=referrals
+        ).exclude(status='withdrawn').select_related(
+            'referral', 'student', 'recommended_by'
+        ).order_by('-applied_at')
+
+        # Optional filters
+        ref_id = request.query_params.get('referral_id')
+        if ref_id:
+            qs = qs.filter(referral_id=ref_id)
+
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+
+        applications = []
+        for app in qs:
+            student = app.student
+            pic = student.profile_pic.url if student.profile_pic else None
+            try:
+                sp = student.student_profile
+                degree = f"{sp.degree} – {sp.branch}" if sp.degree else ''
+            except Exception:
+                degree = ''
+
+            applications.append({
+                'application_id': app.id,
+                'referral_id': app.referral.id,
+                'referral_title': app.referral.job_title,
+                'company_name': app.referral.company_name,
+                'student_id': student.id,
+                'student_name': student.full_name,
+                'student_email': student.email,
+                'student_pic': pic,
+                'student_degree': degree,
+                'match_score': app.match_score,
+                'matched_skills': app.matched_skills or [],
+                'missing_skills': app.missing_skills or [],
+                'status': app.status,
+                'cover_note': app.cover_note,
+                'applied_at': app.applied_at.isoformat(),
+                'is_faculty_recommended': app.is_faculty_recommended,
+                'alumni_note': app.alumni_note if hasattr(app, 'alumni_note') else '',
+            })
+
+        # Stats
+        all_apps = ReferralApplication.objects.filter(referral__in=referrals).exclude(status='withdrawn')
+        stats = {
+            'total':       all_apps.count(),
+            'shortlisted': all_apps.filter(status='shortlisted').count(),
+            'hired':       all_apps.filter(status='hired').count(),
+            'rejected':    all_apps.filter(status='rejected').count(),
+        }
+
+        referral_list = [
+            {'id': r.id, 'job_title': r.job_title, 'company_name': r.company_name, 'status': r.status}
+            for r in referrals
+        ]
+
+        return Response({
+            'applications': applications,
+            'stats': stats,
+            'referrals': referral_list,
         })
 
 

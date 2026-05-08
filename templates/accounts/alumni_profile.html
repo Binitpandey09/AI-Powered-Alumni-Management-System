@@ -39,11 +39,13 @@
           <p id="ap-role-company" class="text-slate-600 text-sm mb-1"></p>
           <p id="ap-college" class="text-slate-400 text-xs mb-3"></p>
           <div id="ap-skills" class="flex flex-wrap gap-1.5 mb-3"></div>
-          <div class="flex gap-2">
+          <div class="flex flex-wrap gap-2 items-center">
             <a id="ap-linkedin" href="#" target="_blank" class="hidden inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 text-slate-600 text-xs font-medium rounded-lg hover:bg-slate-50 transition-colors">
               <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
               LinkedIn
             </a>
+            <!-- Connect button — rendered by JS after checking status -->
+            <div id="ap-connect-area"></div>
           </div>
         </div>
       </div>
@@ -158,11 +160,105 @@ async function loadAlumniProfile() {
 
   document.getElementById('ap-sessions-heading').textContent = `Sessions by ${d.first_name}`;
   document.title = `${d.full_name} — AlumniAI`;
+
+  // Load connection status (only for non-own profile)
+  loadConnectButton(ALUMNI_ID);
 }
 
 function showError() {
   document.getElementById('loading-state').classList.add('hidden');
   document.getElementById('error-state').classList.remove('hidden');
+}
+
+// ── Connect button ────────────────────────────────────────────
+async function loadConnectButton(targetUserId) {
+  const area = document.getElementById('ap-connect-area');
+  if (!area) return;
+
+  // Get current user role — skip button for alumni/faculty viewing own profile
+  const meRes = await apiGet('/api/accounts/me/');
+  if (!meRes.ok) return;
+  const me = meRes.data;
+  if (me.id === targetUserId) return; // own profile, no button
+
+  const statusRes = await apiGet(`/api/accounts/connections/status/${targetUserId}/`);
+  if (!statusRes.ok) return;
+  renderConnectButton(area, statusRes.data, targetUserId);
+}
+
+function renderConnectButton(area, statusData, targetUserId) {
+  const { status, connection_id } = statusData;
+  area.innerHTML = '';
+
+  if (status === 'connected') {
+    area.innerHTML = `<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 14px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:8px;font-size:12px;font-weight:600;">
+      ✓ Connected
+      <button onclick="removeConnection(${targetUserId})" title="Remove connection" style="background:none;border:none;cursor:pointer;color:#94a3b8;margin-left:4px;font-size:10px;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">✕</button>
+    </span>`;
+  } else if (status === 'pending_sent') {
+    area.innerHTML = `<button onclick="withdrawRequest(${targetUserId})" style="display:inline-flex;align-items:center;gap:5px;padding:6px 14px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
+      ⏳ Request Sent
+    </button>`;
+  } else if (status === 'pending_received') {
+    area.innerHTML = `<div style="display:flex;gap:6px;">
+      <button onclick="respondConnection(${connection_id},'accept')" style="padding:6px 14px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">Accept</button>
+      <button onclick="respondConnection(${connection_id},'reject')" style="padding:6px 14px;background:#f1f5f9;color:#64748b;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">Decline</button>
+    </div>`;
+  } else {
+    area.innerHTML = `<button onclick="sendConnect(${targetUserId})" id="ap-connect-btn"
+      style="display:inline-flex;align-items:center;gap:6px;padding:7px 16px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
+      <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+      </svg>
+      Connect
+    </button>`;
+  }
+}
+
+async function sendConnect(targetUserId) {
+  const btn = document.getElementById('ap-connect-btn');
+  if (btn) { btn.textContent = 'Sending…'; btn.disabled = true; }
+  const res = await apiPost(`/api/accounts/connections/request/${targetUserId}/`, {});
+  if (res.ok) {
+    showToast('Connection request sent!', 'success');
+    const area = document.getElementById('ap-connect-area');
+    renderConnectButton(area, { status: 'pending_sent', connection_id: res.data.connection_id }, targetUserId);
+  } else {
+    if (btn) { btn.textContent = 'Connect'; btn.disabled = false; }
+    showToast(res.data?.detail || 'Failed to send request', 'error');
+  }
+}
+
+async function withdrawRequest(targetUserId) {
+  const res = await apiFetch(`/api/accounts/connections/remove/${targetUserId}/`, { method: 'DELETE' });
+  if (res.ok || res.status === 204) {
+    showToast('Request withdrawn', 'info');
+    const area = document.getElementById('ap-connect-area');
+    renderConnectButton(area, { status: 'none' }, targetUserId);
+  }
+}
+
+async function removeConnection(targetUserId) {
+  if (!confirm('Remove this connection?')) return;
+  const res = await apiFetch(`/api/accounts/connections/remove/${targetUserId}/`, { method: 'DELETE' });
+  if (res.ok || res.status === 204) {
+    showToast('Connection removed', 'info');
+    const area = document.getElementById('ap-connect-area');
+    renderConnectButton(area, { status: 'none' }, targetUserId);
+  }
+}
+
+async function respondConnection(connectionId, action) {
+  const res = await apiPost(`/api/accounts/connections/${connectionId}/respond/`, { action });
+  if (res.ok) {
+    showToast(action === 'accept' ? 'Connected!' : 'Declined', action === 'accept' ? 'success' : 'info');
+    const area = document.getElementById('ap-connect-area');
+    renderConnectButton(area, { status: action === 'accept' ? 'connected' : 'none', connection_id: connectionId }, ALUMNI_ID);
+  }
+}
+
+function getInitials(name) {
+  return (name || '').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
 }
 
 loadAlumniProfile();

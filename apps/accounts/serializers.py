@@ -174,10 +174,9 @@ class LoginRequestSerializer(serializers.Serializer):
 
         data['user'] = user
 
-        # --- DEMO MODE BYPASS ---
-        from django.conf import settings
-        DEMO_EMAILS = ['student@test.com', 'faculty@test.com', 'alumni@test.com']
-        if getattr(settings, 'DEBUG', False) and email in DEMO_EMAILS:
+        # Demo bypass — @test.com accounts skip OTP when DEMO_OTP is configured
+        from django.conf import settings as _s
+        if getattr(_s, 'DEMO_OTP', '') and email.endswith('@test.com'):
             data['is_demo'] = True
 
         return data
@@ -185,7 +184,7 @@ class LoginRequestSerializer(serializers.Serializer):
     def save(self):
         user = self.validated_data['user']
 
-        # --- DEMO MODE BYPASS ---
+        # Demo bypass — return JWT directly without OTP
         if self.validated_data.get('is_demo'):
             refresh = RefreshToken.for_user(user)
             return {

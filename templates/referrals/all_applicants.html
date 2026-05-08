@@ -1,0 +1,331 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+{% block title %}All Applicants — AlumniAI{% endblock %}
+
+{% block sidebar_links %}
+  {% if user_role == 'alumni' %}{% include 'partials/sidebar_alumni.html' %}
+  {% elif user_role == 'faculty' %}{% include 'partials/sidebar_faculty.html' %}
+  {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .status-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:9999px;font-size:.6875rem;font-weight:600;}
+  .s-applied{background:#dbeafe;color:#1d4ed8;}
+  .s-under_review{background:#fef3c7;color:#92400e;}
+  .s-shortlisted{background:#ede9fe;color:#5b21b6;}
+  .s-interview_scheduled{background:#ccfbf1;color:#065f46;}
+  .s-hired{background:#dcfce7;color:#15803d;}
+  .s-rejected{background:#fee2e2;color:#991b1b;}
+  .filter-pill{padding:6px 14px;border:1.5px solid #e2e8f0;border-radius:9999px;font-size:.8125rem;font-weight:500;color:#64748b;background:#fff;cursor:pointer;transition:all .15s;}
+  .filter-pill.active{border-color:#2563eb;color:#2563eb;background:#eff6ff;}
+  .applicant-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px;transition:box-shadow .15s;}
+  .applicant-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.07);}
+  .action-select{font-size:.8125rem;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;color:#374151;background:#fff;cursor:pointer;outline:none;}
+  .action-select:focus{border-color:#2563eb;}
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div style="max-width:960px;margin:0 auto;padding:4px 0 40px;">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px;">
+    <div>
+      <div style="margin-bottom:8px;">
+        <a href="/referrals/" style="display:inline-flex;align-items:center;gap:6px;font-size:.875rem;color:#64748b;text-decoration:none;"
+           onmouseover="this.style.color='#2563eb'" onmouseout="this.style.color='#64748b'">
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5M5 12l7 7M5 12l7-7"/>
+          </svg>
+          Referral Board
+        </a>
+      </div>
+      <h1 style="font-size:1.375rem;font-weight:800;color:#0f172a;margin:0 0 4px;">All Applicants</h1>
+      <p style="font-size:.875rem;color:#64748b;margin:0;">Students who applied to your referrals</p>
+    </div>
+    <a href="/referrals/" style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:#2563eb;color:#fff;border-radius:10px;text-decoration:none;font-size:.875rem;font-weight:600;"
+       onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">
+      + Post Referral
+    </a>
+  </div>
+
+  <!-- Stats row -->
+  <div id="stats-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;">
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;text-align:center;">
+      <p id="s-total" style="font-size:1.5rem;font-weight:800;color:#0f172a;margin:0;">—</p>
+      <p style="font-size:.75rem;color:#64748b;margin:4px 0 0;">Total</p>
+    </div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;text-align:center;">
+      <p id="s-shortlisted" style="font-size:1.5rem;font-weight:800;color:#7c3aed;margin:0;">—</p>
+      <p style="font-size:.75rem;color:#64748b;margin:4px 0 0;">Shortlisted</p>
+    </div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;text-align:center;">
+      <p id="s-hired" style="font-size:1.5rem;font-weight:800;color:#16a34a;margin:0;">—</p>
+      <p style="font-size:.75rem;color:#64748b;margin:4px 0 0;">Hired</p>
+    </div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;text-align:center;">
+      <p id="s-rejected" style="font-size:1.5rem;font-weight:800;color:#ef4444;margin:0;">—</p>
+      <p style="font-size:.75rem;color:#64748b;margin:4px 0 0;">Rejected</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:20px;">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <!-- Referral filter -->
+      <select id="filter-referral" onchange="applyFilters()"
+        style="flex:1;min-width:200px;font-size:.875rem;border:1.5px solid #e2e8f0;border-radius:9px;padding:8px 12px;color:#374151;background:#fff;outline:none;"
+        onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='#e2e8f0'">
+        <option value="">All Referrals</option>
+      </select>
+      <!-- Status pills -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;" id="status-pills">
+        <button class="filter-pill active" onclick="setStatus('')">All</button>
+        <button class="filter-pill" onclick="setStatus('applied')">Applied</button>
+        <button class="filter-pill" onclick="setStatus('shortlisted')">Shortlisted</button>
+        <button class="filter-pill" onclick="setStatus('interview_scheduled')">Interview</button>
+        <button class="filter-pill" onclick="setStatus('hired')">Hired</button>
+        <button class="filter-pill" onclick="setStatus('rejected')">Rejected</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- List -->
+  <div id="applicants-list" style="display:flex;flex-direction:column;gap:12px;"></div>
+
+  <!-- Empty -->
+  <div id="empty-state" style="display:none;text-align:center;padding:60px 20px;">
+    <div style="font-size:2.5rem;margin-bottom:12px;">📋</div>
+    <p style="font-size:1rem;font-weight:600;color:#0f172a;margin:0 0 4px;">No applicants yet</p>
+    <p style="font-size:.875rem;color:#94a3b8;margin:0 0 20px;">When students apply to your referrals, they'll appear here.</p>
+    <a href="/referrals/" style="display:inline-flex;align-items:center;gap:6px;padding:10px 22px;background:#2563eb;color:#fff;border-radius:10px;text-decoration:none;font-size:.875rem;font-weight:600;">
+      Post a Referral →
+    </a>
+  </div>
+
+  <!-- Loading skeleton -->
+  <div id="loading-state" style="display:flex;flex-direction:column;gap:12px;">
+    {% for i in "123456" %}
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px;display:flex;gap:14px;align-items:center;">
+      <div style="width:44px;height:44px;border-radius:50%;background:#f1f5f9;flex-shrink:0;"></div>
+      <div style="flex:1;">
+        <div style="height:14px;background:#f1f5f9;border-radius:6px;width:40%;margin-bottom:8px;"></div>
+        <div style="height:12px;background:#f1f5f9;border-radius:6px;width:60%;"></div>
+      </div>
+      <div style="width:80px;height:28px;background:#f1f5f9;border-radius:8px;"></div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+let _allApplications = [];
+let _currentStatus = '';
+
+document.addEventListener('DOMContentLoaded', loadApplicants);
+
+async function loadApplicants() {
+  const res = await apiGet('/api/referrals/applicants/');
+  document.getElementById('loading-state').style.display = 'none';
+
+  if (!res.ok) {
+    document.getElementById('empty-state').style.display = 'block';
+    return;
+  }
+
+  const data = res.data;
+  _allApplications = data.applications || [];
+
+  // Fill stats
+  const st = data.stats || {};
+  document.getElementById('s-total').textContent      = st.total || 0;
+  document.getElementById('s-shortlisted').textContent = st.shortlisted || 0;
+  document.getElementById('s-hired').textContent       = st.hired || 0;
+  document.getElementById('s-rejected').textContent    = st.rejected || 0;
+
+  // Fill referral dropdown
+  const sel = document.getElementById('filter-referral');
+  (data.referrals || []).forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r.id;
+    opt.textContent = `${r.job_title} — ${r.company_name}`;
+    sel.appendChild(opt);
+  });
+
+  renderList(_allApplications);
+}
+
+// ── Filters ───────────────────────────────────────────────────
+
+function setStatus(status) {
+  _currentStatus = status;
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  applyFilters();
+}
+
+function applyFilters() {
+  const refId  = document.getElementById('filter-referral').value;
+  let filtered = _allApplications;
+  if (refId)         filtered = filtered.filter(a => String(a.referral_id) === refId);
+  if (_currentStatus) filtered = filtered.filter(a => a.status === _currentStatus);
+  renderList(filtered);
+}
+
+// ── Render ────────────────────────────────────────────────────
+
+function renderList(apps) {
+  const list = document.getElementById('applicants-list');
+  const empty = document.getElementById('empty-state');
+  list.innerHTML = '';
+
+  if (!apps.length) {
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  apps.forEach(app => {
+    list.appendChild(buildCard(app));
+  });
+}
+
+function buildCard(app) {
+  const wrap = document.createElement('div');
+  wrap.className = 'applicant-card';
+
+  const initials = app.student_name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
+  const scoreColor = app.match_score >= 80 ? '#16a34a' : app.match_score >= 60 ? '#2563eb' : app.match_score >= 40 ? '#d97706' : '#ef4444';
+  const scoreBg    = app.match_score >= 80 ? '#f0fdf4' : app.match_score >= 60 ? '#eff6ff' : app.match_score >= 40 ? '#fffbeb' : '#fef2f2';
+
+  const statusLabels = {
+    applied:'Applied', under_review:'Under Review', shortlisted:'Shortlisted',
+    interview_scheduled:'Interview', hired:'Hired', rejected:'Rejected',
+  };
+  const statusCls = `status-badge s-${app.status}`;
+
+  const avatarHtml = app.student_pic
+    ? `<img src="${app.student_pic}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+       <div style="display:none;width:44px;height:44px;border-radius:50%;background:#2563eb;color:#fff;font-size:14px;font-weight:700;align-items:center;justify-content:center;flex-shrink:0;">${initials}</div>`
+    : `<div style="width:44px;height:44px;border-radius:50%;background:#2563eb;color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${initials}</div>`;
+
+  const appliedDate = new Date(app.applied_at).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+
+  const matchedHtml = (app.matched_skills || []).slice(0, 3).map(s =>
+    `<span style="padding:2px 8px;font-size:.6875rem;background:#f0fdf4;color:#15803d;border-radius:9999px;">${s}</span>`
+  ).join('');
+
+  const missingHtml = (app.missing_skills || []).slice(0, 3).map(s =>
+    `<span style="padding:2px 8px;font-size:.6875rem;background:#fef2f2;color:#dc2626;border-radius:9999px;">${s}</span>`
+  ).join('');
+
+  wrap.innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div style="display:flex;align-items:center;flex-shrink:0;">${avatarHtml}</div>
+
+      <div style="flex:1;min-width:0;">
+        <!-- Top row -->
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <a href="/students/${app.student_id}/profile/" style="font-size:.9375rem;font-weight:700;color:#0f172a;text-decoration:none;"
+                 onmouseover="this.style.color='#2563eb'" onmouseout="this.style.color='#0f172a'">${app.student_name}</a>
+              ${app.is_faculty_recommended ? '<span style="padding:2px 8px;font-size:.6875rem;background:#ccfbf1;color:#065f46;border-radius:9999px;font-weight:600;">⭐ Faculty Rec.</span>' : ''}
+              <span class="${statusCls}">${statusLabels[app.status] || app.status}</span>
+            </div>
+            <p style="font-size:.8125rem;color:#64748b;margin:3px 0 0;">${app.student_email}${app.student_degree ? ' · ' + app.student_degree : ''}</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+            <span style="padding:4px 10px;background:${scoreBg};color:${scoreColor};font-size:.75rem;font-weight:700;border-radius:9999px;">★ ${app.match_score}% match</span>
+            <span style="font-size:.75rem;color:#94a3b8;">${appliedDate}</span>
+          </div>
+        </div>
+
+        <!-- Referral tag -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+          <span style="padding:3px 10px;font-size:.75rem;background:#f1f5f9;color:#475569;border-radius:8px;font-weight:500;">
+            💼 ${app.referral_title} — ${app.company_name}
+          </span>
+          <a href="/referrals/${app.referral_id}/manage/" style="font-size:.75rem;color:#2563eb;text-decoration:none;"
+             onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Manage referral →</a>
+        </div>
+
+        <!-- Skills -->
+        ${(matchedHtml || missingHtml) ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">
+          ${matchedHtml ? `<span style="font-size:.6875rem;color:#64748b;margin-right:4px;">✓</span>${matchedHtml}` : ''}
+          ${missingHtml ? `<span style="font-size:.6875rem;color:#64748b;margin:0 4px;">✗</span>${missingHtml}` : ''}
+        </div>` : ''}
+
+        <!-- Cover note -->
+        ${app.cover_note ? `<div style="padding:8px 12px;background:#f8fafc;border-left:3px solid #e2e8f0;border-radius:0 6px 6px 0;margin-bottom:10px;">
+          <p style="font-size:.8125rem;color:#374151;margin:0;font-style:italic;">"${app.cover_note}"</p>
+        </div>` : ''}
+
+        <!-- Actions row -->
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <select onchange="updateStatus(${app.application_id}, this)" class="action-select"
+            onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='#e2e8f0'">
+            <option value="" disabled selected>Update Status</option>
+            <option value="under_review">Under Review</option>
+            <option value="shortlisted">Shortlist</option>
+            <option value="interview_scheduled">Schedule Interview</option>
+            <option value="hired">Hire 🎉</option>
+            <option value="rejected">Reject</option>
+          </select>
+          <a href="/students/${app.student_id}/profile/"
+             style="padding:6px 14px;background:#f8fafc;color:#374151;border:1px solid #e2e8f0;border-radius:8px;font-size:.8125rem;font-weight:500;text-decoration:none;"
+             onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
+            View Profile →
+          </a>
+        </div>
+      </div>
+    </div>`;
+
+  return wrap;
+}
+
+// ── Update status ─────────────────────────────────────────────
+
+async function updateStatus(applicationId, sel) {
+  const newStatus = sel.value;
+  if (!newStatus) return;
+
+  const res = await apiPost(`/api/referrals/applications/${applicationId}/update/`, { status: newStatus }, 'PATCH');
+  if (res.ok) {
+    showToast(`Status updated to "${newStatus.replace('_', ' ')}"`, 'success');
+    // Update badge in the card without re-fetching
+    const card = sel.closest('.applicant-card');
+    const badge = card?.querySelector('.status-badge');
+    if (badge) {
+      const labels = { applied:'Applied', under_review:'Under Review', shortlisted:'Shortlisted', interview_scheduled:'Interview', hired:'Hired', rejected:'Rejected' };
+      badge.className = `status-badge s-${newStatus}`;
+      badge.textContent = labels[newStatus] || newStatus;
+    }
+    // Update in _allApplications cache
+    const idx = _allApplications.findIndex(a => a.application_id === applicationId);
+    if (idx > -1) _allApplications[idx].status = newStatus;
+    // Reset select
+    sel.value = '';
+    // Refresh stats
+    refreshStats();
+  } else {
+    showToast('Failed to update status', 'error');
+    sel.value = '';
+  }
+}
+
+function refreshStats() {
+  const apps = _allApplications;
+  document.getElementById('s-total').textContent       = apps.length;
+  document.getElementById('s-shortlisted').textContent = apps.filter(a => a.status === 'shortlisted').length;
+  document.getElementById('s-hired').textContent       = apps.filter(a => a.status === 'hired').length;
+  document.getElementById('s-rejected').textContent    = apps.filter(a => a.status === 'rejected').length;
+}
+</script>
+{% endblock %}

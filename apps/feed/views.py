@@ -9,7 +9,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 
-from .models import Post, PostLike, PostComment, PostReport, PostSave
+from .models import Post, PostLike, PostComment, PostReport, PostSave, ExternalJobApplication
 from .serializers import (
     PostCreateSerializer, PostListSerializer, PostDetailSerializer, PostCommentSerializer,
 )
@@ -36,11 +36,13 @@ class FeedListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def _base_qs(self):
+        now = timezone.now()
         return (
             Post.objects
             .filter(status='active')
-            .exclude(post_type='session', session_date__lt=timezone.now())
+            .exclude(post_type='session', session_date__lt=now)
             .exclude(post_type='referral', referral__status__in=['closed', 'expired', 'paused'])
+            .exclude(expires_at__isnull=False, expires_at__lt=now)
             .select_related(
                 'author',
                 'author__alumni_profile',
@@ -333,11 +335,60 @@ class SavedPostsView(APIView):
         return paginator.get_paginated_response(serializer.data)
 
 
+# ── External job application (self-reported) ─────────────────────────────────
+
+class MarkJobAppliedView(APIView):
+    """POST → mark applied, DELETE → unmark. Students only, job posts only."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        if request.user.role != 'student':
+            return Response({'detail': 'Only students can track job applications.'}, status=403)
+        post = get_object_or_404(Post, pk=pk, post_type='job')
+
+        # Calculate match score using student skills vs post required_skills
+        match_score = 0
+        try:
+            from utils.skill_matcher import calculate_skill_match
+            student_skills = request.user.student_profile.skills or []
+            if post.required_skills:
+                result = calculate_skill_match(student_skills, post.required_skills, [])
+                match_score = result['score']
+        except Exception:
+            pass
+
+        obj, created = ExternalJobApplication.objects.get_or_create(
+            user=request.user, post=post,
+            defaults={'match_score': match_score}
+        )
+        if not created and obj.match_score == 0 and match_score > 0:
+            obj.match_score = match_score
+            obj.save(update_fields=['match_score'])
+
+        return Response({'applied': True, 'match_score': match_score})
+
+    def delete(self, request, pk):
+        ExternalJobApplication.objects.filter(user=request.user, post_id=pk).delete()
+        return Response({'applied': False})
+
+
 # ── Feed page view ────────────────────────────────────────────────────────────
 
 class FeedPageView(LoginRequiredMixin, TemplateView):
     template_name = 'feed/feed.html'
     login_url = '/auth/login/'
+
+
+# ── Post detail page view ─────────────────────────────────────────────────────
+
+class PostDetailPageView(LoginRequiredMixin, TemplateView):
+    template_name = 'feed/post_detail.html'
+    login_url = '/auth/login/'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['post_id'] = self.kwargs['pk']
+        return context
 
 
 # ── Admin: flagged posts list ─────────────────────────────────────────────────

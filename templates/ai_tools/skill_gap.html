@@ -32,25 +32,25 @@
       </div>
     </div>
     <div style="margin-top:10px;">
-      <span style="background:#F0FDFA; color:#0F766E; font-size:12px; font-weight:600; padding:4px 12px; border-radius:20px">₹79 per analysis</span>
+      <span style="background:#DCFCE7; color:#166534; font-size:12px; font-weight:600; padding:4px 12px; border-radius:20px">Free — Always</span>
     </div>
   </div>
 
   <!-- SECTION B — PAYMENT GATE -->
   <div id="payment-gate" style="background:white; border:1px solid #E2E8F0; border-radius:16px; padding:24px; max-width:520px; margin-bottom:28px;">
-    <h2 style="font-size:18px; font-weight:700; margin:0 0 12px;">Unlock Skill Analysis</h2>
-    <div style="font-size:32px; font-weight:800; color:#0D9488; margin-bottom:16px;">₹79</div>
+    <h2 style="font-size:18px; font-weight:700; margin:0 0 12px;">Start Skill Gap Analysis</h2>
+    <div style="font-size:32px; font-weight:800; color:#0D9488; margin-bottom:16px;">Free</div>
     <ul style="list-style:none; padding:0; margin:0 0 20px; font-size:14px; color:#475569; line-height:2;">
       <li style="display:flex; gap:8px; align-items:center"><span style="color:#0D9488">✓</span> Readiness score 0-100 for your target role</li>
       <li style="display:flex; gap:8px; align-items:center"><span style="color:#0D9488">✓</span> Exact skills you need to learn (prioritized)</li>
       <li style="display:flex; gap:8px; align-items:center"><span style="color:#0D9488">✓</span> Week-by-week learning roadmap</li>
       <li style="display:flex; gap:8px; align-items:center"><span style="color:#0D9488">✓</span> Free resource recommendations for each skill</li>
     </ul>
-    <button onclick="handleToolAccess('skill_gap', '{{ tool_price }}')" style="width:100%; background:#0D9488; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; font-size:15px; cursor:pointer;" onmouseover="this.style.background='#0F766E'" onmouseout="this.style.background='#0D9488'">Pay ₹79 and Analyze &rarr;</button>
+    <button onclick="handleToolAccess('skill_gap', '0')" style="width:100%; background:#0D9488; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; font-size:15px; cursor:pointer;" onmouseover="this.style.background='#0F766E'" onmouseout="this.style.background='#0D9488'">Analyze My Skills — Free &rarr;</button>
   </div>
 
   <!-- SECTION C — INPUT -->
-  <div id="skill-gap-input" style="display:none; max-width:620px; background:white; border:1px solid #E2E8F0; border-radius:16px; padding:24px; margin-bottom:28px;">
+  <div id="tool-interface" style="display:none; max-width:620px; background:white; border:1px solid #E2E8F0; border-radius:16px; padding:24px; margin-bottom:28px;">
     <div style="margin-bottom:20px;">
       <label style="display:block; font-size:14px; font-weight:600; margin-bottom:8px;">Target Role <span style="color:#DC2626">*</span></label>
       <input type="text" id="target-role-input" placeholder="e.g. Full Stack Developer at a startup" style="width:100%; padding:12px 14px; border:2px solid #E2E8F0; border-radius:8px; font-size:15px; box-sizing:border-box; outline:none;" onfocus="this.style.borderColor='#0D9488'" onblur="this.style.borderColor='#E2E8F0'">
@@ -58,7 +58,7 @@
     <div style="margin-bottom:20px;">
       <div style="font-size:12px; font-weight:600; color:#64748B; margin-bottom:8px; text-transform:uppercase;">Quick Select:</div>
       <div style="display:flex; flex-wrap:wrap; gap:8px;">
-        {% for role in 'Full Stack Dev,Backend Dev,Data Scientist,ML Engineer,DevOps Engineer,Frontend Dev,Android Dev,Cloud Engineer'|split:"," %}
+        {% for role in quick_roles %}
         <span style="background:#F1F5F9; color:#475569; font-size:13px; font-weight:500; padding:6px 12px; border-radius:20px; cursor:pointer;" onmouseover="this.style.background='#E2E8F0'" onmouseout="this.style.background='#F1F5F9'" onclick="document.getElementById('target-role-input').value=this.innerText">{{ role }}</span>
         {% endfor %}
       </div>
@@ -74,7 +74,7 @@
   </div>
 
   <!-- RESULT SECTION -->
-  <div id="skill-gap-result" style="display:none; margin-bottom:28px;">
+  <div id="result-section" style="display:none; margin-bottom:28px;">
 
     <!-- Readiness Card -->
     <div style="background:white; border:1px solid #E2E8F0; border-radius:16px; padding:28px; margin-bottom:20px; display:flex; gap:28px; align-items:center; flex-wrap:wrap;">

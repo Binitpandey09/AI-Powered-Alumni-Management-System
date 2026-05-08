@@ -9,10 +9,12 @@ from .views import (
     StudentApplicationListView,
     FacultyRecommendView,
     SuccessStoriesView,
+    AllMyApplicantsView,
 )
 
 urlpatterns = [
     path('', ReferralListView.as_view()),
+    path('applicants/', AllMyApplicantsView.as_view()),
     path('my-applications/', StudentApplicationListView.as_view()),
     path('my-applications/<int:application_id>/', StudentApplicationListView.as_view()),
     path('success-stories/', SuccessStoriesView.as_view()),
